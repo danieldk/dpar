@@ -1,0 +1,9 @@
+The test data is 1/10th of the Barbara Plank's CoNLL conversion of the
+Alpino treebank:
+
+http://www.let.rug.nl/~bplank/alpino2conll/
+
+The data was projectivized using the 'head' strategy [1].
+
+[1] Joakim Nivre and Jens Nilsson, Pseudo-Projective Dependency Parsing,
+2005, Proceedings of the 43rd Annual Meeting of the ACL
