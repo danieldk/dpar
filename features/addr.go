@@ -7,9 +7,10 @@ package features
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/danieldk/dpar/system"
 	"hash"
 	"strconv"
+
+	"github.com/danieldk/dpar/system"
 )
 
 type Source int
@@ -17,8 +18,8 @@ type Source int
 const (
 	STACK Source = iota
 	BUFFER
-	STACK_LDEP
-	STACK_RDEP
+	LDEP
+	RDEP
 )
 
 type Layer int
@@ -29,18 +30,35 @@ const (
 	DEPREL
 )
 
-type AddressedValue struct {
+type AddressComponent struct {
 	Source Source
 	Index  uint
-	Layer  Layer
-	Value  string
+}
+
+type AddressedValue struct {
+	Address []AddressComponent
+	Layer   Layer
+	Value   string
+}
+
+func (a AddressedValue) appendAddress(buf *bytes.Buffer) {
+	buf.WriteString("addr(")
+	for idx, component := range a.Address {
+		if idx != 0 {
+			buf.WriteByte(',')
+		}
+
+		buf.WriteString(strconv.FormatUint(uint64(component.Source), 10))
+		buf.WriteByte('-')
+		buf.WriteString(strconv.FormatUint(uint64(component.Index), 10))
+
+	}
+	buf.WriteByte(')')
 }
 
 func (a AddressedValue) AppendFeature(buf *bytes.Buffer) {
 	buf.WriteString("av(")
-	buf.WriteString(strconv.FormatUint(uint64(a.Source), 10))
-	buf.WriteByte(',')
-	buf.WriteString(strconv.FormatUint(uint64(a.Index), 10))
+	a.appendAddress(buf)
 	buf.WriteByte(',')
 	buf.WriteString(strconv.FormatUint(uint64(a.Layer), 10))
 	buf.WriteString(a.Value)
@@ -49,51 +67,59 @@ func (a AddressedValue) AppendFeature(buf *bytes.Buffer) {
 
 func (a AddressedValue) AppendHash(hash hash.Hash) {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(a.Source))
-	hash.Write(buf)
-	binary.LittleEndian.PutUint64(buf, uint64(a.Index))
-	hash.Write(buf)
+
+	for _, component := range a.Address {
+		binary.LittleEndian.PutUint64(buf, uint64(component.Source))
+		hash.Write(buf)
+		binary.LittleEndian.PutUint64(buf, uint64(component.Index))
+		hash.Write(buf)
+	}
+
 	binary.LittleEndian.PutUint64(buf, uint64(a.Layer))
 	hash.Write(buf)
 	hash.Write([]byte(a.Value))
 }
 
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
-	var token uint
+	var token uint = 0
 
-	if a.Source == STACK || a.Source == STACK_LDEP || a.Source == STACK_RDEP {
-		stackSize := uint(len(c.Stack))
+	for _, component := range a.Address {
+		switch component.Source {
+		case STACK:
+			stackSize := uint(len(c.Stack))
 
-		// Not addressable
-		if stackSize <= a.Index {
-			return "", false
-		}
+			// Not addressable
+			if stackSize <= component.Index {
+				return "", false
+			}
 
-		token = c.Stack[stackSize-a.Index-1]
+			token = c.Stack[stackSize-component.Index-1]
 
-		if a.Source == STACK_LDEP {
+		case BUFFER:
+			// Not addressable
+			if uint(len(c.Buffer)) <= component.Index {
+				return "", false
+			}
+
+			token = c.Buffer[component.Index]
+
+		case LDEP:
 			var ok bool
-			token, ok = c.LeftmostDependent(token)
+			token, ok = c.LeftmostDependent(token, component.Index)
 			if !ok {
 				return "", false
 			}
-		} else if a.Source == STACK_RDEP {
+
+		case RDEP:
 			var ok bool
-			token, ok = c.RightmostDependent(token)
+			token, ok = c.RightmostDependent(token, component.Index)
 			if !ok {
 				return "", false
 			}
-		}
 
-	} else if a.Source == BUFFER {
-		// Not addressable
-		if uint(len(c.Buffer)) <= a.Index {
-			return "", false
+		default:
+			panic("Source unimplemented")
 		}
-
-		token = c.Buffer[a.Index]
-	} else {
-		panic("Source unimplemented")
 	}
 
 	switch a.Layer {

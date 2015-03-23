@@ -6,9 +6,6 @@ package features
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"strconv"
 
 	"github.com/danieldk/dpar/system"
 	"gopkg.in/danieldk/golinear.v1"
@@ -57,53 +54,6 @@ func NewAddressedValueGenerator(templates []AddressedValue) FeatureGenerator {
 	return AddressedValueGenerator{templates}
 }
 
-func parseAddressedValueGenerator(params []string) (FeatureGenerator, error) {
-	if len(params)%3 != 0 {
-		return nil, errors.New("AddressedValueGenerator definition should have multiple of 3 columns")
-	}
-
-	templates := make([]AddressedValue, 0, len(params)/3)
-
-	for len(params) != 0 {
-		var source Source
-		switch params[0] {
-		case "STACK":
-			source = STACK
-		case "BUFFER":
-			source = BUFFER
-		case "STACK_LDEP":
-			source = STACK_LDEP
-		case "STACK_RDEP":
-			source = STACK_RDEP
-		default:
-			return nil, fmt.Errorf("Unknown source: %s", params[0])
-		}
-
-		depth, err := strconv.ParseUint(params[1], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		var layer Layer
-		switch params[2] {
-		case "TOKEN":
-			layer = TOKEN
-		case "TAG":
-			layer = TAG
-		case "DEPREL":
-			layer = DEPREL
-		default:
-			return nil, fmt.Errorf("Unknown layer: %s", params[0])
-		}
-
-		templates = append(templates, AddressedValue{source, uint(depth), layer, ""})
-
-		params = params[3:]
-	}
-
-	return AddressedValueGenerator{templates}, nil
-}
-
 func (g AddressedValueGenerator) Generate(c *system.Configuration) FeatureSet {
 	features := make(FeatureSet)
 	addressedValues := make([]AddressedValue, len(g.templates))
@@ -114,8 +64,8 @@ func (g AddressedValueGenerator) Generate(c *system.Configuration) FeatureSet {
 			return features
 		}
 
-		addressedValues[idx] = AddressedValue{template.Source, template.Index,
-			template.Layer, value}
+		addressedValues[idx] = AddressedValue{template.Address, template.Layer,
+			value}
 	}
 
 	features[NewAddressedValueFeature(addressedValues).String()] = 1
@@ -136,7 +86,7 @@ func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf Feat
 			return
 		}
 
-		av := AddressedValue{template.Source, template.Index, template.Layer, value}
+		av := AddressedValue{template.Address, template.Layer, value}
 		av.AppendHash(h)
 	}
 

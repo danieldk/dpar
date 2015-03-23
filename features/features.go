@@ -50,7 +50,7 @@ type FeatureGenerator interface {
 
 // Functions that create a feature generators from a (possibly
 // empty) list of arguments.
-type FeatureGeneratorFactory func([]string) (FeatureGenerator, error)
+type FeatureGeneratorFactory func([]byte) (FeatureGenerator, error)
 
 type FeatureGeneratorFactories map[string]FeatureGeneratorFactory
 
@@ -230,8 +230,7 @@ func ReadFeatureGenerators(fs FeatureGeneratorFactories,
 			continue
 		}
 
-		parts := strings.Split(line, " ")
-		g, err := parseGenerator(fs, parts)
+		g, err := parseGenerator(fs, line)
 		if err != nil {
 			return nil, err
 		}
@@ -242,15 +241,17 @@ func ReadFeatureGenerators(fs FeatureGeneratorFactories,
 	return AggregateGenerator{generators}, nil
 }
 
-func parseGenerator(fs FeatureGeneratorFactories, parts []string) (FeatureGenerator, error) {
-	if len(parts) == 0 {
+func parseGenerator(fs FeatureGeneratorFactories, line string) (FeatureGenerator, error) {
+	sepIdx := strings.IndexByte(line, ' ')
+	if sepIdx == -1 {
 		return nil, errors.New("Line should at the very least specify a generator.")
 	}
 
-	factory, ok := fs[parts[0]]
+	generatorName := line[:sepIdx]
+	factory, ok := fs[generatorName]
 	if !ok {
-		return nil, fmt.Errorf("Unknown generator: %s", parts[0])
+		return nil, fmt.Errorf("Unknown generator: %s", generatorName)
 	}
 
-	return factory(parts[1:])
+	return factory([]byte(line[sepIdx+1:]))
 }

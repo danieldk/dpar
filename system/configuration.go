@@ -5,8 +5,9 @@
 package system
 
 import (
-	"github.com/danieldk/conllx"
 	"sort"
+
+	"github.com/danieldk/conllx"
 )
 
 type Configuration struct {
@@ -92,24 +93,24 @@ func insert(slice []uint, index int, value uint) []uint {
 	return slice
 }
 
-// Get the token that is the leftmost dependent of the given token. If no
+// Get the token that is the idx-th leftmost dependent of the given token. If no
 // such token exists, false is returned as the second value.
-func (c *Configuration) LeftmostDependent(head uint) (uint, bool) {
+func (c *Configuration) LeftmostDependent(head uint, idx uint) (uint, bool) {
 	deps := c.headDeps[head]
-	if len(deps) == 0 {
+	if len(deps) == 0 || int(idx) >= len(deps) {
 		return ^uint(0), false
 	}
 
-	return deps[0], true
+	return deps[idx], true
 }
 
-// Get the token that is the rightmost dependent of the given token. If no
+// Get the token that is the idx-th rightmost dependent of the given token. If no
 // such token exists, false is returned as the second value.
-func (c *Configuration) RightmostDependent(head uint) (uint, bool) {
+func (c *Configuration) RightmostDependent(head uint, idx uint) (uint, bool) {
 	deps := c.headDeps[head]
-	if len(deps) == 0 {
+	if len(deps) == 0 || int(idx) >= len(deps) {
 		return 0, false
 	}
 
-	return deps[len(deps)-1], true
+	return deps[len(deps)-int(idx)-1], true
 }
