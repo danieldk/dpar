@@ -70,7 +70,7 @@ func main() {
 	}
 
 	log.Println("Creating training instances...")
-	var collector ml.InstanceCollector
+	var collector ml.GoLinearCollector
 	if *hashKernelSize == 0 {
 		collector = featureParsing(transitionSystem, generator, oracleConstructor)
 	} else {
@@ -102,7 +102,7 @@ func exitIfError(err error) {
 }
 
 func featureParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.InstanceCollector {
+	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.GoLinearCollector {
 	collector := ml.NewFeatureCollector(generator)
 	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
@@ -111,7 +111,7 @@ func featureParsing(transitionSystem system.TransitionSystem,
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.InstanceCollector {
+	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.GoLinearCollector {
 	collector := ml.NewHashCollector(generator, fnv.New32, *hashKernelSize)
 	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)

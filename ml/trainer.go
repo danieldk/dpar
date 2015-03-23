@@ -13,8 +13,12 @@ import (
 
 type InstanceCollector interface {
 	Collect(t system.Transition, c *system.Configuration)
-	Problem() *golinear.Problem
 	LabelNumberer() *features.LabelNumberer
+}
+
+type GoLinearCollector interface {
+	InstanceCollector
+	Problem() *golinear.Problem
 }
 
 type FeatureCollector struct {
