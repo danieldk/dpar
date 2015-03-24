@@ -10,61 +10,53 @@ const correctString2 = "[BUFFER 1] TAG"
 const correctString3 = "[STACK 0, LDEP 0] DEPREL"
 const correctString4 = "[STACK 0, LDEP 0] DEPREL [STACK 0, RDEP 0] DEPREL"
 
-var correct1 = AddressedValueGenerator{
-	[]AddressedValue{
-		AddressedValue{
-			Address: []AddressComponent{AddressComponent{STACK, 0}},
-			Layer:   TOKEN,
-			Value:   "",
-		},
+var correct1 = []AddressedValue{
+	AddressedValue{
+		Address: []AddressComponent{AddressComponent{STACK, 0}},
+		Layer:   TOKEN,
+		Value:   "",
 	},
 }
 
-var correct2 = AddressedValueGenerator{
-	[]AddressedValue{
-		AddressedValue{
-			Address: []AddressComponent{AddressComponent{BUFFER, 1}},
-			Layer:   TAG,
-			Value:   "",
-		},
+var correct2 = []AddressedValue{
+	AddressedValue{
+		Address: []AddressComponent{AddressComponent{BUFFER, 1}},
+		Layer:   TAG,
+		Value:   "",
 	},
 }
 
-var correct3 = AddressedValueGenerator{
-	[]AddressedValue{
-		AddressedValue{
-			Address: []AddressComponent{
-				AddressComponent{STACK, 0},
-				AddressComponent{LDEP, 0},
-			},
-			Layer: DEPREL,
-			Value: "",
+var correct3 = []AddressedValue{
+	AddressedValue{
+		Address: []AddressComponent{
+			AddressComponent{STACK, 0},
+			AddressComponent{LDEP, 0},
 		},
+		Layer: DEPREL,
+		Value: "",
 	},
 }
 
-var correct4 = AddressedValueGenerator{
-	[]AddressedValue{
-		AddressedValue{
-			Address: []AddressComponent{
-				AddressComponent{STACK, 0},
-				AddressComponent{LDEP, 0},
-			},
-			Layer: DEPREL,
-			Value: "",
+var correct4 = []AddressedValue{
+	AddressedValue{
+		Address: []AddressComponent{
+			AddressComponent{STACK, 0},
+			AddressComponent{LDEP, 0},
 		},
-		AddressedValue{
-			Address: []AddressComponent{
-				AddressComponent{STACK, 0},
-				AddressComponent{RDEP, 0},
-			},
-			Layer: DEPREL,
-			Value: "",
+		Layer: DEPREL,
+		Value: "",
+	},
+	AddressedValue{
+		Address: []AddressComponent{
+			AddressComponent{STACK, 0},
+			AddressComponent{RDEP, 0},
 		},
+		Layer: DEPREL,
+		Value: "",
 	},
 }
 
-var correctCases = map[string]AddressedValueGenerator{
+var correctCases = map[string][]AddressedValue{
 	correctString1: correct1,
 	correctString2: correct2,
 	correctString3: correct3,
@@ -89,19 +81,19 @@ var incorrectCases = []string{
 
 func TestCorrect(t *testing.T) {
 	for correctCase, correct := range correctCases {
-		gen, err := parseAddressedValueGenerator([]byte(correctCase))
+		gen, err := parseAddressedValueTemplates([]byte(correctCase))
 		checkCorrect(t, err, correct, gen)
 	}
 }
 
 func TestIncorrect(t *testing.T) {
 	for _, incorrectCase := range incorrectCases {
-		_, err := parseAddressedValueGenerator([]byte(incorrectCase))
+		_, err := parseAddressedValueTemplates([]byte(incorrectCase))
 		checkIncorrect(t, err, incorrectCase)
 	}
 }
 
-func checkCorrect(t *testing.T, err error, correct, candidate FeatureGenerator) {
+func checkCorrect(t *testing.T, err error, correct, candidate []AddressedValue) {
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
 	} else if !check(correct, candidate) {
@@ -115,6 +107,6 @@ func checkIncorrect(t *testing.T, err error, fragment string) {
 	}
 }
 
-func check(correct, candidate FeatureGenerator) bool {
+func check(correct, candidate []AddressedValue) bool {
 	return reflect.DeepEqual(correct, candidate)
 }

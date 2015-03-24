@@ -42,7 +42,7 @@ func readSource(sourceString string) (Source, error) {
   }
 }
 
-func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
+func parseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   cs, p,pe, eof := 0, 0, len(data), len(data)
 
   components := make([]AddressComponent, 0)
@@ -117,5 +117,14 @@ func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
     return nil, fmt.Errorf("Error in feature line at position %d: %s", p, string(data))
   }
 
-  return AddressedValueGenerator{templates}, nil
+  return templates, nil
+}
+
+func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
+  templates, err := parseAddressedValueTemplates(data)
+  if err != nil {
+    return nil, err
+  }
+
+  return NewAddressedValueGenerator(templates), nil
 }
