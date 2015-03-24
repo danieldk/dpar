@@ -94,12 +94,14 @@ func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
   }
 
   ws = [\t ]+;
+  initialSource = ("STACK"|"BUFFER") $ str_char % source;
   source = ("STACK"|"BUFFER"|"LDEP"|"RDEP") $ str_char % source;
   index = [0-9]+ $ str_char % index;
   layer = ("TOKEN"|"TAG"|"DEPREL") $ str_char % layer;
 
+  initialAddrComponent = initialSource ws* index % component;
   addrComponent = source ws* index % component;
-  addrComponents = '[' addrComponent (ws* ',' ws* addrComponent)* ']';
+  addrComponents = '[' initialAddrComponent (ws* ',' ws* addrComponent)* ']';
   addressedValue = addrComponents ws* layer % addressedValue;
   main := ws* addressedValue (ws* addressedValue)* ws*;
 

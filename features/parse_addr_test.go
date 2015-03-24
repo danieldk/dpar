@@ -83,6 +83,8 @@ var incorrectCases = []string{
 	"[STACK 0]",
 	"[STACK 0] TOKEN TAG",
 	"[STACK 0] TOKEN [STACK 1]",
+	"[LDEP 0] TOKEN",
+	"[RDEP 0] TOKEN",
 }
 
 func TestCorrect(t *testing.T) {

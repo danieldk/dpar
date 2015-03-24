@@ -81,9 +81,9 @@ func (a AddressedValue) AppendHash(hash hash.Hash) {
 }
 
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
-	var token uint = 0
+	var token uint
 
-	for _, component := range a.Address {
+	for idx, component := range a.Address {
 		switch component.Source {
 		case STACK:
 			stackSize := uint(len(c.Stack))
@@ -104,6 +104,10 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 			token = c.Buffer[component.Index]
 
 		case LDEP:
+			if idx == 0 {
+				panic("LDEP cannot be an initial address component")
+			}
+
 			var ok bool
 			token, ok = c.LeftmostDependent(token, component.Index)
 			if !ok {
@@ -111,6 +115,10 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 			}
 
 		case RDEP:
+			if idx == 0 {
+				panic("RDEP cannot be an initial address component")
+			}
+
 			var ok bool
 			token, ok = c.RightmostDependent(token, component.Index)
 			if !ok {
