@@ -81,14 +81,14 @@ var incorrectCases = []string{
 
 func TestCorrect(t *testing.T) {
 	for correctCase, correct := range correctCases {
-		gen, err := parseAddressedValueTemplates([]byte(correctCase))
+		gen, err := ParseAddressedValueTemplates([]byte(correctCase))
 		checkCorrect(t, err, correct, gen)
 	}
 }
 
 func TestIncorrect(t *testing.T) {
 	for _, incorrectCase := range incorrectCases {
-		_, err := parseAddressedValueTemplates([]byte(incorrectCase))
+		_, err := ParseAddressedValueTemplates([]byte(incorrectCase))
 		checkIncorrect(t, err, incorrectCase)
 	}
 }

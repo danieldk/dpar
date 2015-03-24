@@ -134,7 +134,7 @@ func readSource(sourceString string) (Source, error) {
 	}
 }
 
-func parseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
+func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 	cs, p, pe, eof := 0, 0, len(data), len(data)
 
 	components := make([]AddressComponent, 0)
@@ -330,7 +330,7 @@ func parseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 }
 
 func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
-	templates, err := parseAddressedValueTemplates(data)
+	templates, err := ParseAddressedValueTemplates(data)
 	if err != nil {
 		return nil, err
 	}
