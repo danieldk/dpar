@@ -22,6 +22,8 @@ func readLayer(layerString string) (Layer, error) {
     return TAG, nil
   case "DEPREL":
     return DEPREL, nil
+  case "FEATURE":
+    return FEATURE, nil
   default:
     return 0, fmt.Errorf("Unknown layer: %s", layerString)
   }
@@ -52,6 +54,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   var source Source
   var index uint64
   var layer Layer
+  var layerArg string
   var err error
 
 %%{
@@ -84,20 +87,30 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
     buf.Reset()
   }
 
+  action layerArg {
+    layerArg = buf.String()
+    buf.Reset()
+  }
+
   action component {
     components = append(components, AddressComponent{source, uint(index)})
   }
 
   action addressedValue {
-    templates = append(templates, AddressedValue{components, layer, ""})
+    templates = append(templates, AddressedValue{components, layer, layerArg, ""})
     components = make([]AddressComponent, 0)
+    layerArg = ""
   }
 
   ws = [\t ]+;
   initialSource = ("STACK"|"BUFFER") $ str_char % source;
   source = ("STACK"|"BUFFER"|"LDEP"|"RDEP") $ str_char % source;
   index = [0-9]+ $ str_char % index;
-  layer = ("TOKEN"|"TAG"|"DEPREL") $ str_char % layer;
+
+  layerArg = [a-zA-Z0-9]+ $ str_char % layerArg;
+  noArgLayer = ("TOKEN"|"TAG"|"DEPREL") $ str_char % layer;
+  argLayer = "FEATURE" $str_char % layer;
+  layer = (argLayer ws* layerArg | noArgLayer);
 
   initialAddrComponent = initialSource ws* index % component;
   addrComponent = source ws* index % component;

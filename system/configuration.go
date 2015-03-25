@@ -13,6 +13,7 @@ import (
 type Configuration struct {
 	Tokens     []string
 	Tags       []string
+	Features   []*conllx.Features
 	Stack      []uint
 	Buffer     []uint
 	tokenHeads []*Dependency
@@ -26,6 +27,11 @@ func NewConfiguration(tokens []conllx.Token) (Configuration, error) {
 	}
 
 	tags, err := SentenceToTags(tokens)
+	if err != nil {
+		return Configuration{}, err
+	}
+
+	features := sentenceToFeatures(tokens)
 	if err != nil {
 		return Configuration{}, err
 	}
@@ -51,7 +57,11 @@ func NewConfiguration(tokens []conllx.Token) (Configuration, error) {
 	rootedTags[0] = "ROOT"
 	copy(rootedTags[1:], tags)
 
-	return Configuration{rootedTokens, rootedTags, stack, buffer,
+	rootedFeatures := make([]*conllx.Features, len(features)+1)
+	rootedFeatures[0] = nil
+	copy(rootedFeatures[1:], features)
+
+	return Configuration{rootedTokens, rootedTags, rootedFeatures, stack, buffer,
 		tokenHeads, headDeps}, nil
 }
 

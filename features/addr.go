@@ -28,6 +28,7 @@ const (
 	TOKEN Layer = iota
 	TAG
 	DEPREL
+	FEATURE
 )
 
 type AddressComponent struct {
@@ -36,9 +37,10 @@ type AddressComponent struct {
 }
 
 type AddressedValue struct {
-	Address []AddressComponent
-	Layer   Layer
-	Value   string
+	Address  []AddressComponent
+	Layer    Layer
+	LayerArg string
+	Value    string
 }
 
 func (a AddressedValue) appendAddress(buf *bytes.Buffer) {
@@ -61,6 +63,10 @@ func (a AddressedValue) AppendFeature(buf *bytes.Buffer) {
 	a.appendAddress(buf)
 	buf.WriteByte(',')
 	buf.WriteString(strconv.FormatUint(uint64(a.Layer), 10))
+	if a.Layer == FEATURE {
+		buf.WriteByte(':')
+		buf.WriteString(a.LayerArg)
+	}
 	buf.WriteString(a.Value)
 	buf.WriteByte(')')
 }
@@ -76,6 +82,10 @@ func (a AddressedValue) AppendHash(hash hash.Hash) {
 	}
 
 	binary.LittleEndian.PutUint64(buf, uint64(a.Layer))
+	if a.Layer == FEATURE {
+		hash.Write([]byte(a.LayerArg))
+	}
+
 	hash.Write(buf)
 	hash.Write([]byte(a.Value))
 }
@@ -141,6 +151,16 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 		} else {
 			return "", false
 		}
+	case FEATURE:
+		if c.Features[token] == nil {
+			return "", false
+		}
+
+		if val, ok := c.Features[token].FeaturesMap()[a.LayerArg]; ok {
+			return val, true
+		}
+
+		return "", false
 	default:
 		panic("Layer not implemented.")
 	}

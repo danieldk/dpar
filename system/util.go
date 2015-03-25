@@ -6,6 +6,7 @@ package system
 
 import (
 	"fmt"
+
 	"github.com/danieldk/conllx"
 )
 
@@ -57,4 +58,16 @@ func SentenceToTags(s []conllx.Token) ([]string, error) {
 	}
 
 	return forms, nil
+}
+
+func sentenceToFeatures(s []conllx.Token) []*conllx.Features {
+	features := make([]*conllx.Features, len(s))
+
+	for idx := range s {
+		if f, avail := s[idx].Features(); avail {
+			features[idx] = f
+		}
+	}
+
+	return features
 }

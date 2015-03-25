@@ -9,6 +9,7 @@ const correctString1 = "[STACK 0] TOKEN"
 const correctString2 = "[BUFFER 1] TAG"
 const correctString3 = "[STACK 0, LDEP 0] DEPREL"
 const correctString4 = "[STACK 0, LDEP 0] DEPREL [STACK 0, RDEP 0] DEPREL"
+const correctString5 = "[STACK 0] FEATURE num"
 
 var correct1 = []AddressedValue{
 	AddressedValue{
@@ -56,11 +57,21 @@ var correct4 = []AddressedValue{
 	},
 }
 
+var correct5 = []AddressedValue{
+	AddressedValue{
+		Address:  []AddressComponent{AddressComponent{STACK, 0}},
+		Layer:    FEATURE,
+		LayerArg: "num",
+		Value:    "",
+	},
+}
+
 var correctCases = map[string][]AddressedValue{
 	correctString1: correct1,
 	correctString2: correct2,
 	correctString3: correct3,
 	correctString4: correct4,
+	correctString5: correct5,
 }
 
 var incorrectCases = []string{
@@ -77,6 +88,9 @@ var incorrectCases = []string{
 	"[STACK 0] TOKEN [STACK 1]",
 	"[LDEP 0] TOKEN",
 	"[RDEP 0] TOKEN",
+	"[STACK 0] TOKEN num",
+	"[STACK 0] TAG num",
+	"[STACK 0] DEPREL num",
 }
 
 func TestCorrect(t *testing.T) {
