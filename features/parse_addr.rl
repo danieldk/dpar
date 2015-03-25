@@ -1,3 +1,5 @@
+// Generated using ragel; DO NOT EDIT!
+
 package features
 
 // Parse addresses

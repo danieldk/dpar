@@ -1,4 +1,7 @@
 //line parse_addr.rl:1
+
+// Generated using ragel; DO NOT EDIT!
+
 package features
 
 // Parse addresses
@@ -10,7 +13,7 @@ import (
 	"strconv"
 )
 
-//line parse_addr.go:16
+//line parse_addr.go:18
 var _addressed_value_actions []byte = []byte{
 	0, 1, 0, 1, 1, 1, 3, 2, 1,
 	0, 2, 2, 5, 2, 3, 0, 2,
@@ -122,7 +125,7 @@ const addressed_value_error int = 0
 
 const addressed_value_en_main int = 1
 
-//line parse_addr.rl:15
+//line parse_addr.rl:17
 
 func readLayer(layerString string) (Layer, error) {
 	switch layerString {
@@ -167,12 +170,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 	var layerArg string
 	var err error
 
-//line parse_addr.go:176
+//line parse_addr.go:178
 	{
 		cs = addressed_value_start
 	}
 
-//line parse_addr.go:181
+//line parse_addr.go:183
 	{
 		var _klen int
 		var _trans int
@@ -253,10 +256,10 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 			_acts++
 			switch _addressed_value_actions[_acts-1] {
 			case 0:
-//line parse_addr.rl:62
+//line parse_addr.rl:64
 				buf.WriteByte(data[p])
 			case 1:
-//line parse_addr.rl:63
+//line parse_addr.rl:65
 				source, err = readSource(buf.String())
 				if err != nil {
 					return nil, err
@@ -265,7 +268,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 2:
-//line parse_addr.rl:72
+//line parse_addr.rl:74
 				index, err = strconv.ParseUint(buf.String(), 10, 64)
 				if err != nil {
 					return nil, err
@@ -274,7 +277,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 3:
-//line parse_addr.rl:81
+//line parse_addr.rl:83
 				layer, err = readLayer(buf.String())
 				if err != nil {
 					return nil, err
@@ -283,21 +286,21 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 4:
-//line parse_addr.rl:90
+//line parse_addr.rl:92
 				layerArg = buf.String()
 				buf.Reset()
 
 			case 5:
-//line parse_addr.rl:95
+//line parse_addr.rl:97
 				components = append(components, AddressComponent{source, uint(index)})
 
 			case 6:
-//line parse_addr.rl:99
+//line parse_addr.rl:101
 				templates = append(templates, AddressedValue{components, layer, layerArg, ""})
 				components = make([]AddressComponent, 0)
 				layerArg = ""
 
-//line parse_addr.go:311
+//line parse_addr.go:313
 			}
 		}
 
@@ -320,7 +323,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				__acts++
 				switch _addressed_value_actions[__acts-1] {
 				case 3:
-//line parse_addr.rl:81
+//line parse_addr.rl:83
 					layer, err = readLayer(buf.String())
 					if err != nil {
 						return nil, err
@@ -329,17 +332,17 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 					buf.Reset()
 
 				case 4:
-//line parse_addr.rl:90
+//line parse_addr.rl:92
 					layerArg = buf.String()
 					buf.Reset()
 
 				case 6:
-//line parse_addr.rl:99
+//line parse_addr.rl:101
 					templates = append(templates, AddressedValue{components, layer, layerArg, ""})
 					components = make([]AddressComponent, 0)
 					layerArg = ""
 
-//line parse_addr.go:353
+//line parse_addr.go:355
 				}
 			}
 		}
@@ -349,7 +352,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 		}
 	}
 
-//line parse_addr.rl:123
+//line parse_addr.rl:125
 
 	if cs < addressed_value_first_final {
 		if p == pe {
