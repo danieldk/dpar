@@ -32,7 +32,6 @@ There is still a lot of work to be done:
 * Write more godoc
 * Implementation of dynamic oracles
 * Pseudo-projective parsing
-* Addressing of the CoNLL features field
 * Optimization
 * Come up with an archive format?
 * Provide models
