@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/danieldk/conllx"
+	"github.com/danieldk/dpar/cmd/common"
 	"github.com/danieldk/dpar/features"
 	"github.com/danieldk/dpar/ml"
 	"github.com/danieldk/dpar/system"
@@ -35,34 +36,38 @@ var oracles = map[string]oracleConstructor{
 	"stackproj":   system.NewStackProjectiveOracle,
 }
 
-var hashKernelSize = flag.Uint("hashkernel", 0, "hash kernel size")
-var transSystem = flag.String("system", "stackproj", "Transition system: arceager, arcstandard, or stackproj (default: stackproj)")
-
 func main() {
 	flag.Parse()
 
-	if flag.NArg() != 4 {
-		log.Fatal("Usage: eval features model transitions eval_data")
+	if flag.NArg() != 2 {
+		log.Fatal("Usage: eval config eval_data")
 	}
 
-	generator, err := readFeatures(flag.Arg(0))
+	configFile, err := os.Open(flag.Arg(0))
+	exitIfError(err)
+	defer configFile.Close()
+	config, err := common.ParseConfig(configFile)
 	exitIfError(err)
 
-	transitionSystem, ok := transitionSystems[*transSystem]
+	generator, err := readFeatures(config.Parser.Features)
+	exitIfError(err)
+
+	transitionSystem, ok := transitionSystems[config.Parser.System]
 	if !ok {
-		log.Fatalf("Unknown transition system: %s", *transSystem)
+		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
 
-	labelNumberer, err := readTransitions(flag.Arg(2), transitionSystem)
+	labelNumberer, err := readTransitions(config.Parser.Transitions, transitionSystem)
 	exitIfError(err)
 
-	model, err := readModel(flag.Arg(1))
+	model, err := readModel(config.Parser.Model)
 	exitIfError(err)
 
-	if *hashKernelSize == 0 {
+	if config.Parser.HashKernelSize == 0 {
 		log.Fatal("Currently only models using a hash kernel are supported")
 	} else {
-		hashKernelParsing(transitionSystem, generator, model, labelNumberer)
+		hashKernelParsing(transitionSystem, generator, model, labelNumberer,
+			config.Parser.HashKernelSize)
 	}
 
 }
@@ -75,9 +80,9 @@ func exitIfError(err error) {
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
 	generator features.FeatureGenerator, model *golinear.Model,
-	labelNumberer *features.LabelNumberer) {
+	labelNumberer *features.LabelNumberer, hashKernelSize uint) {
 	guide := ml.NewHashingSVMGuide(model, generator, *labelNumberer, fnv.New32,
-		*hashKernelSize)
+		hashKernelSize)
 	parser := system.NewGreedyParser(transitionSystem, guide)
 
 	start := time.Now()
@@ -98,7 +103,7 @@ func train(problem *golinear.Problem) *golinear.Model {
 }
 
 func evaluate(parser system.Parser) {
-	testFile, err := os.Open(flag.Arg(3))
+	testFile, err := os.Open(flag.Arg(1))
 	defer testFile.Close()
 	if err != nil {
 		panic("Cannot open training data")

@@ -14,6 +14,7 @@ import (
 	"sort"
 
 	"github.com/danieldk/conllx"
+	"github.com/danieldk/dpar/cmd/common"
 	"github.com/danieldk/dpar/features"
 	"github.com/danieldk/dpar/ml"
 	"github.com/danieldk/dpar/system"
@@ -34,47 +35,50 @@ var oracles = map[string]oracleConstructor{
 	"stackproj":   system.NewStackProjectiveOracle,
 }
 
-var hashKernelSize = flag.Uint("hashkernel", 0, "hash kernel size")
 var libsvmOutput = flag.String("svmoutput", "", "Dump training data in liblinear/libsvm format")
-var modelFilename = flag.String("model", "", "file name to solve the model to")
-var transitionsFilename = flag.String("transitions", "", "file name to save the transitions to")
-var transSystem = flag.String("system", "stackproj", "Transition system: arceager, arcstandard, or stackproj (default: stackproj)")
 
 func main() {
 	flag.Parse()
 
 	if flag.NArg() != 2 {
-		log.Fatal("Usage: train features train_data")
+		log.Fatal("Usage: train config train_data")
 	}
 
-	log.Printf("Transition system: %s", *transSystem)
-	if *hashKernelSize > 0 {
-		log.Printf("Hash kernel size: %d", *hashKernelSize)
+	configFile, err := os.Open(flag.Arg(0))
+	exitIfError(err)
+	defer configFile.Close()
+	config, err := common.ParseConfig(configFile)
+	exitIfError(err)
+
+	log.Printf("Transition system: %s", config.Parser.System)
+	if config.Parser.HashKernelSize > 0 {
+		log.Printf("Hash kernel size: %d", config.Parser.HashKernelSize)
 	}
 
-	featureFile, err := os.Open(flag.Arg(0))
+	featureFile, err := os.Open(config.Parser.Features)
 	exitIfError(err)
 	defer featureFile.Close()
 
 	generator, err := features.ReadFeatureGeneratorsDefault(bufio.NewReader(featureFile))
 	exitIfError(err)
 
-	transitionSystem, ok := transitionSystems[*transSystem]
+	transitionSystem, ok := transitionSystems[config.Parser.System]
 	if !ok {
-		log.Fatalf("Unknown transition system: %s", *transSystem)
+		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
 
-	oracleConstructor, ok := oracles[*transSystem]
+	oracleConstructor, ok := oracles[config.Parser.System]
 	if !ok {
-		log.Fatalf("Unknown transition system: %s", *transSystem)
+		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
 
 	log.Println("Creating training instances...")
 	var collector ml.GoLinearCollector
-	if *hashKernelSize == 0 {
+	if config.Parser.HashKernelSize == 0 {
 		collector = featureParsing(transitionSystem, generator, oracleConstructor)
 	} else {
-		collector = hashKernelParsing(transitionSystem, generator, oracleConstructor)
+		collector = hashKernelParsing(transitionSystem, generator, oracleConstructor,
+			config.Parser.HashKernelSize)
 	}
 
 	if *libsvmOutput != "" {
@@ -82,15 +86,13 @@ func main() {
 	}
 
 	log.Println("Training classifier...")
-	if *modelFilename != "" {
+	if config.Parser.Model != "" {
 		model := train(collector.Problem())
-		err := writeModel(model)
+		err := model.Save(config.Parser.Model)
 		exitIfError(err)
 	}
 
-	if *transitionsFilename != "" {
-		writeTransitions(transitionSystem, collector)
-	}
+	writeTransitions(transitionSystem, collector, config.Parser.Transitions)
 
 	log.Println("Done!")
 }
@@ -111,8 +113,9 @@ func featureParsing(transitionSystem system.TransitionSystem,
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.GoLinearCollector {
-	collector := ml.NewHashCollector(generator, fnv.New32, *hashKernelSize)
+	generator features.FeatureGenerator, oracleConstructor oracleConstructor,
+	hashKernelSize uint) ml.GoLinearCollector {
+	collector := ml.NewHashCollector(generator, fnv.New32, hashKernelSize)
 	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
 
@@ -147,17 +150,14 @@ func writeLibSVMOutput(problem *golinear.Problem) {
 	})
 }
 
-func writeModel(model *golinear.Model) error {
-	return model.Save(*modelFilename)
-}
-
-func writeTransitions(ts system.TransitionSystem, collector ml.InstanceCollector) {
+func writeTransitions(ts system.TransitionSystem, collector ml.InstanceCollector,
+	transitionsFilename string) {
 	serializer, ok := ts.(system.TransitionSerializer)
 	if !ok {
 		log.Fatal("Transition system does not implement transition serialization")
 	}
 
-	f, err := os.Create(*transitionsFilename)
+	f, err := os.Create(transitionsFilename)
 	exitIfError(err)
 	defer f.Close()
 
