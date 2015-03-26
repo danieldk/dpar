@@ -11,7 +11,6 @@ import (
 	"hash/fnv"
 	"log"
 	"os"
-	"sort"
 
 	"github.com/danieldk/conllx"
 	"github.com/danieldk/dpar/cmd/common"
@@ -20,20 +19,6 @@ import (
 	"github.com/danieldk/dpar/system"
 	"gopkg.in/danieldk/golinear.v1"
 )
-
-var transitionSystems = map[string]system.TransitionSystem{
-	"arceager":    system.NewArcEager(),
-	"arcstandard": system.NewArcStandard(),
-	"stackproj":   system.NewStackProjective(),
-}
-
-type oracleConstructor func(system.DependencySet) system.Guide
-
-var oracles = map[string]oracleConstructor{
-	"arceager":    system.NewArcEagerOracle,
-	"arcstandard": system.NewArcStandardOracle,
-	"stackproj":   system.NewStackProjectiveOracle,
-}
 
 var libsvmOutput = flag.String("svmoutput", "", "Dump training data in liblinear/libsvm format")
 
@@ -45,29 +30,25 @@ func main() {
 	}
 
 	configFile, err := os.Open(flag.Arg(0))
-	exitIfError(err)
+	common.ExitIfError(err)
 	defer configFile.Close()
 	config, err := common.ParseConfig(configFile)
-	exitIfError(err)
+	common.ExitIfError(err)
 
 	log.Printf("Transition system: %s", config.Parser.System)
 	if config.Parser.HashKernelSize > 0 {
 		log.Printf("Hash kernel size: %d", config.Parser.HashKernelSize)
 	}
 
-	featureFile, err := os.Open(config.Parser.Features)
-	exitIfError(err)
-	defer featureFile.Close()
+	generator, err := common.ReadFeatures(config.Parser.Features)
+	common.ExitIfError(err)
 
-	generator, err := features.ReadFeatureGeneratorsDefault(bufio.NewReader(featureFile))
-	exitIfError(err)
-
-	transitionSystem, ok := transitionSystems[config.Parser.System]
+	transitionSystem, ok := common.TransitionSystems[config.Parser.System]
 	if !ok {
 		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
 
-	oracleConstructor, ok := oracles[config.Parser.System]
+	oracleConstructor, ok := common.Oracles[config.Parser.System]
 	if !ok {
 		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
@@ -89,7 +70,7 @@ func main() {
 	if config.Parser.Model != "" {
 		model := train(collector.Problem())
 		err := model.Save(config.Parser.Model)
-		exitIfError(err)
+		common.ExitIfError(err)
 	}
 
 	writeTransitions(transitionSystem, collector, config.Parser.Transitions)
@@ -97,14 +78,8 @@ func main() {
 	log.Println("Done!")
 }
 
-func exitIfError(err error) {
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-}
-
 func featureParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor oracleConstructor) ml.GoLinearCollector {
+	generator features.FeatureGenerator, oracleConstructor common.OracleConstructor) ml.GoLinearCollector {
 	collector := ml.NewFeatureCollector(generator)
 	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
@@ -113,7 +88,7 @@ func featureParsing(transitionSystem system.TransitionSystem,
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor oracleConstructor,
+	generator features.FeatureGenerator, oracleConstructor common.OracleConstructor,
 	hashKernelSize uint) ml.GoLinearCollector {
 	collector := ml.NewHashCollector(generator, fnv.New32, hashKernelSize)
 	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
@@ -127,14 +102,14 @@ func train(problem *golinear.Problem) *golinear.Model {
 	param.Cost = 0.1
 	param.SolverType = golinear.NewMCSVMCSDefault()
 	model, err := golinear.TrainModel(param, problem)
-	exitIfError(err)
+	common.ExitIfError(err)
 
 	return model
 }
 
 func writeLibSVMOutput(problem *golinear.Problem) {
 	f, err := os.Create(*libsvmOutput)
-	exitIfError(err)
+	common.ExitIfError(err)
 	defer f.Close()
 
 	problem.Iterate(func(instance *golinear.TrainingInstance) bool {
@@ -158,39 +133,15 @@ func writeTransitions(ts system.TransitionSystem, collector ml.InstanceCollector
 	}
 
 	f, err := os.Create(transitionsFilename)
-	exitIfError(err)
+	common.ExitIfError(err)
 	defer f.Close()
 
 	err = collector.LabelNumberer().WriteLabelNumberer(f, serializer)
-	exitIfError(err)
-}
-
-func sortedFeatureVector(fv golinear.FeatureVector) golinear.FeatureVector {
-	sorted := make(golinear.FeatureVector, len(fv))
-	copy(sorted, fv)
-
-	sort.Sort(byIndex{sorted})
-
-	return sorted
-}
-
-type byIndex struct{ golinear.FeatureVector }
-
-func (fv byIndex) Len() int {
-	return len(fv.FeatureVector)
-}
-
-func (fv byIndex) Swap(i, j int) {
-	fv.FeatureVector[i], fv.FeatureVector[j] =
-		fv.FeatureVector[j], fv.FeatureVector[i]
-}
-
-func (fv byIndex) Less(i, j int) bool {
-	return fv.FeatureVector[i].Index < fv.FeatureVector[j].Index
+	common.ExitIfError(err)
 }
 
 func createTrainingInstances(trainer ml.GreedyTrainer, collector ml.InstanceCollector,
-	oracleConstructor oracleConstructor) {
+	oracleConstructor common.OracleConstructor) {
 	f, err := os.Open(flag.Arg(1))
 	defer f.Close()
 	if err != nil {
@@ -206,7 +157,7 @@ func createTrainingInstances(trainer ml.GreedyTrainer, collector ml.InstanceColl
 		}
 
 		goldDependencies, err := system.SentenceToDependencies(s)
-		exitIfError(err)
+		common.ExitIfError(err)
 
 		oracle := oracleConstructor(goldDependencies)
 		trainer.Parse(s, oracle)

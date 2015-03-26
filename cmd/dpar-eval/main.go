@@ -6,7 +6,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
 	"hash/fnv"
@@ -22,20 +21,6 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
-var transitionSystems = map[string]system.TransitionSystem{
-	"arceager":    system.NewArcEager(),
-	"arcstandard": system.NewArcStandard(),
-	"stackproj":   system.NewStackProjective(),
-}
-
-type oracleConstructor func(system.DependencySet) system.Guide
-
-var oracles = map[string]oracleConstructor{
-	"arceager":    system.NewArcEagerOracle,
-	"arcstandard": system.NewArcStandardOracle,
-	"stackproj":   system.NewStackProjectiveOracle,
-}
-
 func main() {
 	flag.Parse()
 
@@ -44,24 +29,24 @@ func main() {
 	}
 
 	configFile, err := os.Open(flag.Arg(0))
-	exitIfError(err)
+	common.ExitIfError(err)
 	defer configFile.Close()
 	config, err := common.ParseConfig(configFile)
-	exitIfError(err)
+	common.ExitIfError(err)
 
-	generator, err := readFeatures(config.Parser.Features)
-	exitIfError(err)
+	generator, err := common.ReadFeatures(config.Parser.Features)
+	common.ExitIfError(err)
 
-	transitionSystem, ok := transitionSystems[config.Parser.System]
+	transitionSystem, ok := common.TransitionSystems[config.Parser.System]
 	if !ok {
 		log.Fatalf("Unknown transition system: %s", config.Parser.System)
 	}
 
-	labelNumberer, err := readTransitions(config.Parser.Transitions, transitionSystem)
-	exitIfError(err)
+	labelNumberer, err := common.ReadTransitions(config.Parser.Transitions, transitionSystem)
+	common.ExitIfError(err)
 
-	model, err := readModel(config.Parser.Model)
-	exitIfError(err)
+	model, err := golinear.LoadModel(config.Parser.Model)
+	common.ExitIfError(err)
 
 	if config.Parser.HashKernelSize == 0 {
 		log.Fatal("Currently only models using a hash kernel are supported")
@@ -70,12 +55,6 @@ func main() {
 			config.Parser.HashKernelSize)
 	}
 
-}
-
-func exitIfError(err error) {
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
@@ -89,17 +68,6 @@ func hashKernelParsing(transitionSystem system.TransitionSystem,
 	evaluate(parser)
 	elapsed := time.Since(start)
 	log.Printf("Parsing took %s\n", elapsed)
-}
-
-func train(problem *golinear.Problem) *golinear.Model {
-	param := golinear.DefaultParameters()
-	param.Cost = 0.1
-	//param.SolverType = golinear.NewL2RL2LossSvcDualDefault()
-	param.SolverType = golinear.NewMCSVMCSDefault()
-	model, err := golinear.TrainModel(param, problem)
-	exitIfError(err)
-
-	return model
 }
 
 func evaluate(parser system.Parser) {
@@ -122,10 +90,10 @@ func evaluate(parser system.Parser) {
 		}
 
 		goldDeps, err := system.SentenceToDependencies(s)
-		exitIfError(err)
+		common.ExitIfError(err)
 
 		deps, err := parser.Parse(s)
-		exitIfError(err)
+		common.ExitIfError(err)
 
 		total += len(goldDeps)
 		found += foundAttachments(goldDeps, deps)
@@ -154,42 +122,4 @@ func foundAttachments(gold, test system.DependencySet) int {
 	}
 
 	return found
-}
-
-func readFeatures(filename string) (features.FeatureGenerator, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	reader := bufio.NewReader(f)
-
-	return features.ReadFeatureGeneratorsDefault(reader)
-}
-
-func readModel(filename string) (*golinear.Model, error) {
-	return golinear.LoadModel(filename)
-}
-
-func readTransitions(filename string, ts system.TransitionSystem) (*features.LabelNumberer, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	var numberer features.LabelNumberer
-
-	serializer, ok := ts.(system.TransitionSerializer)
-	if !ok {
-		return nil, errors.New("Transition system does not implement transition serialization")
-	}
-
-	if err := numberer.Read(f, serializer); err == nil {
-		return &numberer, nil
-	} else {
-		return nil, err
-	}
 }
