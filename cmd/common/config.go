@@ -12,7 +12,8 @@ import (
 )
 
 type DParConfig struct {
-	Parser Parser
+	Parser    Parser
+	LibLinear LibLinear
 }
 
 type Parser struct {
@@ -23,6 +24,10 @@ type Parser struct {
 	HashKernelSize uint `toml:"hash_kernel_size"`
 }
 
+type LibLinear struct {
+	Cost float64
+}
+
 func defaultConfiguration() *DParConfig {
 	return &DParConfig{
 		Parser: Parser{
@@ -31,6 +36,9 @@ func defaultConfiguration() *DParConfig {
 			Model:          "parser.model",
 			Transitions:    "parser.transitions",
 			HashKernelSize: 300000,
+		},
+		LibLinear: LibLinear{
+			Cost: 0.1,
 		},
 	}
 }

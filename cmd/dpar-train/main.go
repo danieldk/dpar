@@ -66,9 +66,8 @@ func main() {
 		writeLibSVMOutput(collector.Problem())
 	}
 
-	log.Println("Training classifier...")
 	if config.Parser.Model != "" {
-		model := train(collector.Problem())
+		model := train(config.LibLinear, collector.Problem())
 		err := model.Save(config.Parser.Model)
 		common.ExitIfError(err)
 	}
@@ -97,9 +96,12 @@ func hashKernelParsing(transitionSystem system.TransitionSystem,
 	return collector
 }
 
-func train(problem *golinear.Problem) *golinear.Model {
+func train(conf common.LibLinear, problem *golinear.Problem) *golinear.Model {
+	log.Println("Training classifier...")
+	log.Println("Constraint violation cost:", conf.Cost)
+
 	param := golinear.DefaultParameters()
-	param.Cost = 0.1
+	param.Cost = conf.Cost
 	param.SolverType = golinear.NewMCSVMCSDefault()
 	model, err := golinear.TrainModel(param, problem)
 	common.ExitIfError(err)
