@@ -150,9 +150,9 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 	case DEPREL:
 		if depRel, ok := c.Head(token); ok {
 			return depRel.Relation, true
-		} else {
-			return "", false
 		}
+
+		return "", false
 	case FEATURE:
 		if c.Features[token] == nil {
 			return "", false

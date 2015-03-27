@@ -37,7 +37,7 @@ func (ts *ArcEager) IsTerminal(c Configuration) bool {
 func (ts *ArcEager) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
-	for trans, _ := range ts.archetypeTransitions {
+	for trans := range ts.archetypeTransitions {
 		if trans.IsPossible(configuration) {
 			possible[trans] = nil
 		}
@@ -106,11 +106,11 @@ func (l aeLeftArc) IsPossible(c Configuration) bool {
 	return !headPresent
 }
 
-func (s aeLeftArc) Apply(c *Configuration) {
+func (l aeLeftArc) Apply(c *Configuration) {
 	stackSize := len(c.Stack)
 	head := c.Buffer[0]
 	dependant := c.Stack[stackSize-1]
-	dependency := Dependency{head, s.relation, dependant}
+	dependency := Dependency{head, l.relation, dependant}
 
 	c.AddDependency(&dependency)
 	c.Stack = c.Stack[:stackSize-1]
@@ -148,7 +148,7 @@ func (r aeReduce) IsPossible(c Configuration) bool {
 	return headPresent
 }
 
-func (s aeReduce) Apply(c *Configuration) {
+func (r aeReduce) Apply(c *Configuration) {
 	stackSize := len(c.Stack)
 	c.Stack = c.Stack[:stackSize-1]
 }

@@ -35,7 +35,7 @@ func (ts *StackProjective) IsTerminal(c Configuration) bool {
 func (ts *StackProjective) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
-	for trans, _ := range ts.archetypeTransitions {
+	for trans := range ts.archetypeTransitions {
 		if trans.IsPossible(configuration) {
 			possible[trans] = nil
 		}
@@ -91,13 +91,13 @@ func (l spLeftArc) IsPossible(c Configuration) bool {
 	return len(c.Stack) > 1 && c.Stack[stackSize-2] != 0
 }
 
-func (s spLeftArc) Apply(c *Configuration) {
+func (l spLeftArc) Apply(c *Configuration) {
 	stack := c.Stack
 
 	stackSize := len(stack)
 	head := stack[stackSize-1]
 	dependant := stack[stackSize-2]
-	dependency := Dependency{head, s.relation, dependant}
+	dependency := Dependency{head, l.relation, dependant}
 
 	c.AddDependency(&dependency)
 

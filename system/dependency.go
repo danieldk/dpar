@@ -18,7 +18,7 @@ type DependencySet map[Dependency]interface{}
 // (like the rest of dpar currently) that each token is single-headed.
 func (ds DependencySet) CreateDependentHeadMapping() map[uint]Dependency {
 	mapping := make(map[uint]Dependency)
-	for dep, _ := range ds {
+	for dep := range ds {
 		mapping[dep.Dependent] = dep
 	}
 

@@ -35,7 +35,7 @@ func (ts *ArcStandard) IsTerminal(c Configuration) bool {
 func (ts *ArcStandard) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
-	for trans, _ := range ts.archetypeTransitions {
+	for trans := range ts.archetypeTransitions {
 		if trans.IsPossible(configuration) {
 			possible[trans] = nil
 		}
@@ -92,11 +92,11 @@ func (l asLeftArc) IsPossible(c Configuration) bool {
 		c.Stack[stackSize-1] != 0
 }
 
-func (s asLeftArc) Apply(c *Configuration) {
+func (l asLeftArc) Apply(c *Configuration) {
 	stackSize := len(c.Stack)
 	head := c.Buffer[0]
 	dependant := c.Stack[stackSize-1]
-	dependency := Dependency{head, s.relation, dependant}
+	dependency := Dependency{head, l.relation, dependant}
 
 	c.AddDependency(&dependency)
 	c.Stack = c.Stack[:stackSize-1]

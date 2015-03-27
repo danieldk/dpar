@@ -124,7 +124,7 @@ func (l LabelNumberer) Size() int {
 }
 
 func (l *LabelNumberer) Read(reader io.Reader, serializer system.TransitionSerializer) error {
-	labels := make([]system.Transition, 0)
+	var labels []system.Transition
 	bufReader := bufio.NewReader(reader)
 
 	eof := false
@@ -163,10 +163,10 @@ func (l *LabelNumberer) Read(reader io.Reader, serializer system.TransitionSeria
 
 func (l *LabelNumberer) WriteLabelNumberer(writer io.Writer, serializer system.TransitionSerializer) error {
 	for _, trans := range l.labels {
-		if transStr, err := serializer.SerializeTransition(trans); err != nil {
-			return err
-		} else {
+		if transStr, err := serializer.SerializeTransition(trans); err == nil {
 			fmt.Fprintf(writer, "%s\n", transStr)
+		} else {
+			return err
 		}
 	}
 
@@ -211,7 +211,7 @@ func ReadFeatureGenerators(fs FeatureGeneratorFactories,
 	reader *bufio.Reader) (FeatureGenerator, error) {
 	var eof = false
 
-	generators := make([]FeatureGenerator, 0)
+	var generators []FeatureGenerator
 
 	for !eof {
 		line, err := reader.ReadString('\n')
