@@ -33,7 +33,7 @@ There is still a lot of work to be done:
 * Implementation of dynamic oracles
 * Pseudo-projective parsing
 * Optimization
-* Come up with an archive format?
+* ~~Come up with an archive format?~~ Encourage model per-directory.
 * Provide models
 
 Also missing is an actual 'parse' command, which will only be added when
