@@ -22,11 +22,19 @@ import (
 
 var libsvmOutput = flag.String("svmoutput", "", "Dump training data in liblinear/libsvm format")
 
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] config train_data\n\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	if flag.NArg() != 2 {
-		log.Fatal("Usage: train config train_data")
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	configFile, err := os.Open(flag.Arg(0))

@@ -21,11 +21,19 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] config eval_data\n\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	if flag.NArg() != 2 {
-		log.Fatal("Usage: eval config eval_data")
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	configFile, err := os.Open(flag.Arg(0))
