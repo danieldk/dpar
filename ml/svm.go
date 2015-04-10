@@ -6,7 +6,6 @@ package ml
 
 import (
 	"math"
-	"reflect"
 
 	"github.com/danieldk/dpar/features"
 	"github.com/danieldk/dpar/system"
@@ -25,12 +24,7 @@ func NewSVMGuide(model *golinear.Model, featureGenerator features.FeatureGenerat
 	return &SVMGuide{model, featureGenerator, featureVectorizer, labelNumberer}
 }
 
-func (g *SVMGuide) BestTransition(configuration *system.Configuration, transitions system.TransitionSet) system.Transition {
-	possibleLabels := make(map[reflect.Type]interface{})
-	for transition := range transitions {
-		possibleLabels[reflect.TypeOf(transition)] = nil
-	}
-
+func (g *SVMGuide) BestTransition(configuration *system.Configuration) system.Transition {
 	x := g.featureVectorizer.Vectorize(g.featureGenerator.Generate(configuration), false)
 	_, values, _ := g.model.PredictDecisionValuesSlice(x)
 
@@ -45,8 +39,7 @@ func (g *SVMGuide) BestTransition(configuration *system.Configuration, transitio
 
 		numLabel := labels[idx]
 		label := g.labelNumberer.Label(numLabel)
-		_, permitted := possibleLabels[reflect.TypeOf(label)]
-		if !permitted {
+		if !label.IsPossible(*configuration) {
 			continue
 		}
 

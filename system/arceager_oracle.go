@@ -13,7 +13,7 @@ func NewArcEagerOracle(goldDependencies DependencySet) Guide {
 	return &oracle
 }
 
-func (o *ArcEagerOracle) BestTransition(c *Configuration, transitions TransitionSet) Transition {
+func (o *ArcEagerOracle) BestTransition(c *Configuration) Transition {
 	if len(c.Buffer) == 0 {
 		panic("Applying oracle to terminal configuration")
 	}
@@ -28,14 +28,14 @@ func (o *ArcEagerOracle) BestTransition(c *Configuration, transitions Transition
 		// - The transition itself is possible.
 		// - Following the transition would introduce a dependency
 		//   that corresponds to the gold standard.
-		if transitions.IsSetMember(archetypeAELeftArc) &&
-			o.dependentHeadMapping[stackTip].Head == bufferHead {
-			return aeLeftArc{o.dependentHeadMapping[stackTip].Relation}
+		la := aeLeftArc{o.dependentHeadMapping[stackTip].Relation}
+		if la.IsPossible(*c) && o.dependentHeadMapping[stackTip].Head == bufferHead {
+			return la
 		}
 
-		if transitions.IsSetMember(archeTypeAERightArc) &&
-			o.dependentHeadMapping[bufferHead].Head == stackTip {
-			return aeRightArc{o.dependentHeadMapping[bufferHead].Relation}
+		ra := aeRightArc{o.dependentHeadMapping[bufferHead].Relation}
+		if ra.IsPossible(*c) && o.dependentHeadMapping[bufferHead].Head == stackTip {
+			return ra
 		}
 
 		// reduce is the next transition if:
@@ -43,9 +43,9 @@ func (o *ArcEagerOracle) BestTransition(c *Configuration, transitions Transition
 		// - reduce is possible.
 		// - The next token in the buffer is in a dependency relation with a token that precedes
 		//   the token on the tip of the stack.
-		if transitions.IsSetMember(archetypeAEReduce) &&
-			o.nextAttached(c) {
-			return aeReduce{}
+		r := aeReduce{}
+		if r.IsPossible(*c) && o.nextAttached(c) {
+			return r
 		}
 	}
 

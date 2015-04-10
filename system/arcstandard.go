@@ -142,21 +142,21 @@ func NewArcStandardOracle(goldDependencies DependencySet) Guide {
 	return &oracle
 }
 
-func (o *ArcStandardOracle) BestTransition(c *Configuration, transitions TransitionSet) Transition {
+func (o *ArcStandardOracle) BestTransition(c *Configuration) Transition {
 	stackSize := len(c.Stack)
 	if stackSize != 0 {
 		stackTip := c.Stack[stackSize-1]
 		bufferHead := c.Buffer[0]
 
-		if transitions.IsSetMember(archetypeASLeftArc) &&
-			o.dependentHeadMapping[stackTip].Head == bufferHead {
-			return asLeftArc{o.dependentHeadMapping[stackTip].Relation}
+		la := asLeftArc{o.dependentHeadMapping[stackTip].Relation}
+		if la.IsPossible(*c) && o.dependentHeadMapping[stackTip].Head == bufferHead {
+			return la
 		}
 
-		if transitions.IsSetMember(archetypeASRightArc) &&
-			o.dependentHeadMapping[bufferHead].Head == stackTip &&
+		ra := asRightArc{o.dependentHeadMapping[bufferHead].Relation}
+		if ra.IsPossible(*c) && o.dependentHeadMapping[bufferHead].Head == stackTip &&
 			!o.neededForAttachment(c, bufferHead) {
-			return asRightArc{o.dependentHeadMapping[bufferHead].Relation}
+			return ra
 		}
 	}
 

@@ -6,7 +6,6 @@ package ml
 
 import (
 	"math"
-	"reflect"
 
 	"github.com/danieldk/dpar/features"
 	"github.com/danieldk/dpar/system"
@@ -26,12 +25,7 @@ func NewHashingSVMGuide(model *golinear.Model, featureGenerator features.Feature
 	return &HashingSVMGuide{model, featureGenerator, labelNumberer, hf, maxFeatures}
 }
 
-func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration, transitions system.TransitionSet) system.Transition {
-	possibleLabels := make(map[reflect.Type]interface{})
-	for transition := range transitions {
-		possibleLabels[reflect.TypeOf(transition)] = nil
-	}
-
+func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration) system.Transition {
 	vecBuilder := features.NewFeatureVectorBuilder()
 	g.featureGenerator.GenerateHashed(configuration, g.hashFunc, vecBuilder)
 	x := vecBuilder.Build()
@@ -64,8 +58,7 @@ func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration, tr
 
 		numLabel := labels[idx]
 		label := g.labelNumberer.Label(numLabel)
-		_, permitted := possibleLabels[reflect.TypeOf(label)]
-		if !permitted {
+		if !label.IsPossible(*configuration) {
 			continue
 		}
 

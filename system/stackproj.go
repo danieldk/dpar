@@ -152,31 +152,32 @@ func NewStackProjectiveOracle(goldDependencies DependencySet) Guide {
 	return &oracle
 }
 
-func (o *StackProjectiveOracle) BestTransition(configuration *Configuration, transitions TransitionSet) Transition {
-	stack := configuration.Stack
+func (o *StackProjectiveOracle) BestTransition(c *Configuration) Transition {
+	stack := c.Stack
 
 	if len(stack) > 1 {
 		stackSize := len(stack)
 		stack0 := stack[stackSize-1]
 		stack1 := stack[stackSize-2]
 
-		if transitions.IsSetMember(archetypeSPLeftArc) &&
-			o.dependentHeadMapping[stack1].Head == stack0 {
-			return spLeftArc{o.dependentHeadMapping[stack1].Relation}
+		la := spLeftArc{o.dependentHeadMapping[stack1].Relation}
+		if la.IsPossible(*c) && o.dependentHeadMapping[stack1].Head == stack0 {
+			return la
 		}
 
-		if transitions.IsSetMember(archetypeSPRightArc) &&
+		ra := spRightArc{o.dependentHeadMapping[stack0].Relation}
+		if ra.IsPossible(*c) &&
 			o.dependentHeadMapping[stack0].Head == stack1 &&
-			!o.neededForAttachment(configuration, stack0) {
-			return spRightArc{o.dependentHeadMapping[stack0].Relation}
+			!o.neededForAttachment(c, stack0) {
+			return ra
 		}
 	}
 
 	return spShift{}
 }
 
-func (o *StackProjectiveOracle) neededForAttachment(configuration *Configuration, token uint) bool {
-	for _, bufToken := range configuration.Buffer {
+func (o *StackProjectiveOracle) neededForAttachment(c *Configuration, token uint) bool {
+	for _, bufToken := range c.Buffer {
 		if o.dependentHeadMapping[bufToken].Head == token {
 			return true
 		}

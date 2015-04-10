@@ -134,8 +134,7 @@ func (t *GreedyTrainer) Parse(tokens []conllx.Token, oracle system.Guide) (syste
 func (t *GreedyTrainer) parseConfiguration(c *system.Configuration, oracle system.Guide) {
 	for !t.transitionSystem.IsTerminal(*c) {
 		// Find next transition
-		possible := t.transitionSystem.PossibleTransitions(*c)
-		nextTransition := oracle.BestTransition(c, possible)
+		nextTransition := oracle.BestTransition(c)
 
 		// Collect training instance.
 		t.collector.Collect(nextTransition, c)

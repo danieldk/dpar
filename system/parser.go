@@ -9,7 +9,7 @@ import (
 )
 
 type Guide interface {
-	BestTransition(configuration *Configuration, transitions TransitionSet) Transition
+	BestTransition(configuration *Configuration) Transition
 }
 
 type Parser interface {
@@ -36,8 +36,7 @@ func (p *GreedyParser) Parse(tokens []conllx.Token) (DependencySet, error) {
 
 func (p *GreedyParser) parseConfiguration(c *Configuration) DependencySet {
 	for !p.transitionSystem.IsTerminal(*c) {
-		possible := p.transitionSystem.PossibleTransitions(*c)
-		p.guide.BestTransition(c, possible).Apply(c)
+		p.guide.BestTransition(c).Apply(c)
 	}
 
 	return c.Dependencies()
