@@ -22,7 +22,7 @@ type SVMGuide struct {
 }
 
 func NewSVMGuide(model *golinear.Model, featureGenerator features.FeatureGenerator,
-	featureVectorizer features.FeatureVectorizer, labelNumberer features.LabelNumberer) system.Guide {
+	featureVectorizer features.FeatureVectorizer, labelNumberer features.LabelNumberer) *SVMGuide {
 	return &SVMGuide{model, featureGenerator, featureVectorizer, labelNumberer}
 }
 
