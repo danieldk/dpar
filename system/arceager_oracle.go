@@ -9,8 +9,7 @@ type ArcEagerOracle struct {
 }
 
 func NewArcEagerOracle(goldDependencies DependencySet) Guide {
-	oracle := ArcEagerOracle{goldDependencies.CreateDependentHeadMapping()}
-	return &oracle
+	return &ArcEagerOracle{goldDependencies.CreateDependentHeadMapping()}
 }
 
 func (o *ArcEagerOracle) BestTransition(c *Configuration) Transition {

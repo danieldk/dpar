@@ -12,6 +12,8 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
+var _ system.Guide = &HashingSVMGuide{}
+
 type HashingSVMGuide struct {
 	model            *golinear.Model
 	featureGenerator features.FeatureGenerator
@@ -21,7 +23,7 @@ type HashingSVMGuide struct {
 }
 
 func NewHashingSVMGuide(model *golinear.Model, featureGenerator features.FeatureGenerator,
-	labelNumberer features.LabelNumberer, hf features.FeatureHashFun, maxFeatures uint) system.Guide {
+	labelNumberer features.LabelNumberer, hf features.FeatureHashFun, maxFeatures uint) *HashingSVMGuide {
 	return &HashingSVMGuide{model, featureGenerator, labelNumberer, hf, maxFeatures}
 }
 

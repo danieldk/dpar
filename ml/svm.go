@@ -12,6 +12,8 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
+var _ system.Guide = &SVMGuide{}
+
 type SVMGuide struct {
 	model             *golinear.Model
 	featureGenerator  features.FeatureGenerator

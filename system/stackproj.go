@@ -10,15 +10,20 @@ import (
 	"strings"
 )
 
-var archetypeSPShift = spShift{}
-var archetypeSPLeftArc = spLeftArc{"<archetype>"}
-var archetypeSPRightArc = spRightArc{"<archetype>"}
+// Archetype transitions + interface validation.
+var archetypeSPShift Transition = spShift{}
+var archetypeSPLeftArc Transition = spLeftArc{"<archetype>"}
+var archetypeSPRightArc Transition = spRightArc{"<archetype>"}
+
+// Assert TransitionSystem/TransitionSerializer conformance.
+var _ TransitionSystem = NewStackProjective()
+var _ TransitionSerializer = NewStackProjective()
 
 type StackProjective struct {
 	archetypeTransitions TransitionSet
 }
 
-func NewStackProjective() TransitionSystem {
+func NewStackProjective() *StackProjective {
 	trans := map[Transition]interface{}{
 		archetypeSPShift:    nil,
 		archetypeSPLeftArc:  nil,

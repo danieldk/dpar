@@ -16,12 +16,14 @@ type Parser interface {
 	Parse(tokens []conllx.Token) (DependencySet, error)
 }
 
+var _ Parser = &GreedyParser{}
+
 type GreedyParser struct {
 	transitionSystem TransitionSystem
 	guide            Guide
 }
 
-func NewGreedyParser(ts TransitionSystem, guide Guide) Parser {
+func NewGreedyParser(ts TransitionSystem, guide Guide) *GreedyParser {
 	return &GreedyParser{ts, guide}
 }
 

@@ -10,15 +10,20 @@ import (
 	"strings"
 )
 
-var archetypeASShift = asShift{}
-var archetypeASLeftArc = asLeftArc{"<archetype>"}
-var archetypeASRightArc = asRightArc{"<archetype>"}
+// Archetype transitions + interface validation.
+var archetypeASShift Transition = asShift{}
+var archetypeASLeftArc Transition = asLeftArc{"<archetype>"}
+var archetypeASRightArc Transition = asRightArc{"<archetype>"}
+
+// Assert TransitionSystem/TransitionSerializer conformance.
+var _ TransitionSystem = NewArcStandard()
+var _ TransitionSerializer = NewArcStandard()
 
 type ArcStandard struct {
 	archetypeTransitions TransitionSet
 }
 
-func NewArcStandard() TransitionSystem {
+func NewArcStandard() *ArcStandard {
 	trans := map[Transition]interface{}{
 		archetypeASShift:    nil,
 		archetypeASLeftArc:  nil,

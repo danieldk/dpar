@@ -11,8 +11,14 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
+var _ Feature = AddressedValueFeature{}
+
 type AddressedValueFeature struct {
 	addressedValues []AddressedValue
+}
+
+func NewAddressedValueFeature(avs []AddressedValue) AddressedValueFeature {
+	return AddressedValueFeature{avs}
 }
 
 // Append the feature hash to the provided hash function.
@@ -42,15 +48,13 @@ func (f AddressedValueFeature) String() string {
 	return buffer.String()
 }
 
-func NewAddressedValueFeature(avs []AddressedValue) Feature {
-	return AddressedValueFeature{avs}
-}
+var _ FeatureGenerator = AddressedValueGenerator{}
 
 type AddressedValueGenerator struct {
 	templates []AddressedValue
 }
 
-func NewAddressedValueGenerator(templates []AddressedValue) FeatureGenerator {
+func NewAddressedValueGenerator(templates []AddressedValue) AddressedValueGenerator {
 	return AddressedValueGenerator{templates}
 }
 

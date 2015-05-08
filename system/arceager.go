@@ -10,16 +10,21 @@ import (
 	"strings"
 )
 
+// Archetype transitions + interface validation.
 var archetypeAEShift = aeShift{}
 var archetypeAEReduce = aeReduce{}
 var archetypeAELeftArc = aeLeftArc{"<archetype>"}
 var archeTypeAERightArc = aeRightArc{"<archetype>"}
 
+// Assert TransitionSystem/TransitionSerializer conformance.
+var _ TransitionSystem = NewArcEager()
+var _ TransitionSerializer = NewArcEager()
+
 type ArcEager struct {
 	archetypeTransitions TransitionSet
 }
 
-func NewArcEager() TransitionSystem {
+func NewArcEager() *ArcEager {
 	trans := map[Transition]interface{}{
 		archetypeAEShift:    nil,
 		archetypeAEReduce:   nil,
