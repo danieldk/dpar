@@ -17,6 +17,7 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
+// A funtion that produces a hash function.
 type FeatureHashFun func() hash.Hash32
 
 type FeatureVectorBuilder struct {
@@ -36,6 +37,8 @@ func (fvb *FeatureVectorBuilder) Build() golinear.FeatureVector {
 	return fvb.featureVector
 }
 
+// A feature describes a part of a parser configuration. The
+// feature should be representable as a string or a hash.
 type Feature interface {
 	Hash(hf FeatureHashFun) uint32
 	String() string
@@ -43,6 +46,10 @@ type Feature interface {
 
 type FeatureSet map[string]float64
 
+// A feature generator generates concrete features based on a
+// parser configuration. The feature set can be represented as
+// (1) a string/value mapping or (2) a vector when feature hashing
+// is used.
 type FeatureGenerator interface {
 	Generate(c *system.Configuration) FeatureSet
 	GenerateHashed(c *system.Configuration, hf FeatureHashFun, fvb *FeatureVectorBuilder)
@@ -54,6 +61,9 @@ type FeatureGeneratorFactory func([]byte) (FeatureGenerator, error)
 
 type FeatureGeneratorFactories map[string]FeatureGeneratorFactory
 
+// A feature vectorizer creates a bijection between (string-based)
+// features and numbers. This bijection is used to translate
+// feature sets to feature vectors.
 type FeatureVectorizer struct {
 	featureNumbers map[string]int
 }
@@ -94,6 +104,8 @@ func (v FeatureVectorizer) MarshalText() (text []byte, err error) {
 	return buf.Bytes(), nil
 }
 
+// A label numberer creates a bijection between (string-based)
+// features and numbers.
 type LabelNumberer struct {
 	labelNumbers map[system.Transition]int
 	labels       []system.Transition
@@ -173,6 +185,8 @@ func (l *LabelNumberer) WriteLabelNumberer(writer io.Writer, serializer system.T
 	return nil
 }
 
+// An aggregate generator is a feature generator returns the
+// set union of the output of the generators it wraps.
 type AggregateGenerator struct {
 	featureGenerators []FeatureGenerator
 }

@@ -13,6 +13,7 @@ import (
 
 var _ Feature = AddressedValueFeature{}
 
+// A feature consisting of one or more addressed values.
 type AddressedValueFeature struct {
 	addressedValues []AddressedValue
 }
@@ -27,7 +28,7 @@ func (f AddressedValueFeature) Hash(hf FeatureHashFun) uint32 {
 	h.Write([]byte("avf"))
 
 	for _, av := range f.addressedValues {
-		av.AppendHash(h)
+		av.appendHash(h)
 	}
 
 	return h.Sum32()
@@ -41,7 +42,7 @@ func (f AddressedValueFeature) String() string {
 		if idx != 0 {
 			buffer.WriteRune(',')
 		}
-		av.AppendFeature(buffer)
+		av.appendFeature(buffer)
 	}
 	buffer.WriteByte(')')
 
@@ -50,10 +51,14 @@ func (f AddressedValueFeature) String() string {
 
 var _ FeatureGenerator = AddressedValueGenerator{}
 
+// A feature generator that creates AddressedValueFeatures.
 type AddressedValueGenerator struct {
 	templates []AddressedValue
 }
 
+// Constuct a AdressedValueGenerator that uses the provided
+// addressed values as templates. This means that the addressing
+// will be used, but values in the template will be ignored.
 func NewAddressedValueGenerator(templates []AddressedValue) AddressedValueGenerator {
 	return AddressedValueGenerator{templates}
 }
@@ -91,7 +96,7 @@ func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf Feat
 		}
 
 		av := AddressedValue{template.Address, template.Layer, template.LayerArg, value}
-		av.AppendHash(h)
+		av.appendHash(h)
 	}
 
 	fvb.Add(golinear.FeatureValue{int(h.Sum32()), 1})
