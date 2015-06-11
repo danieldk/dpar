@@ -109,7 +109,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   source = ("STACK"|"BUFFER"|"LDEP"|"RDEP") $ str_char % source;
   index = [0-9]+ $ str_char % index;
 
-  layerArg = [_a-zA-Z0-9]+ $ str_char % layerArg;
+  layerArg = [_a-zA-Z0-9*]+ $ str_char % layerArg;
   noArgLayer = ("TOKEN"|"TAG"|"DEPREL") $ str_char % layer;
   argLayer = "FEATURE" $str_char % layer;
   layer = (argLayer ws* layerArg | noArgLayer);

@@ -24,8 +24,8 @@ var _addressed_value_key_offsets []byte = []byte{
 	10, 14, 18, 24, 27, 33, 34, 35,
 	36, 37, 38, 39, 40, 45, 46, 47,
 	48, 49, 50, 51, 52, 53, 54, 55,
-	56, 65, 74, 76, 77, 78, 79, 80,
-	83, 86,
+	56, 66, 76, 78, 79, 80, 81, 82,
+	85, 88,
 }
 
 var _addressed_value_trans_keys []byte = []byte{
@@ -36,11 +36,12 @@ var _addressed_value_trans_keys []byte = []byte{
 	83, 68, 69, 80, 84, 65, 67, 75,
 	9, 32, 68, 70, 84, 69, 80, 82,
 	69, 76, 69, 65, 84, 85, 82, 69,
-	9, 32, 95, 48, 57, 65, 90, 97,
-	122, 9, 32, 95, 48, 57, 65, 90,
-	97, 122, 65, 79, 71, 75, 69, 78,
-	9, 32, 91, 9, 32, 91, 9, 32,
-	91, 95, 48, 57, 65, 90, 97, 122,
+	9, 32, 42, 95, 48, 57, 65, 90,
+	97, 122, 9, 32, 42, 95, 48, 57,
+	65, 90, 97, 122, 65, 79, 71, 75,
+	69, 78, 9, 32, 91, 9, 32, 91,
+	9, 32, 42, 91, 95, 48, 57, 65,
+	90, 97, 122,
 }
 
 var _addressed_value_single_lengths []byte = []byte{
@@ -48,8 +49,8 @@ var _addressed_value_single_lengths []byte = []byte{
 	2, 2, 4, 3, 6, 1, 1, 1,
 	1, 1, 1, 1, 5, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1,
-	3, 3, 2, 1, 1, 1, 1, 3,
-	3, 4,
+	4, 4, 2, 1, 1, 1, 1, 3,
+	3, 5,
 }
 
 var _addressed_value_range_lengths []byte = []byte{
@@ -66,8 +67,8 @@ var _addressed_value_index_offsets []byte = []byte{
 	17, 21, 25, 31, 35, 42, 44, 46,
 	48, 50, 52, 54, 56, 62, 64, 66,
 	68, 70, 72, 74, 76, 78, 80, 82,
-	84, 91, 98, 101, 103, 105, 107, 109,
-	113, 117,
+	84, 92, 100, 103, 105, 107, 109, 111,
+	115, 119,
 }
 
 var _addressed_value_indicies []byte = []byte{
@@ -82,11 +83,11 @@ var _addressed_value_indicies []byte = []byte{
 	30, 1, 31, 1, 32, 1, 33, 1,
 	34, 1, 35, 1, 36, 1, 37, 1,
 	38, 1, 39, 1, 40, 40, 41, 41,
-	41, 41, 1, 42, 42, 43, 43, 43,
-	43, 1, 44, 45, 1, 33, 1, 46,
-	1, 47, 1, 33, 1, 48, 48, 49,
-	1, 50, 50, 2, 1, 51, 51, 52,
-	43, 43, 43, 43, 1,
+	41, 41, 41, 1, 42, 42, 43, 43,
+	43, 43, 43, 1, 44, 45, 1, 33,
+	1, 46, 1, 47, 1, 33, 1, 48,
+	48, 49, 1, 50, 50, 2, 1, 51,
+	51, 43, 52, 43, 43, 43, 43, 1,
 }
 
 var _addressed_value_trans_targs []byte = []byte{
@@ -169,12 +170,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 	var layerArg string
 	var err error
 
-	// line 179 "parse_addr.go"
+	// line 180 "parse_addr.go"
 	{
 		cs = addressed_value_start
 	}
 
-	// line 184 "parse_addr.go"
+	// line 185 "parse_addr.go"
 	{
 		var _klen int
 		var _trans int
@@ -306,7 +307,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				components = make([]AddressComponent, 0)
 				layerArg = ""
 
-				// line 321 "parse_addr.go"
+				// line 322 "parse_addr.go"
 			}
 		}
 
@@ -351,7 +352,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 					components = make([]AddressComponent, 0)
 					layerArg = ""
 
-					// line 366 "parse_addr.go"
+					// line 367 "parse_addr.go"
 				}
 			}
 		}

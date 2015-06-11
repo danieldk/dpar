@@ -183,6 +183,10 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 			return "", false
 		}
 
+		if a.LayerArg == "*" {
+			return c.Features[token].FeaturesString(), true
+		}
+
 		if val, ok := c.Features[token].FeaturesMap()[a.LayerArg]; ok {
 			return val, true
 		}
