@@ -93,7 +93,7 @@ type spLeftArc struct {
 
 func (l spLeftArc) IsPossible(c Configuration) bool {
 	stackSize := len(c.Stack)
-	return len(c.Stack) > 1 && c.Stack[stackSize-2] != 0
+	return stackSize > 1 && c.Stack[stackSize-2] != 0
 }
 
 func (l spLeftArc) Apply(c *Configuration) {

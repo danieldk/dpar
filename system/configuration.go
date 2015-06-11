@@ -37,7 +37,7 @@ func NewConfiguration(tokens []conllx.Token) (Configuration, error) {
 	}
 
 	stack := []uint{0}
-	buffer := make([]uint, len(tokens), len(tokens))
+	buffer := make([]uint, len(tokens))
 	tokenHeads := make([]*Dependency, len(tokens)+1)
 	headDeps := make([][]uint, len(tokens)+1)
 
