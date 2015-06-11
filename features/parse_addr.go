@@ -1,5 +1,4 @@
-//line parse_addr.rl:1
-
+// line 1 "parse_addr.rl"
 // Generated using ragel; DO NOT EDIT!
 
 package features
@@ -13,7 +12,7 @@ import (
 	"strconv"
 )
 
-//line parse_addr.go:18
+// line 18 "parse_addr.go"
 var _addressed_value_actions []byte = []byte{
 	0, 1, 0, 1, 1, 1, 3, 2, 1,
 	0, 2, 2, 5, 2, 3, 0, 2,
@@ -25,8 +24,8 @@ var _addressed_value_key_offsets []byte = []byte{
 	10, 14, 18, 24, 27, 33, 34, 35,
 	36, 37, 38, 39, 40, 45, 46, 47,
 	48, 49, 50, 51, 52, 53, 54, 55,
-	56, 64, 72, 74, 75, 76, 77, 78,
-	81, 84,
+	56, 65, 74, 76, 77, 78, 79, 80,
+	83, 86,
 }
 
 var _addressed_value_trans_keys []byte = []byte{
@@ -37,11 +36,11 @@ var _addressed_value_trans_keys []byte = []byte{
 	83, 68, 69, 80, 84, 65, 67, 75,
 	9, 32, 68, 70, 84, 69, 80, 82,
 	69, 76, 69, 65, 84, 85, 82, 69,
-	9, 32, 48, 57, 65, 90, 97, 122,
-	9, 32, 48, 57, 65, 90, 97, 122,
-	65, 79, 71, 75, 69, 78, 9, 32,
-	91, 9, 32, 91, 9, 32, 91, 48,
-	57, 65, 90, 97, 122,
+	9, 32, 95, 48, 57, 65, 90, 97,
+	122, 9, 32, 95, 48, 57, 65, 90,
+	97, 122, 65, 79, 71, 75, 69, 78,
+	9, 32, 91, 9, 32, 91, 9, 32,
+	91, 95, 48, 57, 65, 90, 97, 122,
 }
 
 var _addressed_value_single_lengths []byte = []byte{
@@ -49,8 +48,8 @@ var _addressed_value_single_lengths []byte = []byte{
 	2, 2, 4, 3, 6, 1, 1, 1,
 	1, 1, 1, 1, 5, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1,
-	2, 2, 2, 1, 1, 1, 1, 3,
-	3, 3,
+	3, 3, 2, 1, 1, 1, 1, 3,
+	3, 4,
 }
 
 var _addressed_value_range_lengths []byte = []byte{
@@ -67,8 +66,8 @@ var _addressed_value_index_offsets []byte = []byte{
 	17, 21, 25, 31, 35, 42, 44, 46,
 	48, 50, 52, 54, 56, 62, 64, 66,
 	68, 70, 72, 74, 76, 78, 80, 82,
-	84, 90, 96, 99, 101, 103, 105, 107,
-	111, 115,
+	84, 91, 98, 101, 103, 105, 107, 109,
+	113, 117,
 }
 
 var _addressed_value_indicies []byte = []byte{
@@ -83,11 +82,11 @@ var _addressed_value_indicies []byte = []byte{
 	30, 1, 31, 1, 32, 1, 33, 1,
 	34, 1, 35, 1, 36, 1, 37, 1,
 	38, 1, 39, 1, 40, 40, 41, 41,
-	41, 1, 42, 42, 43, 43, 43, 1,
-	44, 45, 1, 33, 1, 46, 1, 47,
-	1, 33, 1, 48, 48, 49, 1, 50,
-	50, 2, 1, 51, 51, 52, 43, 43,
-	43, 1,
+	41, 41, 1, 42, 42, 43, 43, 43,
+	43, 1, 44, 45, 1, 33, 1, 46,
+	1, 47, 1, 33, 1, 48, 48, 49,
+	1, 50, 50, 2, 1, 51, 51, 52,
+	43, 43, 43, 43, 1,
 }
 
 var _addressed_value_trans_targs []byte = []byte{
@@ -125,7 +124,7 @@ const addressed_value_error int = 0
 
 const addressed_value_en_main int = 1
 
-//line parse_addr.rl:17
+// line 17 "parse_addr.rl"
 
 func readLayer(layerString string) (Layer, error) {
 	switch layerString {
@@ -170,12 +169,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 	var layerArg string
 	var err error
 
-//line parse_addr.go:178
+	// line 179 "parse_addr.go"
 	{
 		cs = addressed_value_start
 	}
 
-//line parse_addr.go:183
+	// line 184 "parse_addr.go"
 	{
 		var _klen int
 		var _trans int
@@ -256,10 +255,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 			_acts++
 			switch _addressed_value_actions[_acts-1] {
 			case 0:
-//line parse_addr.rl:64
+				// line 64 "parse_addr.rl"
+
 				buf.WriteByte(data[p])
 			case 1:
-//line parse_addr.rl:65
+				// line 65 "parse_addr.rl"
+
 				source, err = readSource(buf.String())
 				if err != nil {
 					return nil, err
@@ -268,7 +269,8 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 2:
-//line parse_addr.rl:74
+				// line 74 "parse_addr.rl"
+
 				index, err = strconv.ParseUint(buf.String(), 10, 64)
 				if err != nil {
 					return nil, err
@@ -277,7 +279,8 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 3:
-//line parse_addr.rl:83
+				// line 83 "parse_addr.rl"
+
 				layer, err = readLayer(buf.String())
 				if err != nil {
 					return nil, err
@@ -286,21 +289,24 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				buf.Reset()
 
 			case 4:
-//line parse_addr.rl:92
+				// line 92 "parse_addr.rl"
+
 				layerArg = buf.String()
 				buf.Reset()
 
 			case 5:
-//line parse_addr.rl:97
+				// line 97 "parse_addr.rl"
+
 				components = append(components, AddressComponent{source, uint(index)})
 
 			case 6:
-//line parse_addr.rl:101
+				// line 101 "parse_addr.rl"
+
 				templates = append(templates, AddressedValue{components, layer, layerArg, ""})
 				components = make([]AddressComponent, 0)
 				layerArg = ""
 
-//line parse_addr.go:313
+				// line 321 "parse_addr.go"
 			}
 		}
 
@@ -323,7 +329,8 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 				__acts++
 				switch _addressed_value_actions[__acts-1] {
 				case 3:
-//line parse_addr.rl:83
+					// line 83 "parse_addr.rl"
+
 					layer, err = readLayer(buf.String())
 					if err != nil {
 						return nil, err
@@ -332,17 +339,19 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 					buf.Reset()
 
 				case 4:
-//line parse_addr.rl:92
+					// line 92 "parse_addr.rl"
+
 					layerArg = buf.String()
 					buf.Reset()
 
 				case 6:
-//line parse_addr.rl:101
+					// line 101 "parse_addr.rl"
+
 					templates = append(templates, AddressedValue{components, layer, layerArg, ""})
 					components = make([]AddressComponent, 0)
 					layerArg = ""
 
-//line parse_addr.go:355
+					// line 366 "parse_addr.go"
 				}
 			}
 		}
@@ -352,7 +361,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 		}
 	}
 
-//line parse_addr.rl:125
+	// line 125 "parse_addr.rl"
 
 	if cs < addressed_value_first_final {
 		if p == pe {
