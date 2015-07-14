@@ -2,34 +2,29 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package ml
+package svm
 
 import (
-	"github.com/danieldk/conllx"
-	"github.com/danieldk/dpar/features"
+	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
+	"github.com/danieldk/dpar/train"
 	"gopkg.in/danieldk/golinear.v1"
 )
 
-type InstanceCollector interface {
-	Collect(t system.Transition, c *system.Configuration)
-	LabelNumberer() *features.LabelNumberer
-}
-
 type GoLinearCollector interface {
-	InstanceCollector
+	train.InstanceCollector
 	Problem() *golinear.Problem
 }
 
 type FeatureCollector struct {
-	featureVectorizer features.FeatureVectorizer
-	labelNumberer     features.LabelNumberer
-	featureGenerator  features.FeatureGenerator
+	featureVectorizer FeatureVectorizer
+	labelNumberer     system.LabelNumberer
+	featureGenerator  symbolic.FeatureGenerator
 	problem           *golinear.Problem
 }
 
-func NewFeatureCollector(featureGenerator features.FeatureGenerator) *FeatureCollector {
-	return &FeatureCollector{features.NewFeatureVectorizer(), features.NewLabelNumberer(),
+func NewFeatureCollector(featureGenerator symbolic.FeatureGenerator) *FeatureCollector {
+	return &FeatureCollector{NewFeatureVectorizer(), system.NewLabelNumberer(),
 		featureGenerator, golinear.NewProblem()}
 }
 
@@ -43,26 +38,26 @@ func (fc *FeatureCollector) Problem() *golinear.Problem {
 	return fc.problem
 }
 
-func (fc *FeatureCollector) FeatureVectorizer() features.FeatureVectorizer {
+func (fc *FeatureCollector) FeatureVectorizer() FeatureVectorizer {
 	return fc.featureVectorizer
 }
 
-func (fc *FeatureCollector) LabelNumberer() *features.LabelNumberer {
+func (fc *FeatureCollector) LabelNumberer() *system.LabelNumberer {
 	return &fc.labelNumberer
 }
 
 type HashCollector struct {
-	labelNumberer    features.LabelNumberer
-	featureGenerator features.FeatureGenerator
-	featureHash      features.FeatureHashFun
+	labelNumberer    system.LabelNumberer
+	featureGenerator symbolic.FeatureGenerator
+	featureHash      symbolic.FeatureHashFun
 	problem          *golinear.Problem
 	maxFeatures      uint
 }
 
-func NewHashCollector(featureGenerator features.FeatureGenerator,
-	featureHash features.FeatureHashFun, maxFeatures uint) *HashCollector {
+func NewHashCollector(featureGenerator symbolic.FeatureGenerator,
+	featureHash symbolic.FeatureHashFun, maxFeatures uint) *HashCollector {
 	return &HashCollector{
-		labelNumberer:    features.NewLabelNumberer(),
+		labelNumberer:    system.NewLabelNumberer(),
 		featureGenerator: featureGenerator,
 		featureHash:      featureHash,
 		problem:          golinear.NewProblem(),
@@ -72,7 +67,7 @@ func NewHashCollector(featureGenerator features.FeatureGenerator,
 
 func (hc *HashCollector) Collect(t system.Transition, c *system.Configuration) {
 	label := hc.labelNumberer.Number(t)
-	vecBuilder := features.NewFeatureVectorBuilder()
+	vecBuilder := NewGolinearVectorBuilder()
 	hc.featureGenerator.GenerateHashed(c, hc.featureHash, vecBuilder)
 
 	featuresByIndex := make(map[int]float64)
@@ -107,39 +102,6 @@ func (hc *HashCollector) Problem() *golinear.Problem {
 	return hc.problem
 }
 
-func (hc *HashCollector) LabelNumberer() *features.LabelNumberer {
+func (hc *HashCollector) LabelNumberer() *system.LabelNumberer {
 	return &hc.labelNumberer
-}
-
-type GreedyTrainer struct {
-	transitionSystem system.TransitionSystem
-	collector        InstanceCollector
-}
-
-func NewGreedyTrainer(transitionSystem system.TransitionSystem,
-	collector InstanceCollector) GreedyTrainer {
-	return GreedyTrainer{transitionSystem, collector}
-}
-
-func (t *GreedyTrainer) Parse(tokens []conllx.Token, oracle system.Guide) (system.DependencySet, error) {
-	c, err := system.NewConfiguration(tokens)
-	if err != nil {
-		return nil, err
-	}
-
-	t.parseConfiguration(&c, oracle)
-	return c.Dependencies(), nil
-}
-
-func (t *GreedyTrainer) parseConfiguration(c *system.Configuration, oracle system.Guide) {
-	for !t.transitionSystem.IsTerminal(*c) {
-		// Find next transition
-		nextTransition := oracle.BestTransition(c)
-
-		// Collect training instance.
-		t.collector.Collect(nextTransition, c)
-
-		// Follow the transition
-		nextTransition.Apply(c)
-	}
 }

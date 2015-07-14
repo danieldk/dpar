@@ -134,12 +134,3 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 
   return templates, nil
 }
-
-func parseAddressedValueGenerator(data []byte) (FeatureGenerator, error) {
-  templates, err := ParseAddressedValueTemplates(data)
-  if err != nil {
-    return nil, err
-  }
-
-  return NewAddressedValueGenerator(templates), nil
-}

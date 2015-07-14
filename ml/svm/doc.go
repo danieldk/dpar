@@ -2,5 +2,5 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ml provides trainers and guides for dependency parsers.
-package ml
+// Package svm provides collectors and guides liblinear models.
+package svm

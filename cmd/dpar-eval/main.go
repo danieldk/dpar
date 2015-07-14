@@ -15,8 +15,8 @@ import (
 
 	"github.com/danieldk/conllx"
 	"github.com/danieldk/dpar/cmd/common"
-	"github.com/danieldk/dpar/features"
-	"github.com/danieldk/dpar/ml"
+	"github.com/danieldk/dpar/features/symbolic"
+	"github.com/danieldk/dpar/ml/svm"
 	"github.com/danieldk/dpar/system"
 	"gopkg.in/danieldk/golinear.v1"
 )
@@ -66,9 +66,9 @@ func main() {
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, model *golinear.Model,
-	labelNumberer *features.LabelNumberer, hashKernelSize uint) {
-	guide := ml.NewHashingSVMGuide(model, generator, *labelNumberer, fnv.New32,
+	generator symbolic.FeatureGenerator, model *golinear.Model,
+	labelNumberer *system.LabelNumberer, hashKernelSize uint) {
+	guide := svm.NewHashingSVMGuide(model, generator, *labelNumberer, fnv.New32,
 		hashKernelSize)
 	parser := system.NewGreedyParser(transitionSystem, guide)
 

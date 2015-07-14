@@ -14,9 +14,10 @@ import (
 
 	"github.com/danieldk/conllx"
 	"github.com/danieldk/dpar/cmd/common"
-	"github.com/danieldk/dpar/features"
-	"github.com/danieldk/dpar/ml"
+	"github.com/danieldk/dpar/features/symbolic"
+	"github.com/danieldk/dpar/ml/svm"
 	"github.com/danieldk/dpar/system"
+	"github.com/danieldk/dpar/train"
 	"gopkg.in/danieldk/golinear.v1"
 )
 
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	log.Println("Creating training instances...")
-	var collector ml.GoLinearCollector
+	var collector svm.GoLinearCollector
 	if config.Parser.HashKernelSize == 0 {
 		collector = featureParsing(transitionSystem, generator, oracleConstructor)
 	} else {
@@ -75,7 +76,7 @@ func main() {
 	}
 
 	if config.Parser.Model != "" {
-		model := train(config.LibLinear, collector.Problem())
+		model := trainModel(config.LibLinear, collector.Problem())
 		err := model.Save(config.Parser.Model)
 		common.ExitIfError(err)
 	}
@@ -86,25 +87,25 @@ func main() {
 }
 
 func featureParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor common.OracleConstructor) ml.GoLinearCollector {
-	collector := ml.NewFeatureCollector(generator)
-	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
+	generator symbolic.FeatureGenerator, oracleConstructor common.OracleConstructor) svm.GoLinearCollector {
+	collector := svm.NewFeatureCollector(generator)
+	trainer := train.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
 
 	return collector
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
-	generator features.FeatureGenerator, oracleConstructor common.OracleConstructor,
-	hashKernelSize uint) ml.GoLinearCollector {
-	collector := ml.NewHashCollector(generator, fnv.New32, hashKernelSize)
-	trainer := ml.NewGreedyTrainer(transitionSystem, collector)
+	generator symbolic.FeatureGenerator, oracleConstructor common.OracleConstructor,
+	hashKernelSize uint) svm.GoLinearCollector {
+	collector := svm.NewHashCollector(generator, fnv.New32, hashKernelSize)
+	trainer := train.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
 
 	return collector
 }
 
-func train(conf common.LibLinear, problem *golinear.Problem) *golinear.Model {
+func trainModel(conf common.LibLinear, problem *golinear.Problem) *golinear.Model {
 	log.Println("Training classifier...")
 	log.Println("Constraint violation cost:", conf.Cost)
 
@@ -135,7 +136,7 @@ func writeLibSVMOutput(problem *golinear.Problem) {
 	})
 }
 
-func writeTransitions(ts system.TransitionSystem, collector ml.InstanceCollector,
+func writeTransitions(ts system.TransitionSystem, collector train.InstanceCollector,
 	transitionsFilename string) {
 	serializer, ok := ts.(system.TransitionSerializer)
 	if !ok {
@@ -150,7 +151,7 @@ func writeTransitions(ts system.TransitionSystem, collector ml.InstanceCollector
 	common.ExitIfError(err)
 }
 
-func createTrainingInstances(trainer ml.GreedyTrainer, collector ml.InstanceCollector,
+func createTrainingInstances(trainer train.GreedyTrainer, collector train.InstanceCollector,
 	oracleConstructor common.OracleConstructor) {
 	f, err := os.Open(flag.Arg(1))
 	defer f.Close()

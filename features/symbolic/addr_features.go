@@ -2,23 +2,23 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package features
+package symbolic
 
 import (
 	"bytes"
 
+	"github.com/danieldk/dpar/features/addr"
 	"github.com/danieldk/dpar/system"
-	"gopkg.in/danieldk/golinear.v1"
 )
 
 var _ Feature = AddressedValueFeature{}
 
 // A feature consisting of one or more addressed values.
 type AddressedValueFeature struct {
-	addressedValues []AddressedValue
+	addressedValues []addr.AddressedValue
 }
 
-func NewAddressedValueFeature(avs []AddressedValue) AddressedValueFeature {
+func NewAddressedValueFeature(avs []addr.AddressedValue) AddressedValueFeature {
 	return AddressedValueFeature{avs}
 }
 
@@ -28,7 +28,7 @@ func (f AddressedValueFeature) Hash(hf FeatureHashFun) uint32 {
 	h.Write([]byte("avf"))
 
 	for _, av := range f.addressedValues {
-		av.appendHash(h)
+		HashableAddressedValue(av).appendHash(h)
 	}
 
 	return h.Sum32()
@@ -42,7 +42,7 @@ func (f AddressedValueFeature) String() string {
 		if idx != 0 {
 			buffer.WriteRune(',')
 		}
-		av.appendFeature(buffer)
+		AppendableAddressedValue(av).appendFeature(buffer)
 	}
 	buffer.WriteByte(')')
 
@@ -51,39 +51,39 @@ func (f AddressedValueFeature) String() string {
 
 var _ FeatureGenerator = AddressedValueGenerator{}
 
-// A feature generator that creates AddressedValueFeatures.
+// A feature generator that creates AddressedValues.
 type AddressedValueGenerator struct {
-	templates []AddressedValue
+	templates []addr.AddressedValue
 }
 
 // Constuct a AdressedValueGenerator that uses the provided
 // addressed values as templates. This means that the addressing
 // will be used, but values in the template will be ignored.
-func NewAddressedValueGenerator(templates []AddressedValue) AddressedValueGenerator {
+func NewAddressedValueGenerator(templates []addr.AddressedValue) AddressedValueGenerator {
 	return AddressedValueGenerator{templates}
 }
 
 func (g AddressedValueGenerator) Generate(c *system.Configuration) FeatureSet {
-	features := make(FeatureSet)
-	addressedValues := make([]AddressedValue, len(g.templates))
+	genFeatures := make(FeatureSet)
+	addressedValues := make([]addr.AddressedValue, len(g.templates))
 
 	for idx, template := range g.templates {
 		value, ok := template.Get(c)
 		if !ok {
-			return features
+			return genFeatures
 		}
 
-		addressedValues[idx] = AddressedValue{template.Address, template.Layer,
+		addressedValues[idx] = addr.AddressedValue{template.Address, template.Layer,
 			template.LayerArg, value}
 	}
 
-	features[NewAddressedValueFeature(addressedValues).String()] = 1
+	genFeatures[NewAddressedValueFeature(addressedValues).String()] = 1
 
-	return features
+	return genFeatures
 }
 
 func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf FeatureHashFun,
-	fvb *FeatureVectorBuilder) {
+	fvb FeatureVectorBuilder) {
 	// We'll cheat here. Since we never have to generate the actual feature,
 	// do the hashing here to avoid extra allocations.
 	h := hf()
@@ -95,9 +95,9 @@ func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf Feat
 			return
 		}
 
-		av := AddressedValue{template.Address, template.Layer, template.LayerArg, value}
-		av.appendHash(h)
+		av := addr.AddressedValue{template.Address, template.Layer, template.LayerArg, value}
+		HashableAddressedValue(av).appendHash(h)
 	}
 
-	fvb.Add(golinear.FeatureValue{int(h.Sum32()), 1})
+	fvb.Add(int(h.Sum32()), 1)
 }

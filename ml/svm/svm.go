@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package ml
+package svm
 
 import (
 	"math"
 
-	"github.com/danieldk/dpar/features"
+	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
 	"gopkg.in/danieldk/golinear.v1"
 )
@@ -16,13 +16,13 @@ var _ system.Guide = &SVMGuide{}
 
 type SVMGuide struct {
 	model             *golinear.Model
-	featureGenerator  features.FeatureGenerator
-	featureVectorizer features.FeatureVectorizer
-	labelNumberer     features.LabelNumberer
+	featureGenerator  symbolic.FeatureGenerator
+	featureVectorizer FeatureVectorizer
+	labelNumberer     system.LabelNumberer
 }
 
-func NewSVMGuide(model *golinear.Model, featureGenerator features.FeatureGenerator,
-	featureVectorizer features.FeatureVectorizer, labelNumberer features.LabelNumberer) *SVMGuide {
+func NewSVMGuide(model *golinear.Model, featureGenerator symbolic.FeatureGenerator,
+	featureVectorizer FeatureVectorizer, labelNumberer system.LabelNumberer) *SVMGuide {
 	return &SVMGuide{model, featureGenerator, featureVectorizer, labelNumberer}
 }
 

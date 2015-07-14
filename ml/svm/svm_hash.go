@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package ml
+package svm
 
 import (
 	"math"
 
-	"github.com/danieldk/dpar/features"
+	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
 	"gopkg.in/danieldk/golinear.v1"
 )
@@ -16,19 +16,19 @@ var _ system.Guide = &HashingSVMGuide{}
 
 type HashingSVMGuide struct {
 	model            *golinear.Model
-	featureGenerator features.FeatureGenerator
-	labelNumberer    features.LabelNumberer
-	hashFunc         features.FeatureHashFun
+	featureGenerator symbolic.FeatureGenerator
+	labelNumberer    system.LabelNumberer
+	hashFunc         symbolic.FeatureHashFun
 	maxFeatures      uint
 }
 
-func NewHashingSVMGuide(model *golinear.Model, featureGenerator features.FeatureGenerator,
-	labelNumberer features.LabelNumberer, hf features.FeatureHashFun, maxFeatures uint) *HashingSVMGuide {
+func NewHashingSVMGuide(model *golinear.Model, featureGenerator symbolic.FeatureGenerator,
+	labelNumberer system.LabelNumberer, hf symbolic.FeatureHashFun, maxFeatures uint) *HashingSVMGuide {
 	return &HashingSVMGuide{model, featureGenerator, labelNumberer, hf, maxFeatures}
 }
 
 func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration) system.Transition {
-	vecBuilder := features.NewFeatureVectorBuilder()
+	vecBuilder := NewGolinearVectorBuilder()
 	g.featureGenerator.GenerateHashed(configuration, g.hashFunc, vecBuilder)
 	x := vecBuilder.Build()
 

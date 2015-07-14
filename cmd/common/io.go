@@ -9,11 +9,11 @@ import (
 	"errors"
 	"os"
 
-	"github.com/danieldk/dpar/features"
+	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
 )
 
-func ReadFeatures(filename string) (features.FeatureGenerator, error) {
+func ReadFeatures(filename string) (symbolic.FeatureGenerator, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -22,10 +22,10 @@ func ReadFeatures(filename string) (features.FeatureGenerator, error) {
 
 	reader := bufio.NewReader(f)
 
-	return features.ReadFeatureGeneratorsDefault(reader)
+	return symbolic.ReadFeatureGeneratorsDefault(reader)
 }
 
-func ReadTransitions(filename string, ts system.TransitionSystem) (*features.LabelNumberer, error) {
+func ReadTransitions(filename string, ts system.TransitionSystem) (*system.LabelNumberer, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func ReadTransitions(filename string, ts system.TransitionSystem) (*features.Lab
 
 	defer f.Close()
 
-	var numberer features.LabelNumberer
+	var numberer system.LabelNumberer
 
 	serializer, ok := ts.(system.TransitionSerializer)
 	if !ok {
