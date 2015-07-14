@@ -7,12 +7,11 @@ package svm
 import (
 	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
-	"github.com/danieldk/dpar/train"
 	"gopkg.in/danieldk/golinear.v1"
 )
 
 type GoLinearCollector interface {
-	train.InstanceCollector
+	system.InstanceCollector
 	Problem() *golinear.Problem
 }
 

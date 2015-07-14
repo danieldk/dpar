@@ -2,30 +2,27 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package train
+package system
 
-import (
-	"github.com/danieldk/conllx"
-	"github.com/danieldk/dpar/system"
-)
+import "github.com/danieldk/conllx"
 
 type InstanceCollector interface {
-	Collect(t system.Transition, c *system.Configuration)
-	LabelNumberer() *system.LabelNumberer
+	Collect(t Transition, c *Configuration)
+	LabelNumberer() *LabelNumberer
 }
 
 type GreedyTrainer struct {
-	transitionSystem system.TransitionSystem
+	transitionSystem TransitionSystem
 	collector        InstanceCollector
 }
 
-func NewGreedyTrainer(transitionSystem system.TransitionSystem,
+func NewGreedyTrainer(transitionSystem TransitionSystem,
 	collector InstanceCollector) GreedyTrainer {
 	return GreedyTrainer{transitionSystem, collector}
 }
 
-func (t *GreedyTrainer) Parse(tokens []conllx.Token, oracle system.Guide) (system.DependencySet, error) {
-	c, err := system.NewConfiguration(tokens)
+func (t *GreedyTrainer) Parse(tokens []conllx.Token, oracle Guide) (DependencySet, error) {
+	c, err := NewConfiguration(tokens)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +31,7 @@ func (t *GreedyTrainer) Parse(tokens []conllx.Token, oracle system.Guide) (syste
 	return c.Dependencies(), nil
 }
 
-func (t *GreedyTrainer) parseConfiguration(c *system.Configuration, oracle system.Guide) {
+func (t *GreedyTrainer) parseConfiguration(c *Configuration, oracle Guide) {
 	for !t.transitionSystem.IsTerminal(*c) {
 		// Find next transition
 		nextTransition := oracle.BestTransition(c)

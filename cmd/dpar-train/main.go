@@ -17,7 +17,6 @@ import (
 	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/ml/svm"
 	"github.com/danieldk/dpar/system"
-	"github.com/danieldk/dpar/train"
 	"gopkg.in/danieldk/golinear.v1"
 )
 
@@ -89,7 +88,7 @@ func main() {
 func featureParsing(transitionSystem system.TransitionSystem,
 	generator symbolic.FeatureGenerator, oracleConstructor common.OracleConstructor) svm.GoLinearCollector {
 	collector := svm.NewFeatureCollector(generator)
-	trainer := train.NewGreedyTrainer(transitionSystem, collector)
+	trainer := system.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
 
 	return collector
@@ -99,7 +98,7 @@ func hashKernelParsing(transitionSystem system.TransitionSystem,
 	generator symbolic.FeatureGenerator, oracleConstructor common.OracleConstructor,
 	hashKernelSize uint) svm.GoLinearCollector {
 	collector := svm.NewHashCollector(generator, fnv.New32, hashKernelSize)
-	trainer := train.NewGreedyTrainer(transitionSystem, collector)
+	trainer := system.NewGreedyTrainer(transitionSystem, collector)
 	createTrainingInstances(trainer, collector, oracleConstructor)
 
 	return collector
@@ -136,7 +135,7 @@ func writeLibSVMOutput(problem *golinear.Problem) {
 	})
 }
 
-func writeTransitions(ts system.TransitionSystem, collector train.InstanceCollector,
+func writeTransitions(ts system.TransitionSystem, collector system.InstanceCollector,
 	transitionsFilename string) {
 	serializer, ok := ts.(system.TransitionSerializer)
 	if !ok {
@@ -151,7 +150,7 @@ func writeTransitions(ts system.TransitionSystem, collector train.InstanceCollec
 	common.ExitIfError(err)
 }
 
-func createTrainingInstances(trainer train.GreedyTrainer, collector train.InstanceCollector,
+func createTrainingInstances(trainer system.GreedyTrainer, collector system.InstanceCollector,
 	oracleConstructor common.OracleConstructor) {
 	f, err := os.Open(flag.Arg(1))
 	defer f.Close()
