@@ -1,6 +1,6 @@
 // Generated using ragel; DO NOT EDIT!
 
-package features
+package addr
 
 // Parse addresses
 
@@ -26,6 +26,8 @@ func readLayer(layerString string) (Layer, error) {
     return DEPREL, nil
   case "FEATURE":
     return FEATURE, nil
+  case "CHAR":
+    return CHAR, nil
   default:
     return 0, fmt.Errorf("Unknown layer: %s", layerString)
   }
@@ -57,6 +59,8 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   var index uint64
   var layer Layer
   var layerArg string
+  var layerInt0Arg int
+  var layerInt1Arg int
   var err error
 
 %%{
@@ -94,14 +98,34 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
     buf.Reset()
   }
 
+  action layerInt0Arg {
+    val, err := strconv.ParseInt(buf.String(), 10, 64)
+    if err != nil {
+      return nil, err
+    }
+    layerInt0Arg = int(val) 
+    buf.Reset()
+  }
+
+  action layerInt1Arg {
+    val, err := strconv.ParseInt(buf.String(), 10, 64)
+    if err != nil {
+      return nil, err
+    }
+    layerInt1Arg = int(val) 
+    buf.Reset()
+  }
+
   action component {
     components = append(components, AddressComponent{source, uint(index)})
   }
 
   action addressedValue {
-    templates = append(templates, AddressedValue{components, layer, layerArg, ""})
+    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg, ""})
     components = make([]AddressComponent, 0)
     layerArg = ""
+    layerInt0Arg = 0
+    layerInt1Arg = 0
   }
 
   ws = [\t ]+;
@@ -110,9 +134,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   index = [0-9]+ $ str_char % index;
 
   layerArg = [_a-zA-Z0-9*]+ $ str_char % layerArg;
+  layerInt0Arg = ([0-9]+) $ str_char % layerInt0Arg;
+  layerInt1Arg = ([0-9]+) $ str_char % layerInt1Arg;
   noArgLayer = ("TOKEN"|"TAG"|"DEPREL") $ str_char % layer;
   argLayer = "FEATURE" $str_char % layer;
-  layer = (argLayer ws* layerArg | noArgLayer);
+  intIntArgLayer = "CHAR" $str_char % layer;
+  layer = (argLayer ws+ layerArg | intIntArgLayer ws+ layerInt0Arg ws+ layerInt1Arg | noArgLayer);
 
   initialAddrComponent = initialSource ws* index % component;
   addrComponent = source ws* index % component;

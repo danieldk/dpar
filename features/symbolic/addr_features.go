@@ -74,7 +74,7 @@ func (g AddressedValueGenerator) Generate(c *system.Configuration) FeatureSet {
 		}
 
 		addressedValues[idx] = addr.AddressedValue{template.Address, template.Layer,
-			template.LayerArg, value}
+			template.LayerArg, template.LayerInt0Arg, template.LayerInt1Arg, value}
 	}
 
 	genFeatures[NewAddressedValueFeature(addressedValues).String()] = 1
@@ -95,7 +95,8 @@ func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf Feat
 			return
 		}
 
-		av := addr.AddressedValue{template.Address, template.Layer, template.LayerArg, value}
+		av := addr.AddressedValue{template.Address, template.Layer, template.LayerArg,
+			template.LayerInt0Arg, template.LayerInt0Arg, value}
 		HashableAddressedValue(av).appendHash(h)
 	}
 

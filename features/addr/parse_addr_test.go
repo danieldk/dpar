@@ -10,6 +10,7 @@ const correctString2 = "[BUFFER 1] TAG"
 const correctString3 = "[STACK 0, LDEP 0] DEPREL"
 const correctString4 = "[STACK 0, LDEP 0] DEPREL [STACK 0, RDEP 0] DEPREL"
 const correctString5 = "[STACK 0] FEATURE num"
+const correctString6 = "[STACK 0] CHAR 1 2"
 
 var correct1 = []AddressedValue{
 	AddressedValue{
@@ -66,12 +67,24 @@ var correct5 = []AddressedValue{
 	},
 }
 
+var correct6 = []AddressedValue{
+	AddressedValue{
+		Address:      []AddressComponent{AddressComponent{STACK, 0}},
+		Layer:        CHAR,
+		LayerArg:     "",
+		Value:        "",
+		LayerInt0Arg: 1,
+		LayerInt1Arg: 2,
+	},
+}
+
 var correctCases = map[string][]AddressedValue{
 	correctString1: correct1,
 	correctString2: correct2,
 	correctString3: correct3,
 	correctString4: correct4,
 	correctString5: correct5,
+	correctString6: correct6,
 }
 
 var incorrectCases = []string{

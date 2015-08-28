@@ -27,9 +27,10 @@ const (
 	TAG
 	DEPREL
 	FEATURE
+	CHAR
 )
 
-const LAST_LAYER = FEATURE
+const LAST_LAYER = CHAR
 
 const N_LAYERS = LAST_LAYER + 1
 
@@ -61,10 +62,12 @@ type AddressComponent struct {
 // The LayerArg field is currently only used for the FEATURE
 // layer to obtain a specific feature.
 type AddressedValue struct {
-	Address  []AddressComponent
-	Layer    Layer
-	LayerArg string
-	Value    string
+	Address      []AddressComponent
+	Layer        Layer
+	LayerArg     string
+	LayerInt0Arg int
+	LayerInt1Arg int
+	Value        string
 }
 
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
@@ -142,8 +145,38 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 		}
 
 		return "", false
+	case CHAR:
+		tokenRunes := []rune(c.Tokens[token])
+		maxRunes := a.LayerInt0Arg + a.LayerInt1Arg
+
+		// If the prefix length is 3 Suffix Length is 4, we want to encode 'zu' as:
+		//
+		// 'z' 'u' 0 0 0 'z' 'u'
+		affixRunes := make([]rune, maxRunes)
+		copy(affixRunes, tokenRunes[:min(len(tokenRunes), a.LayerInt0Arg)])
+		copy(affixRunes[len(affixRunes)-min(a.LayerInt1Arg, len(tokenRunes)):],
+			tokenRunes[max(0, len(tokenRunes)-a.LayerInt1Arg):])
+
+		return string(affixRunes), true
 	default:
 		panic("Layer not implemented.")
 	}
 
+}
+
+// Really? Yeah, really :(
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
 }
