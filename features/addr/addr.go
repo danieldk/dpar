@@ -29,6 +29,10 @@ const (
 	FEATURE
 )
 
+const LAST_LAYER = FEATURE
+
+const N_LAYERS = LAST_LAYER + 1
+
 // A component of an adress used to point to tokens in
 // a configuration. See AddressedValue.
 type AddressComponent struct {
