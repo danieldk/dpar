@@ -36,6 +36,13 @@ func (a HashableAddressedValue) appendHash(c *system.Configuration, hash hash.Ha
 		hash.Write([]byte(a.LayerArg))
 	}
 
+	if a.Layer == addr.CHAR {
+		binary.LittleEndian.PutUint64(buf, uint64(a.LayerInt0Arg))
+		hash.Write(buf)
+		binary.LittleEndian.PutUint64(buf, uint64(a.LayerInt1Arg))
+		hash.Write(buf)
+	}
+
 	hash.Write(buf)
 	hash.Write([]byte(value))
 
