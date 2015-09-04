@@ -15,36 +15,6 @@ type GoLinearCollector interface {
 	Problem() *golinear.Problem
 }
 
-type FeatureCollector struct {
-	featureVectorizer FeatureVectorizer
-	labelNumberer     system.LabelNumberer
-	featureGenerator  symbolic.FeatureGenerator
-	problem           *golinear.Problem
-}
-
-func NewFeatureCollector(featureGenerator symbolic.FeatureGenerator) *FeatureCollector {
-	return &FeatureCollector{NewFeatureVectorizer(), system.NewLabelNumberer(),
-		featureGenerator, golinear.NewProblem()}
-}
-
-func (fc *FeatureCollector) Collect(t system.Transition, c *system.Configuration) {
-	label := fc.labelNumberer.Number(t)
-	features := fc.featureVectorizer.Vectorize(fc.featureGenerator.Generate(c), true)
-	fc.problem.Add(golinear.TrainingInstance{Label: float64(label), Features: features})
-}
-
-func (fc *FeatureCollector) Problem() *golinear.Problem {
-	return fc.problem
-}
-
-func (fc *FeatureCollector) FeatureVectorizer() FeatureVectorizer {
-	return fc.featureVectorizer
-}
-
-func (fc *FeatureCollector) LabelNumberer() *system.LabelNumberer {
-	return &fc.labelNumberer
-}
-
 type HashCollector struct {
 	labelNumberer    system.LabelNumberer
 	featureGenerator symbolic.FeatureGenerator
@@ -67,7 +37,7 @@ func NewHashCollector(featureGenerator symbolic.FeatureGenerator,
 func (hc *HashCollector) Collect(t system.Transition, c *system.Configuration) {
 	label := hc.labelNumberer.Number(t)
 	vecBuilder := NewGolinearVectorBuilder()
-	hc.featureGenerator.GenerateHashed(c, hc.featureHash, vecBuilder)
+	hc.featureGenerator.Generate(c, hc.featureHash, vecBuilder)
 
 	featuresByIndex := make(map[int]float64)
 

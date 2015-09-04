@@ -5,47 +5,23 @@
 package symbolic
 
 import (
-	"bytes"
 	"encoding/binary"
 	"hash"
-	"strconv"
 
 	"github.com/danieldk/dpar/features/addr"
+	"github.com/danieldk/dpar/system"
 )
 
-type AppendableAddressedValue addr.AddressedValue
-
-func (a AppendableAddressedValue) appendAddress(buf *bytes.Buffer) {
-	buf.WriteString("addr(")
-	for idx, component := range a.Address {
-		if idx != 0 {
-			buf.WriteByte(',')
-		}
-
-		buf.WriteString(strconv.FormatUint(uint64(component.Source), 10))
-		buf.WriteByte('-')
-		buf.WriteString(strconv.FormatUint(uint64(component.Index), 10))
-
-	}
-	buf.WriteByte(')')
+type HashableAddressedValue struct {
+	addr.AddressedValue
 }
 
-func (a AppendableAddressedValue) appendFeature(buf *bytes.Buffer) {
-	buf.WriteString("av(")
-	a.appendAddress(buf)
-	buf.WriteByte(',')
-	buf.WriteString(strconv.FormatUint(uint64(a.Layer), 10))
-	if a.Layer == addr.FEATURE {
-		buf.WriteByte(':')
-		buf.WriteString(a.LayerArg)
+func (a HashableAddressedValue) appendHash(c *system.Configuration, hash hash.Hash) bool {
+	value, ok := a.Get(c)
+	if !ok {
+		return false
 	}
-	buf.WriteString(a.Value)
-	buf.WriteByte(')')
-}
 
-type HashableAddressedValue addr.AddressedValue
-
-func (a HashableAddressedValue) appendHash(hash hash.Hash) {
 	buf := make([]byte, 8)
 
 	for _, component := range a.Address {
@@ -61,5 +37,7 @@ func (a HashableAddressedValue) appendHash(hash hash.Hash) {
 	}
 
 	hash.Write(buf)
-	hash.Write([]byte(a.Value))
+	hash.Write([]byte(value))
+
+	return true
 }

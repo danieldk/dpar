@@ -5,49 +5,9 @@
 package symbolic
 
 import (
-	"bytes"
-
 	"github.com/danieldk/dpar/features/addr"
 	"github.com/danieldk/dpar/system"
 )
-
-var _ Feature = AddressedValueFeature{}
-
-// A feature consisting of one or more addressed values.
-type AddressedValueFeature struct {
-	addressedValues []addr.AddressedValue
-}
-
-func NewAddressedValueFeature(avs []addr.AddressedValue) AddressedValueFeature {
-	return AddressedValueFeature{avs}
-}
-
-// Append the feature hash to the provided hash function.
-func (f AddressedValueFeature) Hash(hf FeatureHashFun) uint32 {
-	h := hf()
-	h.Write([]byte("avf"))
-
-	for _, av := range f.addressedValues {
-		HashableAddressedValue(av).appendHash(h)
-	}
-
-	return h.Sum32()
-}
-
-func (f AddressedValueFeature) String() string {
-	buffer := new(bytes.Buffer)
-	buffer.Grow(10 + 20*len(f.addressedValues))
-	buffer.WriteString("avf(")
-	for idx, av := range f.addressedValues {
-		if idx != 0 {
-			buffer.WriteRune(',')
-		}
-		AppendableAddressedValue(av).appendFeature(buffer)
-	}
-	buffer.WriteByte(')')
-
-	return buffer.String()
-}
 
 var _ FeatureGenerator = AddressedValueGenerator{}
 
@@ -63,41 +23,19 @@ func NewAddressedValueGenerator(templates []addr.AddressedValue) AddressedValueG
 	return AddressedValueGenerator{templates}
 }
 
-func (g AddressedValueGenerator) Generate(c *system.Configuration) FeatureSet {
-	genFeatures := make(FeatureSet)
-	addressedValues := make([]addr.AddressedValue, len(g.templates))
-
-	for idx, template := range g.templates {
-		value, ok := template.Get(c)
-		if !ok {
-			return genFeatures
-		}
-
-		addressedValues[idx] = addr.AddressedValue{template.Address, template.Layer,
-			template.LayerArg, template.LayerInt0Arg, template.LayerInt1Arg, value}
-	}
-
-	genFeatures[NewAddressedValueFeature(addressedValues).String()] = 1
-
-	return genFeatures
-}
-
-func (g AddressedValueGenerator) GenerateHashed(c *system.Configuration, hf FeatureHashFun,
+func (g AddressedValueGenerator) Generate(c *system.Configuration, hf FeatureHashFun,
 	fvb FeatureVectorBuilder) {
 	// We'll cheat here. Since we never have to generate the actual feature,
 	// do the hashing here to avoid extra allocations.
 	h := hf()
 	h.Write([]byte("avf"))
 
-	for _, template := range g.templates {
-		value, ok := template.Get(c)
-		if !ok {
+	for _, av := range g.templates {
+		// If the feature is not addressable, exit early.
+		hav := HashableAddressedValue{av}
+		if ok := hav.appendHash(c, h); !ok {
 			return
 		}
-
-		av := addr.AddressedValue{template.Address, template.Layer, template.LayerArg,
-			template.LayerInt0Arg, template.LayerInt0Arg, value}
-		HashableAddressedValue(av).appendHash(h)
 	}
 
 	fvb.Add(int(h.Sum32()), 1)

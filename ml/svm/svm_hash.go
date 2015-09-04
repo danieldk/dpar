@@ -29,7 +29,7 @@ func NewHashingSVMGuide(model *golinear.Model, featureGenerator symbolic.Feature
 
 func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration) system.Transition {
 	vecBuilder := NewGolinearVectorBuilder()
-	g.featureGenerator.GenerateHashed(configuration, g.hashFunc, vecBuilder)
+	g.featureGenerator.Generate(configuration, g.hashFunc, vecBuilder)
 	x := vecBuilder.Build()
 
 	// Introduce feature bounds.

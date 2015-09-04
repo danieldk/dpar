@@ -15,26 +15,14 @@ import (
 // A funtion that produces a hash function.
 type FeatureHashFun func() hash.Hash32
 
-// A feature describes a part of a parser configuration. The
-// // feature should be representable as a string or a hash.
-type Feature interface {
-	Hash(hf FeatureHashFun) uint32
-	String() string
-}
-
-type FeatureSet map[string]float64
-
 type FeatureVectorBuilder interface {
 	Add(feature int, value float64)
 }
 
 // A feature generator generates concrete features based on a
-// parser configuration. The feature set can be represented as
-// (1) a string/value mapping or (2) a vector when feature hashing
-// is used.
+// parser configuration. Features are represented as hash codes.
 type FeatureGenerator interface {
-	Generate(c *system.Configuration) FeatureSet
-	GenerateHashed(c *system.Configuration, hf FeatureHashFun, fvb FeatureVectorBuilder)
+	Generate(c *system.Configuration, hf FeatureHashFun, fvb FeatureVectorBuilder)
 }
 
 // Functions that create a feature generators from a (possibly
@@ -53,22 +41,10 @@ func NewAggregateGenerator(generators []FeatureGenerator) FeatureGenerator {
 	return AggregateGenerator{generators}
 }
 
-func (a AggregateGenerator) Generate(c *system.Configuration) FeatureSet {
-	combined := make(FeatureSet)
-
-	for _, generator := range a.featureGenerators {
-		for feature, value := range generator.Generate(c) {
-			combined[feature] = value
-		}
-	}
-
-	return combined
-}
-
-func (a AggregateGenerator) GenerateHashed(c *system.Configuration, hf FeatureHashFun,
+func (a AggregateGenerator) Generate(c *system.Configuration, hf FeatureHashFun,
 	fvb FeatureVectorBuilder) {
 	for _, generator := range a.featureGenerators {
-		generator.GenerateHashed(c, hf, fvb)
+		generator.Generate(c, hf, fvb)
 	}
 }
 

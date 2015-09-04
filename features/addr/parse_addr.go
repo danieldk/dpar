@@ -1,5 +1,5 @@
 
-// line 1 "parse_addr.rl"
+//line parse_addr.rl:1
 // Generated using ragel; DO NOT EDIT!
 
 package addr
@@ -14,7 +14,7 @@ import (
 )
 
 
-// line 18 "parse_addr.go"
+//line parse_addr.go:18
 var _addressed_value_actions []byte = []byte{
 	0, 1, 0, 1, 1, 1, 3, 1, 5, 
 	2, 1, 0, 2, 2, 7, 2, 3, 
@@ -140,7 +140,7 @@ const addressed_value_error int = 0
 const addressed_value_en_main int = 1
 
 
-// line 17 "parse_addr.rl"
+//line parse_addr.rl:17
 
 
 func readLayer(layerString string) (Layer, error) {
@@ -191,12 +191,12 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   var err error
 
 
-// line 195 "parse_addr.go"
+//line parse_addr.go:195
 	{
 	cs = addressed_value_start
 	}
 
-// line 200 "parse_addr.go"
+//line parse_addr.go:200
 	{
 	var _klen int
 	var _trans int
@@ -276,12 +276,10 @@ _match:
 		_acts++
 		switch _addressed_value_actions[_acts-1] {
 		case 0:
-// line 68 "parse_addr.rl"
-
+//line parse_addr.rl:68
  buf.WriteByte(data[p]) 
 		case 1:
-// line 69 "parse_addr.rl"
-
+//line parse_addr.rl:69
 
     source, err = readSource(buf.String())
     if err != nil {
@@ -291,8 +289,7 @@ _match:
     buf.Reset()
   
 		case 2:
-// line 78 "parse_addr.rl"
-
+//line parse_addr.rl:78
 
     index, err = strconv.ParseUint(buf.String(), 10, 64)
     if err != nil {
@@ -302,8 +299,7 @@ _match:
     buf.Reset()
   
 		case 3:
-// line 87 "parse_addr.rl"
-
+//line parse_addr.rl:87
 
     layer, err = readLayer(buf.String())
     if err != nil {
@@ -313,15 +309,13 @@ _match:
     buf.Reset()
   
 		case 4:
-// line 96 "parse_addr.rl"
-
+//line parse_addr.rl:96
 
     layerArg = buf.String()
     buf.Reset()
   
 		case 5:
-// line 101 "parse_addr.rl"
-
+//line parse_addr.rl:101
 
     val, err := strconv.ParseInt(buf.String(), 10, 64)
     if err != nil {
@@ -331,8 +325,7 @@ _match:
     buf.Reset()
   
 		case 6:
-// line 110 "parse_addr.rl"
-
+//line parse_addr.rl:110
 
     val, err := strconv.ParseInt(buf.String(), 10, 64)
     if err != nil {
@@ -342,22 +335,20 @@ _match:
     buf.Reset()
   
 		case 7:
-// line 119 "parse_addr.rl"
-
+//line parse_addr.rl:119
 
     components = append(components, AddressComponent{source, uint(index)})
   
 		case 8:
-// line 123 "parse_addr.rl"
+//line parse_addr.rl:123
 
-
-    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg, ""})
+    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg})
     components = make([]AddressComponent, 0)
     layerArg = ""
     layerInt0Arg = 0
     layerInt1Arg = 0
   
-// line 361 "parse_addr.go"
+//line parse_addr.go:352
 		}
 	}
 
@@ -377,8 +368,7 @@ _again:
 			__acts++
 			switch _addressed_value_actions[__acts-1] {
 			case 3:
-// line 87 "parse_addr.rl"
-
+//line parse_addr.rl:87
 
     layer, err = readLayer(buf.String())
     if err != nil {
@@ -388,15 +378,13 @@ _again:
     buf.Reset()
   
 			case 4:
-// line 96 "parse_addr.rl"
-
+//line parse_addr.rl:96
 
     layerArg = buf.String()
     buf.Reset()
   
 			case 6:
-// line 110 "parse_addr.rl"
-
+//line parse_addr.rl:110
 
     val, err := strconv.ParseInt(buf.String(), 10, 64)
     if err != nil {
@@ -406,16 +394,15 @@ _again:
     buf.Reset()
   
 			case 8:
-// line 123 "parse_addr.rl"
+//line parse_addr.rl:123
 
-
-    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg, ""})
+    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg})
     components = make([]AddressComponent, 0)
     layerArg = ""
     layerInt0Arg = 0
     layerInt1Arg = 0
   
-// line 419 "parse_addr.go"
+//line parse_addr.go:406
 			}
 		}
 	}
@@ -423,7 +410,7 @@ _again:
 	_out: {}
 	}
 
-// line 152 "parse_addr.rl"
+//line parse_addr.rl:152
 
 
   if cs < addressed_value_first_final {

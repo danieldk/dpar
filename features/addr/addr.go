@@ -43,9 +43,8 @@ type AddressComponent struct {
 
 // To create features, we need to address value in the parser
 // configuration. The purpose of AddressedValue is two-fold:
-// Before the Get() method is called it is used as an address
-// specifier. After calling Get() it is an address specifier
-// plus the actual value of a token within a certain layer.
+// (1) as an address specifier and (2) to obtain the value at
+// that address in the current parser state.
 //
 // If we wanted to get the part-of-speech tag of the leftmost
 // dependent of the first token on the stack, we would use the
@@ -67,7 +66,6 @@ type AddressedValue struct {
 	LayerArg     string
 	LayerInt0Arg int
 	LayerInt1Arg int
-	Value        string
 }
 
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {

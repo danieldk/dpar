@@ -44,9 +44,7 @@ func main() {
 	common.ExitIfError(err)
 
 	log.Printf("Transition system: %s", config.Parser.System)
-	if config.Parser.HashKernelSize > 0 {
-		log.Printf("Hash kernel size: %d", config.Parser.HashKernelSize)
-	}
+	log.Printf("Hash kernel size: %d", config.Parser.HashKernelSize)
 
 	generator, err := common.ReadFeatures(config.Parser.Features)
 	common.ExitIfError(err)
@@ -62,13 +60,8 @@ func main() {
 	}
 
 	log.Println("Creating training instances...")
-	var collector svm.GoLinearCollector
-	if config.Parser.HashKernelSize == 0 {
-		collector = featureParsing(transitionSystem, generator, oracleConstructor)
-	} else {
-		collector = hashKernelParsing(transitionSystem, generator, oracleConstructor,
-			config.Parser.HashKernelSize)
-	}
+	collector := hashKernelParsing(transitionSystem, generator, oracleConstructor,
+		config.Parser.HashKernelSize)
 
 	if *libsvmOutput != "" {
 		writeLibSVMOutput(collector.Problem())
@@ -83,15 +76,6 @@ func main() {
 	writeTransitions(transitionSystem, collector, config.Parser.Transitions)
 
 	log.Println("Done!")
-}
-
-func featureParsing(transitionSystem system.TransitionSystem,
-	generator symbolic.FeatureGenerator, oracleConstructor common.OracleConstructor) svm.GoLinearCollector {
-	collector := svm.NewFeatureCollector(generator)
-	trainer := system.NewGreedyTrainer(transitionSystem, collector)
-	createTrainingInstances(trainer, collector, oracleConstructor)
-
-	return collector
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,

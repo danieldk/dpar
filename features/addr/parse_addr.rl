@@ -121,7 +121,7 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   }
 
   action addressedValue {
-    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg, ""})
+    templates = append(templates, AddressedValue{components, layer, layerArg, layerInt0Arg, layerInt1Arg})
     components = make([]AddressComponent, 0)
     layerArg = ""
     layerInt0Arg = 0

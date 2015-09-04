@@ -56,13 +56,8 @@ func main() {
 	model, err := golinear.LoadModel(config.Parser.Model)
 	common.ExitIfError(err)
 
-	if config.Parser.HashKernelSize == 0 {
-		log.Fatal("Currently only models using a hash kernel are supported")
-	} else {
-		hashKernelParsing(transitionSystem, generator, model, labelNumberer,
-			config.Parser.HashKernelSize)
-	}
-
+	hashKernelParsing(transitionSystem, generator, model, labelNumberer,
+		config.Parser.HashKernelSize)
 }
 
 func hashKernelParsing(transitionSystem system.TransitionSystem,
