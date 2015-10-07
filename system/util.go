@@ -37,10 +37,12 @@ func SentenceToForms(s []conllx.Token) ([]string, error) {
 	for idx, token := range s {
 		form, avail := token.Form()
 		if !avail {
-			return nil, fmt.Errorf("Token does not have a form: %v", token)
+			// XXX: CoNLL-X annoyance. Not sure wether the reader should be
+			//      smarter or we should handle such cases ad-hoc (as here).
+			forms[idx] = "_"
+		} else {
+			forms[idx] = form
 		}
-
-		forms[idx] = form
 	}
 
 	return forms, nil
