@@ -66,6 +66,7 @@ var TransitionSystems = map[string]system.TransitionSystem{
 	"arceager":    system.NewArcEager(),
 	"arcstandard": system.NewArcStandard(),
 	"stackproj":   system.NewStackProjective(),
+	"stackswap":   system.NewStackSwap(),
 }
 
 // An OracleConstructor constructs an oracle for a set of gold standard
@@ -78,4 +79,5 @@ var Oracles = map[string]OracleConstructor{
 	"arceager":    system.NewArcEagerOracle,
 	"arcstandard": system.NewArcStandardOracle,
 	"stackproj":   system.NewStackProjectiveOracle,
+	"stackswap":   system.NewStackSwapOracle,
 }

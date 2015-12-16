@@ -9,5 +9,5 @@ import (
 )
 
 func TestArcEagerSystem(t *testing.T) {
-	testSystem(t, NewArcEager(), NewArcEagerOracle)
+	testSystem(t, NewArcEager(), NewArcEagerOracle, ProjectiveData)
 }

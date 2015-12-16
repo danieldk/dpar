@@ -6,16 +6,22 @@ package system
 
 import (
 	"bufio"
-	"github.com/danieldk/conllx"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/danieldk/conllx"
 )
 
 type oracleConstructor func(DependencySet) Guide
 
-func testSystem(t *testing.T, ts TransitionSystem, oc oracleConstructor) {
-	f, err := os.Open("../testdata/cdb-test.conll")
+const (
+	ProjectiveData    = "../testdata/cdb-test.conll"
+	NonProjectiveData = "../testdata/cdb-test-np.conll"
+)
+
+func testSystem(t *testing.T, ts TransitionSystem, oc oracleConstructor, data string) {
+	f, err := os.Open(data)
 	if err != nil {
 		t.Fatal(err)
 	}

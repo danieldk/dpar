@@ -4,9 +4,7 @@
 
 package system
 
-import (
-	"github.com/danieldk/conllx"
-)
+import "github.com/danieldk/conllx"
 
 // A Guide provides the best transition for the current configuration.
 type Guide interface {

@@ -8,6 +8,6 @@ import (
 	"testing"
 )
 
-func TestStackProjectiveSystem(t *testing.T) {
-	testSystem(t, NewStackProjective(), NewStackProjectiveOracle, ProjectiveData)
+func TestStackSwapSystem(t *testing.T) {
+	testSystem(t, NewStackSwap(), NewStackSwapOracle, NonProjectiveData)
 }

@@ -9,5 +9,5 @@ import (
 )
 
 func TestArcStandardSystem(t *testing.T) {
-	testSystem(t, NewArcStandard(), NewArcStandardOracle)
+	testSystem(t, NewArcStandard(), NewArcStandardOracle, ProjectiveData)
 }
