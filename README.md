@@ -2,20 +2,20 @@
 
 ## Introduction
 
-dpar started out as a simple dependency parser in Java for teaching
-purposes. It was then rewritten in Go, because I like Go more :). The goal
-of dpar is twofold:
+dpar is a transition-based dependency parser in Go. The goal of dpar is
+threefold:
 
-1. To provide basic building blocks to construct transition-based dependency
-   parsers.
-2. To provide a fast, traditional, feature-based, dependency parser.
-3. To provide a dependency parser that can be embedded easily in Go
+1. To provide a fast, traditional, feature-based, dependency parser.
+2. To provide a dependency parser that can be embedded easily in Go
    applications.
+3. To provide the basic building blocks for new research/experiments
+   in dependency parsing.
 
-As a demonstration of dpar's modularity, the separate (soon to-be released)
-*dparnn* project provides a dependency parser that only uses
-word/tag/relation embeddings as input and uses a multi-layer perceptron for
-classification.
+To encourage and demonstrate the modularity of dpar, the
+[dparnn](http://github.com/danieldk/dparnn) parser was developed in
+parallel. dparnn is a neural net dependency parser using word/tag/relation
+embeddings that dpar packages for transition systems, feature specification,
+and parsing.
 
 ## Documentation
 
