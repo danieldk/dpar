@@ -6,6 +6,6 @@
 //
 // This package implements the Arc-Standard, Arc-Eager, and
 // Stack-Projective systems. You can define your own transition
-// systems by implementing the Transition and TransitionSet
+// systems by implementing the Transition and TransitionSystem
 // interfaces.
 package system
