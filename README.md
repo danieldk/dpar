@@ -1,7 +1,5 @@
 # dpar - Decaffeinated/Dependency Parser
 
-**Warning:** dpar is not ready for use yet, APIs will break and burn.
-
 ## Introduction
 
 dpar started out as a simple dependency parser in Java for teaching
@@ -23,21 +21,13 @@ classification.
 
 * [Usage information](https://github.com/danieldk/dpar/wiki)
 * [API documentation](https://godoc.org/github.com/danieldk/dpar) (minor changes expected)
+* [Todo items](https://github.com/danieldk/dpar/labels/enhancement)
 
-## TODO
+## Status
 
-There is still a lot of work to be done:
-
-* Polish the API
-* Write more godoc
-* Implementation of dynamic oracles
-* Pseudo-projective parsing
-* Optimization
-* ~~Come up with an archive format?~~ Encourage model per-directory.
-* Provide models
-
-Also missing is an actual 'parse' command, which will only be added when
-I am happy with the API and performance.
+The dpar command-line tools are fully functional. The public API can be used
+to embed dpar in other applications, but will see some breaking changes. If
+you rely on the current API, use vendoring.
 
 ## License
 
