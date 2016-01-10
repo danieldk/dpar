@@ -14,6 +14,8 @@ import (
 
 var _ system.Guide = &HashingSVMGuide{}
 
+// HashingSVMGuide is a parser guide that uses a linear SVM classifier
+// in conjunction with a hash kernel.
 type HashingSVMGuide struct {
 	model            *golinear.Model
 	featureGenerator symbolic.FeatureGenerator
@@ -22,13 +24,22 @@ type HashingSVMGuide struct {
 	maxFeatures      uint
 }
 
+// NewHashingSVMGuide returns a parser guide. The required arguments are:
+// the linear SVM classifier (model), the feature generator, the label <=>
+// number bijection (labelNumberer), the hash function used for the hash kernel,
+// and the size of the hash kernel.
+//
+// All the arguments except the model, should be the same as what was used
+// during training.
 func NewHashingSVMGuide(model *golinear.Model, featureGenerator symbolic.FeatureGenerator,
 	labelNumberer system.LabelNumberer, hf symbolic.FeatureHashFun, maxFeatures uint) *HashingSVMGuide {
 	return &HashingSVMGuide{model, featureGenerator, labelNumberer, hf, maxFeatures}
 }
 
+// BestTransition returns the best transition according to the transition classifier
+// used by the guide.
 func (g *HashingSVMGuide) BestTransition(configuration *system.Configuration) system.Transition {
-	vecBuilder := NewGolinearVectorBuilder()
+	vecBuilder := newGoLinearVectorBuilder()
 	g.featureGenerator.Generate(configuration, g.hashFunc, vecBuilder)
 	x := vecBuilder.Build()
 

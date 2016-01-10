@@ -4,18 +4,19 @@
 
 package system
 
-// A labeled dependency.
+// A Dependency stores the grammatical relation between two tokens.
 type Dependency struct {
 	Head      uint
 	Relation  string
 	Dependent uint
 }
 
-// A set of labeled dependencies.
+// A DependencySet stores labeled dependencies.
 type DependencySet map[Dependency]interface{}
 
-// Create a mapping from a dependent to its head. This method assumes
-// (like the rest of dpar currently) that each token is single-headed.
+// CreateDependentHeadMapping creates a mapping from a dependent to
+// its head. This method assumes (like the rest of dpar) that each
+// token is single-headed.
 func (ds DependencySet) CreateDependentHeadMapping() map[uint]Dependency {
 	mapping := make(map[uint]Dependency)
 	for dep := range ds {

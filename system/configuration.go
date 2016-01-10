@@ -10,6 +10,11 @@ import (
 	"github.com/danieldk/conllx"
 )
 
+// Configuration represents a parser state. Typically, the
+// configuration's buffer contains tokens have not been processed
+// yet. The stack contains tokens that are under active processing
+// Moreover, the configuration holds the dependencies that were
+// found so far.
 type Configuration struct {
 	Tokens     []string
 	Tags       []string
@@ -20,6 +25,16 @@ type Configuration struct {
 	headDeps   [][]uint
 }
 
+// NewConfiguration construct an initial parser configuration from
+// the provided list of tokens. In this initial configuration is as
+// follows:
+//
+// * Buffer: contains the sentence token identifiers.
+// * Stack: contains the special ROOT token (0).
+// * Dependencies: the set of dependencies is empty.
+//
+// In addition, mappings between token identifiers and forms/tags are
+// set up.
 func NewConfiguration(tokens []conllx.Token) (Configuration, error) {
 	forms, err := SentenceToForms(tokens)
 	if err != nil {
@@ -65,6 +80,7 @@ func NewConfiguration(tokens []conllx.Token) (Configuration, error) {
 		tokenHeads, headDeps}, nil
 }
 
+// AddDependency adds a dependency to the current configuration.
 func (c *Configuration) AddDependency(d *Dependency) {
 	c.tokenHeads[d.Dependent] = d
 
@@ -73,6 +89,7 @@ func (c *Configuration) AddDependency(d *Dependency) {
 	c.headDeps[d.Head] = insert(deps, ip, d.Dependent)
 }
 
+// Dependencies returns the found in the current configuration.
 func (c *Configuration) Dependencies() DependencySet {
 	ds := make(DependencySet)
 
@@ -85,7 +102,7 @@ func (c *Configuration) Dependencies() DependencySet {
 	return ds
 }
 
-// Get the head of a token. If a token does not have a head
+// Head returns the head of a token. If a token does not have a head
 // attached yet, the second value of the return tuple is false.
 func (c *Configuration) Head(token uint) (Dependency, bool) {
 	dep := c.tokenHeads[token]
@@ -103,8 +120,8 @@ func insert(slice []uint, index int, value uint) []uint {
 	return slice
 }
 
-// Get the token that is the idx-th leftmost dependent of the given token. If no
-// such token exists, false is returned as the second value.
+// LeftmostDependent returns token that is the idx-th leftmost dependent of the
+// given token. If no such token exists, false is returned as the second value.
 func (c *Configuration) LeftmostDependent(head uint, idx uint) (uint, bool) {
 	deps := c.headDeps[head]
 	if len(deps) == 0 || int(idx) >= len(deps) {
@@ -114,8 +131,9 @@ func (c *Configuration) LeftmostDependent(head uint, idx uint) (uint, bool) {
 	return deps[idx], true
 }
 
-// Get the token that is the idx-th rightmost dependent of the given token. If no
-// such token exists, false is returned as the second value.
+// RightmostDependent returns the token that is the idx-th rightmost dependent
+// of the given token. If no such token exists, false is returned as the second
+// value.
 func (c *Configuration) RightmostDependent(head uint, idx uint) (uint, bool) {
 	deps := c.headDeps[head]
 	if len(deps) == 0 || int(idx) >= len(deps) {

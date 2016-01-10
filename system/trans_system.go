@@ -4,16 +4,10 @@
 
 package system
 
-// A set of transitions.
+// A TransitionSet stores transitions.
 type TransitionSet map[Transition]interface{}
 
-// Check whether a transition is part a transition set.
-func (ts TransitionSet) IsSetMember(transition Transition) bool {
-	_, ok := ts[transition]
-	return ok
-}
-
-// Transitions allow the system to move from configuration to configuration,
+// A Transition allows the system to move from configuration to configuration,
 // until a terminal configuration is reached.
 //
 // The IsPossible method checks whether a transition is possible in a
@@ -25,7 +19,7 @@ type Transition interface {
 	Apply(configuration *Configuration)
 }
 
-// A transition system consists of a set of transitions specific to that system.
+// A TransitionSystem consists of a set of transitions specific to that system.
 //
 // The IsTerminal method is used to check whether the configuration is a final
 // configuration. The PossibleTransitions gives that transitions in the system
@@ -37,6 +31,7 @@ type TransitionSystem interface {
 	PossibleTransitions(configuration Configuration) TransitionSet
 }
 
+// A TransitionSerializer seralizes a transition to a string.
 type TransitionSerializer interface {
 	SerializeTransition(Transition) (string, error)
 	DeserializeTransition(string) (Transition, error)

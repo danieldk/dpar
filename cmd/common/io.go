@@ -13,6 +13,7 @@ import (
 	"github.com/danieldk/dpar/system"
 )
 
+// ReadFeatures reads a feature specification from the specified file.
 func ReadFeatures(filename string) (symbolic.FeatureGenerator, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -25,6 +26,8 @@ func ReadFeatures(filename string) (symbolic.FeatureGenerator, error) {
 	return symbolic.ReadFeatureGeneratorsDefault(reader)
 }
 
+// ReadTransitions reads the transitions from the specified file. Transitions are
+// numbered in file order.
 func ReadTransitions(filename string, ts system.TransitionSystem) (*system.LabelNumberer, error) {
 	f, err := os.Open(filename)
 	if err != nil {

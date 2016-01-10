@@ -11,11 +11,16 @@ import (
 	"github.com/danieldk/dpar/system"
 )
 
+// DParConfig stores the configuration of a dpar command-line parser.
 type DParConfig struct {
 	Parser    Parser
 	LibLinear LibLinear
 }
 
+// Parser store the parser configuration. The configuration consts
+// of a string indicating the transition system ('arcstandard', 'arceager',
+// or 'stackproj'); paths to the feature specification, model, and transition
+// files; and the size of the hash kernel.
 type Parser struct {
 	System         string
 	Features       string
@@ -24,6 +29,8 @@ type Parser struct {
 	HashKernelSize uint `toml:"hash_kernel_size"`
 }
 
+// LibLinear stores the configuration for golinear/liblinear. At the moment,
+// the only configurable parameter is the constraint violation cost.
 type LibLinear struct {
 	Cost float64
 }
@@ -43,23 +50,30 @@ func defaultConfiguration() *DParConfig {
 	}
 }
 
+// ParseConfig attempts to parse the configuration from the given reader.
 func ParseConfig(reader io.Reader) (*DParConfig, error) {
 	config := defaultConfiguration()
-	if _, err := toml.DecodeReader(reader, config); err == nil {
-		return config, nil
-	} else {
+	if _, err := toml.DecodeReader(reader, config); err != nil {
 		return config, err
 	}
+
+	return config, nil
 }
 
+// TransitionSystems is a mapping from the known transition system names
+// to instances of those transition systems.
 var TransitionSystems = map[string]system.TransitionSystem{
 	"arceager":    system.NewArcEager(),
 	"arcstandard": system.NewArcStandard(),
 	"stackproj":   system.NewStackProjective(),
 }
 
+// An OracleConstructor constructs an oracle for a set of gold standard
+// depdendencies.
 type OracleConstructor func(system.DependencySet) system.Guide
 
+// Oracles provides a mapping of known transition systems (also see
+// TransitionSystems) and their oracle constructors.
 var Oracles = map[string]OracleConstructor{
 	"arceager":    system.NewArcEagerOracle,
 	"arcstandard": system.NewArcStandardOracle,

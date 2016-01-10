@@ -10,6 +10,8 @@ import (
 	"github.com/danieldk/conllx"
 )
 
+// SentenceToDependencies extracts the dependencies in a given
+// CoNLL-X sentence and stores them in a set.
 func SentenceToDependencies(s []conllx.Token) (DependencySet, error) {
 	dependencies := make(DependencySet)
 
@@ -31,6 +33,8 @@ func SentenceToDependencies(s []conllx.Token) (DependencySet, error) {
 	return dependencies, nil
 }
 
+// SentenceToForms extracts the forms from a given CoNLL-X sentence in
+// sentence order.
 func SentenceToForms(s []conllx.Token) ([]string, error) {
 	forms := make([]string, len(s))
 
@@ -48,6 +52,8 @@ func SentenceToForms(s []conllx.Token) ([]string, error) {
 	return forms, nil
 }
 
+// SentenceToTags extracts the tags from a given CoNLL-X sentence in
+// sentence order.
 func SentenceToTags(s []conllx.Token) ([]string, error) {
 	forms := make([]string, len(s))
 

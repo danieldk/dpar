@@ -4,14 +4,23 @@
 
 package system
 
+// The ArcEagerOracle returns a correct transition for a particular
+// configuration in the arc-eager system. The transition choice in
+// an oracle is based on the gold-standard parse.
 type ArcEagerOracle struct {
 	dependentHeadMapping map[uint]Dependency
 }
 
+// NewArcEagerOracle returns a new oracle from the arc-eager system.
+// The gold dependency set is used to choose a correct transition from
+// each configuration.
 func NewArcEagerOracle(goldDependencies DependencySet) Guide {
 	return &ArcEagerOracle{goldDependencies.CreateDependentHeadMapping()}
 }
 
+// BestTransition returns the best transition from the current
+// configuration, as inferred from the gold standard dependency
+// structure.
 func (o *ArcEagerOracle) BestTransition(c *Configuration) Transition {
 	if len(c.Buffer) == 0 {
 		panic("Applying oracle to terminal configuration")

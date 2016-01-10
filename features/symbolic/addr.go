@@ -12,11 +12,11 @@ import (
 	"github.com/danieldk/dpar/system"
 )
 
-type HashableAddressedValue struct {
+type hashableAddressedValue struct {
 	addr.AddressedValue
 }
 
-func (a HashableAddressedValue) appendHash(c *system.Configuration, hash hash.Hash) bool {
+func (a hashableAddressedValue) appendHash(c *system.Configuration, hash hash.Hash) bool {
 	value, ok := a.Get(c)
 	if !ok {
 		return false

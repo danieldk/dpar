@@ -8,10 +8,11 @@ package addr
 
 import "github.com/danieldk/dpar/system"
 
-// Sources of tokens in the parser configuration. LDEP/RDEP
+// Source of tokens in the parser configuration. LDEP/RDEP
 // are used to address from the left-most/right-most dependency.
 type Source int
 
+// Parser configuration token sources.
 const (
 	STACK Source = iota
 	BUFFER
@@ -19,9 +20,10 @@ const (
 	RDEP
 )
 
-// Information layers in the parser configuration.
+// Layer in the parser configuration.
 type Layer int
 
+// Parser configuration layers.
 const (
 	TOKEN Layer = iota
 	TAG
@@ -34,13 +36,15 @@ const LAST_LAYER = CHAR
 
 const N_LAYERS = LAST_LAYER + 1
 
-// A component of an adress used to point to tokens in
-// a configuration. See AddressedValue.
+// An AddressComponent is a component of an adress used to point to
+// tokens in a parser configuration. See AddressedValue.
 type AddressComponent struct {
 	Source Source
 	Index  uint
 }
 
+// An AddressedValue represents a value in the parser configuration.
+//
 // To create features, we need to address value in the parser
 // configuration. The purpose of AddressedValue is two-fold:
 // (1) as an address specifier and (2) to obtain the value at
@@ -68,6 +72,7 @@ type AddressedValue struct {
 	LayerInt1Arg int
 }
 
+// Get returns the addressed value.
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 	var token uint
 

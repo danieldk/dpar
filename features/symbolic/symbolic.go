@@ -12,35 +12,44 @@ import (
 	"github.com/danieldk/dpar/system"
 )
 
-// A funtion that produces a hash function.
+// A FeatureHashFun is a function that produces a hash function.
 type FeatureHashFun func() hash.Hash32
 
+// A FeatureVectorBuilder constructs a sparse feature vector.
 type FeatureVectorBuilder interface {
 	Add(feature int, value float64)
 }
 
-// A feature generator generates concrete features based on a
+// A FeatureGenerator generates concrete features based on a
 // parser configuration. Features are represented as hash codes.
 type FeatureGenerator interface {
 	Generate(c *system.Configuration, hf FeatureHashFun, fvb FeatureVectorBuilder)
 }
 
-// Functions that create a feature generators from a (possibly
+// A FeatureGeneratorFactory creates a feature generators from a (possibly
 // empty) list of arguments.
 type FeatureGeneratorFactory func([]byte) (FeatureGenerator, error)
 
+// A FeatureGeneratorFactories stores the mapping from a class of feature
+// generators (represented as a string) and the factory for that class of
+// feature generators.
 type FeatureGeneratorFactories map[string]FeatureGeneratorFactory
 
-// An aggregate generator is a feature generator returns the
-// set union of the output of the generators it wraps.
+// An AggregateGenerator is a feature generator returns the set union of
+// the output of the generators it wraps.
 type AggregateGenerator struct {
 	featureGenerators []FeatureGenerator
 }
 
+// NewAggregateGenerator constructs an aggregate feature generator from a
+// slice of feature generators.
 func NewAggregateGenerator(generators []FeatureGenerator) FeatureGenerator {
 	return AggregateGenerator{generators}
 }
 
+// Generate generates features from a given configuration and using the provided
+// feature hash function. The result is stored with the provided feature vector
+// builder.
 func (a AggregateGenerator) Generate(c *system.Configuration, hf FeatureHashFun,
 	fvb FeatureVectorBuilder) {
 	for _, generator := range a.featureGenerators {
@@ -48,13 +57,15 @@ func (a AggregateGenerator) Generate(c *system.Configuration, hf FeatureHashFun,
 	}
 }
 
-// Read feature descriptions with the default set of generators.
+// ReadFeatureGeneratorsDefault reads feature descriptions with the default
+// set of generators.
 func ReadFeatureGeneratorsDefault(reader *bufio.Reader) (FeatureGenerator, error) {
 	return ReadFeatureGenerators(FeatureGeneratorFactories{
 		"addr": parseAddressedValueGenerator,
 	}, reader)
 }
 
+// ReadFeatureGenerators reads feature (generator) descriptions from a reader.
 func ReadFeatureGenerators(fs FeatureGeneratorFactories,
 	reader *bufio.Reader) (FeatureGenerator, error) {
 	var eof = false

@@ -19,10 +19,12 @@ var archetypeASRightArc Transition = asRightArc{"<archetype>"}
 var _ TransitionSystem = NewArcStandard()
 var _ TransitionSerializer = NewArcStandard()
 
+// The ArcStandard transition system.
 type ArcStandard struct {
 	archetypeTransitions TransitionSet
 }
 
+// NewArcStandard creates a new arc-standard transition system.
 func NewArcStandard() *ArcStandard {
 	trans := map[Transition]interface{}{
 		archetypeASShift:    nil,
@@ -33,10 +35,17 @@ func NewArcStandard() *ArcStandard {
 	return &ArcStandard{trans}
 }
 
+// IsTerminal checks whether a parser configuration is a terminal
+// configuration for the system. When this is the case, no further
+// transitions should be attempted.
 func (ts *ArcStandard) IsTerminal(c Configuration) bool {
 	return len(c.Buffer) == 0
 }
 
+// PossibleTransitions returns the set of possible transitions in a
+// particular parser configuration. The returned transitions are
+// archetypal transitions (they do not parametrized over a dependency
+// relation).
 func (ts *ArcStandard) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
@@ -49,6 +58,9 @@ func (ts *ArcStandard) PossibleTransitions(configuration Configuration) Transiti
 	return possible
 }
 
+// SerializeTransition serializes a transition of the arc-standard
+// system to a string. An error is returned when it is attempted to
+// serialize a transition of another system.
 func (ts *ArcStandard) SerializeTransition(t Transition) (string, error) {
 	switch t := t.(type) {
 	case asLeftArc:
@@ -62,6 +74,8 @@ func (ts *ArcStandard) SerializeTransition(t Transition) (string, error) {
 	}
 }
 
+// DeserializeTransition deserializes a transition from the arc-standard system.
+// If the provided transition is not known to the system, an error is returned.
 func (ts *ArcStandard) DeserializeTransition(transString string) (Transition, error) {
 	parts := strings.SplitN(transString, " ", 2)
 
@@ -138,15 +152,24 @@ func (s asShift) Apply(c *Configuration) {
 	c.Stack = append(c.Stack, token)
 }
 
+// The ArcStandardOracle returns a correct transition for a particular
+// configuration in the arc-standard system. The transition choice in
+// an oracle is based on the gold-standard parse.
 type ArcStandardOracle struct {
 	dependentHeadMapping map[uint]Dependency
 }
 
+// NewArcStandardOracle returns a new oracle from the arc-standard system.
+// The gold dependency set is used to choose a correct transition from
+// each configuration.
 func NewArcStandardOracle(goldDependencies DependencySet) Guide {
 	oracle := ArcStandardOracle{goldDependencies.CreateDependentHeadMapping()}
 	return &oracle
 }
 
+// BestTransition returns the best transition from the current
+// configuration, as inferred from the gold standard dependency
+// structure.
 func (o *ArcStandardOracle) BestTransition(c *Configuration) Transition {
 	stackSize := len(c.Stack)
 	if stackSize != 0 {

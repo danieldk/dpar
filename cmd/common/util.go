@@ -6,6 +6,8 @@ package common
 
 import "log"
 
+// ExitIfError exits the program with a fatal error if the provided
+// error is not nil.
 func ExitIfError(err error) {
 	if err != nil {
 		log.Fatal(err.Error())

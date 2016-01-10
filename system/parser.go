@@ -8,25 +8,34 @@ import (
 	"github.com/danieldk/conllx"
 )
 
+// A Guide provides the best transition for the current configuration.
 type Guide interface {
 	BestTransition(configuration *Configuration) Transition
 }
 
+// A Parser returns the dependency set for a sentence.
 type Parser interface {
 	Parse(tokens []conllx.Token) (DependencySet, error)
 }
 
 var _ Parser = &GreedyParser{}
 
+// GreedyParser is a parser that is deterministic -- it returns only
+// one possible parse. Greedy parsers are O(n) where n is the length
+// of the input sentence.
 type GreedyParser struct {
 	transitionSystem TransitionSystem
 	guide            Guide
 }
 
+// NewGreedyParser constructs a GreedyParser using the given transition
+// system and guide.
 func NewGreedyParser(ts TransitionSystem, guide Guide) *GreedyParser {
 	return &GreedyParser{ts, guide}
 }
 
+// Parse a sentence, returning the set of dependency relations that
+// was found.
 func (p *GreedyParser) Parse(tokens []conllx.Token) (DependencySet, error) {
 	c, err := NewConfiguration(tokens)
 	if err != nil {

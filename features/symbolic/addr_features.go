@@ -11,18 +11,22 @@ import (
 
 var _ FeatureGenerator = AddressedValueGenerator{}
 
-// A feature generator that creates AddressedValues.
+// AddressedValueGenerator is a feature generator that creates features
+// based on AddressedValues (information from the parser configuration).
 type AddressedValueGenerator struct {
 	templates []addr.AddressedValue
 }
 
-// Constuct a AdressedValueGenerator that uses the provided
-// addressed values as templates. This means that the addressing
+// NewAddressedValueGenerator constuct a AdressedValueGenerator that uses
+// the provided addressed values as templates. This means that the addressing
 // will be used, but values in the template will be ignored.
 func NewAddressedValueGenerator(templates []addr.AddressedValue) AddressedValueGenerator {
 	return AddressedValueGenerator{templates}
 }
 
+// Generate generates features from a given configuration and using the provided
+// feature hash function. The result is stored with the provided feature vector
+// builder.
 func (g AddressedValueGenerator) Generate(c *system.Configuration, hf FeatureHashFun,
 	fvb FeatureVectorBuilder) {
 	// We'll cheat here. Since we never have to generate the actual feature,
@@ -32,7 +36,7 @@ func (g AddressedValueGenerator) Generate(c *system.Configuration, hf FeatureHas
 
 	for _, av := range g.templates {
 		// If the feature is not addressable, exit early.
-		hav := HashableAddressedValue{av}
+		hav := hashableAddressedValue{av}
 		if ok := hav.appendHash(c, h); !ok {
 			return
 		}

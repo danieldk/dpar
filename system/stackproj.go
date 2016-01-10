@@ -19,10 +19,12 @@ var archetypeSPRightArc Transition = spRightArc{"<archetype>"}
 var _ TransitionSystem = NewStackProjective()
 var _ TransitionSerializer = NewStackProjective()
 
+// The StackProjective transition-system (Nivre, 2009).
 type StackProjective struct {
 	archetypeTransitions TransitionSet
 }
 
+// NewStackProjective creates a stack-projective transition system.
 func NewStackProjective() *StackProjective {
 	trans := map[Transition]interface{}{
 		archetypeSPShift:    nil,
@@ -33,10 +35,17 @@ func NewStackProjective() *StackProjective {
 	return &StackProjective{trans}
 }
 
+// IsTerminal checks whether a parser configuration is a terminal
+// configuration for the system. When this is the case, no further
+// transitions should be attempted.
 func (ts *StackProjective) IsTerminal(c Configuration) bool {
 	return len(c.Stack) == 0 && len(c.Buffer) == 0
 }
 
+// PossibleTransitions returns the set of possible transitions in a
+// particular parser configuration. The returned transitions are
+// archetypal transitions (they do not parametrized over a dependency
+// relation).
 func (ts *StackProjective) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
@@ -49,6 +58,9 @@ func (ts *StackProjective) PossibleTransitions(configuration Configuration) Tran
 	return possible
 }
 
+// SerializeTransition serializes a transition of the stack-projective
+// system to a string. An error is returned when it is attempted to
+// serialize a transition of another system.
 func (ts *StackProjective) SerializeTransition(t Transition) (string, error) {
 	switch t := t.(type) {
 	case spLeftArc:
@@ -62,6 +74,9 @@ func (ts *StackProjective) SerializeTransition(t Transition) (string, error) {
 	}
 }
 
+// DeserializeTransition deserializes a transition from the
+// stack-projective system. If the provided transition is not known to
+// the system, an error is returned.
 func (ts *StackProjective) DeserializeTransition(transString string) (Transition, error) {
 	parts := strings.SplitN(transString, " ", 2)
 
@@ -148,15 +163,24 @@ func (s spShift) Apply(c *Configuration) {
 	}
 }
 
+// The StackProjectiveOracle returns a correct transition for a particular
+// configuration in the stack-projective system. The transition choice in
+// an oracle is based on the gold-standard parse.
 type StackProjectiveOracle struct {
 	dependentHeadMapping map[uint]Dependency
 }
 
+// NewStackProjectiveOracle returns a new oracle from the stack-projective
+// system. The gold dependency set is used to choose a correct transition
+// from each configuration.
 func NewStackProjectiveOracle(goldDependencies DependencySet) Guide {
 	oracle := StackProjectiveOracle{goldDependencies.CreateDependentHeadMapping()}
 	return &oracle
 }
 
+// BestTransition returns the best transition from the current
+// configuration, as inferred from the gold standard dependency
+// structure.
 func (o *StackProjectiveOracle) BestTransition(c *Configuration) Transition {
 	stack := c.Stack
 

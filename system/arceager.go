@@ -20,10 +20,14 @@ var archeTypeAERightArc = aeRightArc{"<archetype>"}
 var _ TransitionSystem = NewArcEager()
 var _ TransitionSerializer = NewArcEager()
 
+// The ArcEager transition system.
+//
+// See: Joakim Nivre, Incrementality in Deterministic Dependency Parsing, 2004
 type ArcEager struct {
 	archetypeTransitions TransitionSet
 }
 
+// NewArcEager creates a new arc-eager transition system.
 func NewArcEager() *ArcEager {
 	trans := map[Transition]interface{}{
 		archetypeAEShift:    nil,
@@ -35,10 +39,17 @@ func NewArcEager() *ArcEager {
 	return &ArcEager{trans}
 }
 
+// IsTerminal checks whether a parser configuration is a terminal
+// configuration for the system. When this is the case, no further
+// transitions should be attempted.
 func (ts *ArcEager) IsTerminal(c Configuration) bool {
 	return len(c.Buffer) == 0
 }
 
+// PossibleTransitions returns the set of possible transitions in a
+// particular parser configuration. The returned transitions are
+// archetypal transitions (they do not parametrized over a dependency
+// relation).
 func (ts *ArcEager) PossibleTransitions(configuration Configuration) TransitionSet {
 	possible := make(TransitionSet)
 
@@ -51,6 +62,9 @@ func (ts *ArcEager) PossibleTransitions(configuration Configuration) TransitionS
 	return possible
 }
 
+// SerializeTransition serializes a transition of the arc-eager
+// system to a string. An error is returned when it is attempted to
+// serialize a transition of another system.
 func (ts *ArcEager) SerializeTransition(t Transition) (string, error) {
 	switch t := t.(type) {
 	case aeLeftArc:
@@ -66,6 +80,8 @@ func (ts *ArcEager) SerializeTransition(t Transition) (string, error) {
 	}
 }
 
+// DeserializeTransition deserializes a transition from the arc-eager system.
+// If the provided transition is not known to the system, an error is returned.
 func (ts *ArcEager) DeserializeTransition(transString string) (Transition, error) {
 	parts := strings.SplitN(transString, " ", 2)
 

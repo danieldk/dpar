@@ -9,21 +9,21 @@ import (
 	"gopkg.in/danieldk/golinear.v1"
 )
 
-var _ symbolic.FeatureVectorBuilder = &GolinearVectorBuilder{}
+var _ symbolic.FeatureVectorBuilder = &goLinearVectorBuilder{}
 
-type GolinearVectorBuilder struct {
+type goLinearVectorBuilder struct {
 	featureVector golinear.FeatureVector
 }
 
-func NewGolinearVectorBuilder() *GolinearVectorBuilder {
+func newGoLinearVectorBuilder() *goLinearVectorBuilder {
 	// Allocate opportunistically.
-	return &GolinearVectorBuilder{make(golinear.FeatureVector, 0, 10)}
+	return &goLinearVectorBuilder{make(golinear.FeatureVector, 0, 10)}
 }
 
-func (fvb *GolinearVectorBuilder) Add(index int, value float64) {
+func (fvb *goLinearVectorBuilder) Add(index int, value float64) {
 	fvb.featureVector = append(fvb.featureVector, golinear.FeatureValue{index, value})
 }
 
-func (fvb *GolinearVectorBuilder) Build() golinear.FeatureVector {
+func (fvb *goLinearVectorBuilder) Build() golinear.FeatureVector {
 	return fvb.featureVector
 }
