@@ -7,7 +7,7 @@ package svm
 import (
 	"github.com/danieldk/dpar/features/symbolic"
 	"github.com/danieldk/dpar/system"
-	"gopkg.in/danieldk/golinear.v1"
+	golinear "gopkg.in/danieldk/golinear.v1"
 )
 
 // A GoLinearCollector is a training instance collector that can return
@@ -76,7 +76,10 @@ func (hc *HashCollector) Collect(t system.Transition, c *system.Configuration) {
 
 	features := make([]golinear.FeatureValue, 0, len(featuresByIndex))
 	for idx, val := range featuresByIndex {
-		features = append(features, golinear.FeatureValue{idx, val})
+		features = append(features, golinear.FeatureValue{
+			Index: idx,
+			Value: val,
+		})
 	}
 
 	hc.problem.Add(golinear.TrainingInstance{Label: float64(label), Features: features})

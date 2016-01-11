@@ -6,7 +6,7 @@ package svm
 
 import (
 	"github.com/danieldk/dpar/features/symbolic"
-	"gopkg.in/danieldk/golinear.v1"
+	golinear "gopkg.in/danieldk/golinear.v1"
 )
 
 var _ symbolic.FeatureVectorBuilder = &goLinearVectorBuilder{}
@@ -21,7 +21,10 @@ func newGoLinearVectorBuilder() *goLinearVectorBuilder {
 }
 
 func (fvb *goLinearVectorBuilder) Add(index int, value float64) {
-	fvb.featureVector = append(fvb.featureVector, golinear.FeatureValue{index, value})
+	fvb.featureVector = append(fvb.featureVector, golinear.FeatureValue{
+		Index: index,
+		Value: value,
+	})
 }
 
 func (fvb *goLinearVectorBuilder) Build() golinear.FeatureVector {
