@@ -16,7 +16,6 @@ var correct1 = []AddressedValue{
 	AddressedValue{
 		Address: []AddressComponent{AddressComponent{STACK, 0}},
 		Layer:   TOKEN,
-		Value:   "",
 	},
 }
 
@@ -24,7 +23,6 @@ var correct2 = []AddressedValue{
 	AddressedValue{
 		Address: []AddressComponent{AddressComponent{BUFFER, 1}},
 		Layer:   TAG,
-		Value:   "",
 	},
 }
 
@@ -35,7 +33,6 @@ var correct3 = []AddressedValue{
 			AddressComponent{LDEP, 0},
 		},
 		Layer: DEPREL,
-		Value: "",
 	},
 }
 
@@ -46,7 +43,6 @@ var correct4 = []AddressedValue{
 			AddressComponent{LDEP, 0},
 		},
 		Layer: DEPREL,
-		Value: "",
 	},
 	AddressedValue{
 		Address: []AddressComponent{
@@ -54,7 +50,6 @@ var correct4 = []AddressedValue{
 			AddressComponent{RDEP, 0},
 		},
 		Layer: DEPREL,
-		Value: "",
 	},
 }
 
@@ -63,7 +58,6 @@ var correct5 = []AddressedValue{
 		Address:  []AddressComponent{AddressComponent{STACK, 0}},
 		Layer:    FEATURE,
 		LayerArg: "num",
-		Value:    "",
 	},
 }
 
@@ -72,7 +66,6 @@ var correct6 = []AddressedValue{
 		Address:      []AddressComponent{AddressComponent{STACK, 0}},
 		Layer:        CHAR,
 		LayerArg:     "",
-		Value:        "",
 		LayerInt0Arg: 1,
 		LayerInt1Arg: 2,
 	},

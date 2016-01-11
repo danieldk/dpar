@@ -21,7 +21,6 @@ var shortCharTestCorrect = []rune{122, 117, 0, 0, 0, 122, 117}
 var charTestAddr = AddressedValue{
 	Address:      []AddressComponent{AddressComponent{STACK, 0}},
 	Layer:        CHAR,
-	Value:        "",
 	LayerInt0Arg: 3,
 	LayerInt1Arg: 4,
 }
