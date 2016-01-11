@@ -13,57 +13,57 @@ const correctString5 = "[STACK 0] FEATURE num"
 const correctString6 = "[STACK 0] CHAR 1 2"
 
 var correct1 = []AddressedValue{
-	AddressedValue{
-		Address: []AddressComponent{AddressComponent{STACK, 0}},
+	{
+		Address: []AddressComponent{{STACK, 0}},
 		Layer:   TOKEN,
 	},
 }
 
 var correct2 = []AddressedValue{
-	AddressedValue{
-		Address: []AddressComponent{AddressComponent{BUFFER, 1}},
+	{
+		Address: []AddressComponent{{BUFFER, 1}},
 		Layer:   TAG,
 	},
 }
 
 var correct3 = []AddressedValue{
-	AddressedValue{
+	{
 		Address: []AddressComponent{
-			AddressComponent{STACK, 0},
-			AddressComponent{LDEP, 0},
+			{STACK, 0},
+			{LDEP, 0},
 		},
 		Layer: DEPREL,
 	},
 }
 
 var correct4 = []AddressedValue{
-	AddressedValue{
+	{
 		Address: []AddressComponent{
-			AddressComponent{STACK, 0},
-			AddressComponent{LDEP, 0},
+			{STACK, 0},
+			{LDEP, 0},
 		},
 		Layer: DEPREL,
 	},
-	AddressedValue{
+	{
 		Address: []AddressComponent{
-			AddressComponent{STACK, 0},
-			AddressComponent{RDEP, 0},
+			{STACK, 0},
+			{RDEP, 0},
 		},
 		Layer: DEPREL,
 	},
 }
 
 var correct5 = []AddressedValue{
-	AddressedValue{
-		Address:  []AddressComponent{AddressComponent{STACK, 0}},
+	{
+		Address:  []AddressComponent{{STACK, 0}},
 		Layer:    FEATURE,
 		LayerArg: "num",
 	},
 }
 
 var correct6 = []AddressedValue{
-	AddressedValue{
-		Address:      []AddressComponent{AddressComponent{STACK, 0}},
+	{
+		Address:      []AddressComponent{{STACK, 0}},
 		Layer:        CHAR,
 		LayerArg:     "",
 		LayerInt0Arg: 1,
