@@ -116,8 +116,8 @@ func (l spLeftArc) Apply(c *Configuration) {
 
 	stackSize := len(stack)
 	head := stack[stackSize-1]
-	dependant := stack[stackSize-2]
-	dependency := Dependency{head, l.relation, dependant}
+	dependent := stack[stackSize-2]
+	dependency := Dependency{head, l.relation, dependent}
 
 	c.AddDependency(&dependency)
 
@@ -136,9 +136,9 @@ func (r spRightArc) Apply(c *Configuration) {
 	stack := c.Stack
 
 	stackSize := len(stack)
-	dependant := stack[stackSize-1]
+	dependent := stack[stackSize-1]
 	head := stack[stackSize-2]
-	dependency := Dependency{head, r.relation, dependant}
+	dependency := Dependency{head, r.relation, dependent}
 
 	c.AddDependency(&dependency)
 

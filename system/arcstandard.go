@@ -114,8 +114,8 @@ func (l asLeftArc) IsPossible(c Configuration) bool {
 func (l asLeftArc) Apply(c *Configuration) {
 	stackSize := len(c.Stack)
 	head := c.Buffer[0]
-	dependant := c.Stack[stackSize-1]
-	dependency := Dependency{head, l.relation, dependant}
+	dependent := c.Stack[stackSize-1]
+	dependency := Dependency{head, l.relation, dependent}
 
 	c.AddDependency(&dependency)
 	c.Stack = c.Stack[:stackSize-1]
@@ -131,9 +131,9 @@ func (r asRightArc) IsPossible(c Configuration) bool {
 
 func (r asRightArc) Apply(c *Configuration) {
 	stackSize := len(c.Stack)
-	dependant := c.Buffer[0]
+	dependent := c.Buffer[0]
 	head := c.Stack[stackSize-1]
-	dependency := Dependency{head, r.relation, dependant}
+	dependency := Dependency{head, r.relation, dependent}
 
 	c.AddDependency(&dependency)
 	c.Stack = c.Stack[:stackSize-1]

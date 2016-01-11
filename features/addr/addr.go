@@ -36,7 +36,7 @@ const LAST_LAYER = CHAR
 
 const N_LAYERS = LAST_LAYER + 1
 
-// An AddressComponent is a component of an adress used to point to
+// An AddressComponent is a component of an address used to point to
 // tokens in a parser configuration. See AddressedValue.
 type AddressComponent struct {
 	Source Source
