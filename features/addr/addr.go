@@ -77,54 +77,69 @@ type AddressedValue struct {
 // Get returns the addressed value.
 func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 	var token uint
+	var ok bool
 
 	for idx, component := range a.Address {
-		switch component.Source {
-		case STACK:
-			stackSize := uint(len(c.Stack))
-
-			// Not addressable
-			if stackSize <= component.Index {
-				return "", false
-			}
-
-			token = c.Stack[stackSize-component.Index-1]
-
-		case BUFFER:
-			// Not addressable
-			if uint(len(c.Buffer)) <= component.Index {
-				return "", false
-			}
-
-			token = c.Buffer[component.Index]
-
-		case LDEP:
-			if idx == 0 {
-				panic("LDEP cannot be an initial address component")
-			}
-
-			var ok bool
-			token, ok = c.LeftmostDependent(token, component.Index)
-			if !ok {
-				return "", false
-			}
-
-		case RDEP:
-			if idx == 0 {
-				panic("RDEP cannot be an initial address component")
-			}
-
-			var ok bool
-			token, ok = c.RightmostDependent(token, component.Index)
-			if !ok {
-				return "", false
-			}
-
-		default:
-			panic("Source unimplemented")
+		token, ok = resolveAddressComponent(c, component, idx, token)
+		if !ok {
+			return "", false
 		}
 	}
 
+	return resolveValue(c, token, a)
+}
+
+func resolveAddressComponent(c *system.Configuration, component AddressComponent,
+	componentIdx int, token uint) (uint, bool) {
+	switch component.Source {
+	case STACK:
+		stackSize := uint(len(c.Stack))
+
+		// Not addressable
+		if stackSize <= component.Index {
+			return 0, false
+		}
+
+		token = c.Stack[stackSize-component.Index-1]
+
+	case BUFFER:
+		// Not addressable
+		if uint(len(c.Buffer)) <= component.Index {
+			return 0, false
+		}
+
+		token = c.Buffer[component.Index]
+
+	case LDEP:
+		if componentIdx == 0 {
+			panic("LDEP cannot be an initial address component")
+		}
+
+		var ok bool
+		token, ok = c.LeftmostDependent(token, component.Index)
+		if !ok {
+			return 0, false
+		}
+
+	case RDEP:
+		if componentIdx == 0 {
+			panic("RDEP cannot be an initial address component")
+		}
+
+		var ok bool
+		token, ok = c.RightmostDependent(token, component.Index)
+		if !ok {
+			return 0, false
+		}
+
+	default:
+		panic("Source unimplemented")
+	}
+
+	return token, true
+}
+
+func resolveValue(c *system.Configuration, token uint, a AddressedValue) (string, bool) {
 	switch a.Layer {
 	case TOKEN:
 		return c.Tokens[token], true
@@ -166,7 +181,6 @@ func (a AddressedValue) Get(c *system.Configuration) (string, bool) {
 	default:
 		panic("Layer not implemented.")
 	}
-
 }
 
 // Really? Yeah, really :(
