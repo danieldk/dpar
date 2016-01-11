@@ -139,7 +139,6 @@ const addressed_value_error int = 0
 const addressed_value_en_main int = 1
 
 //line parse_addr.rl:17
-
 func readLayer(layerString string) (Layer, error) {
 	switch layerString {
 	case "TOKEN":
@@ -403,7 +402,6 @@ func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
 	}
 
 //line parse_addr.rl:154
-
 	if cs < addressed_value_first_final {
 		if p == pe {
 			return nil, errors.New("Unexpected end of file")
