@@ -32,9 +32,11 @@ const (
 	CHAR
 )
 
-const LAST_LAYER = CHAR
+// LastLayer is identifier of the last parser configuration layer.
+const LastLayer = CHAR
 
-const N_LAYERS = LAST_LAYER + 1
+// NLayers is the number of different parser configuration layers.
+const NLayers = LastLayer + 1
 
 // An AddressComponent is a component of an address used to point to
 // tokens in a parser configuration. See AddressedValue.

@@ -48,11 +48,13 @@ func readSource(sourceString string) (Source, error) {
   }
 }
 
+// ParseAddressedValueTemplates parses templates of AddressedValue-based
+// features.
 func ParseAddressedValueTemplates(data []byte) ([]AddressedValue, error) {
   cs, p,pe, eof := 0, 0, len(data), len(data)
 
-  components := make([]AddressComponent, 0)
-  templates := make([]AddressedValue, 0)
+  var components []AddressComponent
+  var templates []AddressedValue
 
   var buf bytes.Buffer
   var source Source
