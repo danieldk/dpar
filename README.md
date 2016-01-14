@@ -1,3 +1,5 @@
+[![Report card](http://goreportcard.com/badge/danieldk/dpar)](http://goreportcard.com/report/danieldk/dpar)
+
 # dpar - Decaffeinated/Dependency Parser
 
 ## Introduction
