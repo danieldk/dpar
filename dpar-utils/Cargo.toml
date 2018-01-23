@@ -1,0 +1,20 @@
+[package]
+name = "dpar-utils"
+version = "0.1.0"
+authors = ["Daniël de Kok <me@danieldk.eu>"]
+
+[dependencies]
+dpar = {path = "../dpar"}
+conllx = "0.9"
+error-chain = "0.11"
+getopts = "0.2"
+serde = "1.0"
+serde_cbor = "0.6"
+serde_derive = "1.0"
+stdinout = "0.4"
+tensorflow = { git = "https://github.com/tensorflow/rust" }
+tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.1.0" }
+toml = "0.4"
+
+[dev-dependencies]
+lazy_static = "0.2"
