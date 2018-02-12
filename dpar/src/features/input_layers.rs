@@ -209,7 +209,7 @@ impl InputVectorizer {
                         Some(chars) => {
                             for ch in chars.as_ref().chars() {
                                 slices[Layer::Char].as_mut()[*offset] =
-                                    lookup_char_or_null(
+                                    lookup_char(
                                         self.layer_lookups.layer_lookup(Layer::Char).unwrap(),
                                         ch,
                                     );
@@ -229,7 +229,7 @@ impl InputVectorizer {
                 }
                 ref layer => {
                     slices[layer.into()].as_mut()[*offset] =
-                        lookup_value_or_null(
+                        lookup_value(
                             self.layer_lookups.layer_lookup(layer.into()).unwrap(),
                             val,
                         );
@@ -240,20 +240,22 @@ impl InputVectorizer {
     }
 }
 
-fn lookup_char_or_null(lookup: &Lookup, feature: char) -> i32 {
-    let feature = feature.to_string();
+fn lookup_char(lookup: &Lookup, feature: char) -> i32 {
+    if feature == '\0' {
+        return lookup.null() as i32;
+    }
 
+    let feature = feature.to_string();
     if let Some(idx) = lookup.lookup(&feature) {
         idx as i32
     } else {
-        lookup.null() as i32
+        lookup.unknown() as i32
     }
 }
 
-fn lookup_value_or_null(lookup: &Lookup, feature: Option<Cow<str>>) -> i32 {
-    if let Some(idx) = feature.and_then(|f| lookup.lookup(f.as_ref())) {
-        idx as i32
-    } else {
-        lookup.null() as i32
+fn lookup_value(lookup: &Lookup, feature: Option<Cow<str>>) -> i32 {
+    match feature {
+        Some(f) => lookup.lookup(f.as_ref()).unwrap_or(lookup.unknown()) as i32,
+        None => lookup.null() as i32,
     }
 }

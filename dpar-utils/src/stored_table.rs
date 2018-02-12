@@ -81,4 +81,11 @@ impl Lookup for StoredLookupTable {
             &StoredLookupTable::FreshTable { ref table, .. } => table.null(),
         }
     }
+
+    fn unknown(&self) -> usize {
+        match self {
+            &StoredLookupTable::Table(ref table) => table.unknown(),
+            &StoredLookupTable::FreshTable {ref table, .. } => table.unknown(),
+        }
+    }
 }

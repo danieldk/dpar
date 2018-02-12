@@ -7,6 +7,8 @@ use Numberer;
 
 static NULL_TOKEN: &'static str = "<NULL-TOKEN>";
 
+static UNKNOWN_TOKEN: &'static str = "<UNKNOWN-TOKEN>";
+
 /// Trait for feature index lookup.
 ///
 /// In dpar, the parser state is encoded as a vector of integers. The integers
@@ -33,6 +35,9 @@ pub trait Lookup {
 
     /// Null value.
     fn null(&self) -> usize;
+
+    // Unknown value.
+    fn unknown(&self) -> usize;
 }
 
 impl Lookup for Embeddings {
@@ -46,6 +51,10 @@ impl Lookup for Embeddings {
 
     fn null(&self) -> usize {
         self.indices()[NULL_TOKEN]
+    }
+
+    fn unknown(&self) -> usize {
+        self.indices()[UNKNOWN_TOKEN]
     }
 }
 
@@ -72,6 +81,13 @@ impl Lookup for MutableLookupTable {
     fn null(&self) -> usize {
         0
     }
+
+    fn unknown(&self) -> usize {
+        // No better possible value until we mark low-frequency tokens,
+        // features, etc. as unknown. Luckily, unknowns do not really
+        // happen 
+        0
+    }
 }
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
@@ -89,6 +105,13 @@ impl Lookup for LookupTable {
     }
 
     fn null(&self) -> usize {
+        0
+    }
+
+    fn unknown(&self) -> usize {
+        // No better possible value until we mark low-frequency tokens,
+        // features, etc. as unknown. Luckily, unknowns do not really
+        // happen 
         0
     }
 }
@@ -135,6 +158,7 @@ mod tests {
         assert_eq!(table.lookup("b"), Some(2));
         assert_eq!(table.lookup("a"), Some(1));
         assert_eq!(table.null(), 0);
+        assert_eq!(table.unknown(), 0);
         assert!(table.embed_matrix().is_none());
     }
 
@@ -151,6 +175,7 @@ mod tests {
         assert_eq!(table.lookup("b"), Some(2));
         assert_eq!(table.lookup("c"), None);
         assert_eq!(table.null(), 0);
+        assert_eq!(table.unknown(), 0);
         assert!(table.embed_matrix().is_none());
     }
 }
