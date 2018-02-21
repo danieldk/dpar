@@ -12,8 +12,8 @@ serde = "1.0"
 serde_cbor = "0.6"
 serde_derive = "1.0"
 stdinout = "0.4"
-tensorflow = { git = "https://github.com/tensorflow/rust" }
-tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.1.0" }
+tensorflow = "0.7"
+tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.2.0" }
 toml = "0.4"
 
 [dev-dependencies]
