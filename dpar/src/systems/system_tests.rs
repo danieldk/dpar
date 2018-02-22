@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -31,6 +32,10 @@ where
         let mut parser = GreedyParser::new(oracle);
 
         let result = parser.parse(&sentence).unwrap();
+
+        // Convert to ordered set for easier comparisons.
+        let dependencies: BTreeSet<_> = dependencies.into_iter().collect();
+        let result: BTreeSet<_> = result.into_iter().collect();
 
         assert_eq!(&dependencies, &result);
     }
