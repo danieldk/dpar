@@ -4,7 +4,8 @@ use std::io::{Read, Write};
 use dpar::Numberer;
 use dpar::features::LookupTable;
 use dpar::system::TransitionSystem;
-use dpar::systems::{ArcEagerSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem};
+use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
+                    StackSwapSystem};
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -55,6 +56,7 @@ macro_rules! cbor_read {
 }
 
 cbor_read!(ArcEagerSystem);
+cbor_read!(ArcHybridSystem);
 cbor_read!(ArcStandardSystem);
 cbor_read!(StackProjectiveSystem);
 cbor_read!(StackSwapSystem);
@@ -95,6 +97,7 @@ macro_rules! cbor_write {
 }
 
 cbor_write!(ArcEagerSystem);
+cbor_write!(ArcHybridSystem);
 cbor_write!(ArcStandardSystem);
 cbor_write!(StackProjectiveSystem);
 cbor_write!(StackSwapSystem);

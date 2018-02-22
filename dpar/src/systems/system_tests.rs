@@ -7,6 +7,7 @@ use guide::Guide;
 use parser::{GreedyParser, Parse};
 use system::*;
 use systems::arc_eager::ArcEagerOracle;
+use systems::arc_hybrid::ArcHybridOracle;
 use systems::arc_standard::ArcStandardOracle;
 use systems::stack_projective::StackProjectiveOracle;
 use systems::stack_swap::StackSwapOracle;
@@ -41,16 +42,19 @@ fn test_arc_eager() {
 }
 
 #[test]
+fn test_arc_hybrid() {
+    test_system(ArcHybridOracle::new, PROJECTIVE_DATA);
+}
+
+#[test]
 fn test_arc_standard() {
     test_system(ArcStandardOracle::new, PROJECTIVE_DATA);
 }
-
 
 #[test]
 fn test_stack_projective() {
     test_system(StackProjectiveOracle::new, PROJECTIVE_DATA);
 }
-
 
 #[test]
 fn test_stack_swap() {

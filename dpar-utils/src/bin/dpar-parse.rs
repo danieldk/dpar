@@ -19,7 +19,8 @@ use dpar::guide::BatchGuide;
 use dpar::guide::tensorflow::{LayerOps, TensorflowGuide};
 use dpar::parser::{GreedyParser, ParseBatch};
 use dpar::system::{DependencySet, TransitionSystem};
-use dpar::systems::{ArcEagerSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem};
+use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
+                    StackSwapSystem};
 use stdinout::{Input, Output};
 
 use dpar_utils::{Config, OrExit, Result, SerializableTransitionSystem, TomlRead};
@@ -67,6 +68,7 @@ where
 {
     match config.parser.system.as_ref() {
         "arceager" => parse_with_system::<R, W, ArcEagerSystem>(config, reader, writer),
+        "archybrid" => parse_with_system::<R, W, ArcHybridSystem>(config, reader, writer),
         "arcstandard" => parse_with_system::<R, W, ArcStandardSystem>(config, reader, writer),
         "stackproj" => parse_with_system::<R, W, StackProjectiveSystem>(config, reader, writer),
         "stackswap" => parse_with_system::<R, W, StackSwapSystem>(config, reader, writer),

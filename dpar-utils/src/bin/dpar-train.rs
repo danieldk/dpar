@@ -15,7 +15,8 @@ use conllx::{HeadProjectivizer, Projectivize, ReadSentence};
 use dpar::train::HDF5Collector;
 use dpar::features::InputVectorizer;
 use dpar::system::{sentence_to_dependencies, ParserState};
-use dpar::systems::{ArcEagerSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem};
+use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
+                    StackSwapSystem};
 use dpar::train::GreedyTrainer;
 use getopts::Options;
 use stdinout::Input;
@@ -61,9 +62,10 @@ where
 {
     match config.parser.system.as_ref() {
         "arceager" => train_with_system::<R, ArcEagerSystem>(config, reader, hdf5_filename),
+        "archybrid" => train_with_system::<R, ArcHybridSystem>(config, reader, hdf5_filename),
         "arcstandard" => train_with_system::<R, ArcStandardSystem>(config, reader, hdf5_filename),
         "stackproj" => train_with_system::<R, StackProjectiveSystem>(config, reader, hdf5_filename),
-        "stackswap" => train_with_system::<R, StackSwapSystem>(config, reader, hdf5_filename),        
+        "stackswap" => train_with_system::<R, StackSwapSystem>(config, reader, hdf5_filename),
         _ => {
             stderr!("Unsupported transition system: {}", config.parser.system);
             process::exit(1);
@@ -124,7 +126,6 @@ where
     let system = T::from_cbor_read(f)?;
 
     Ok(system)
-
 }
 
 fn write_transition_system<T>(config: &Config, system: &T) -> Result<()>
