@@ -1,9 +1,9 @@
 use conllx::Sentence;
 
-use Result;
 use guide::{BatchGuide, Guide};
 use parser::{Parse, ParseBatch};
 use system::{DependencySet, ParserState, Transition, TransitionSystem};
+use Result;
 
 pub struct GreedyParser<G> {
     guide: G,

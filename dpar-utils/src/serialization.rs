@@ -1,14 +1,15 @@
 use std::hash::Hash;
 use std::io::{Read, Write};
 
-use dpar::Numberer;
 use dpar::features::LookupTable;
 use dpar::system::TransitionSystem;
-use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
-                    StackSwapSystem};
+use dpar::systems::{
+    ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
+};
+use dpar::Numberer;
 
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_cbor;
 use toml;
 
@@ -41,18 +42,19 @@ pub trait CborRead {
 }
 
 macro_rules! cbor_read {
-    ($type: ty) => {
+    ($type:ty) => {
         impl CborRead for $type {
             type Value = $type;
 
             fn from_cbor_read<R>(read: R) -> Result<$type>
-                where R: Read
+            where
+                R: Read,
             {
                 let system = serde_cbor::from_reader(read)?;
                 Ok(system)
             }
         }
-    }
+    };
 }
 
 cbor_read!(ArcEagerSystem);
@@ -83,17 +85,18 @@ where
 }
 
 macro_rules! cbor_write {
-    ($type: ty) => {
+    ($type:ty) => {
         impl CborWrite for $type {
             fn to_cbor_write<W>(&self, write: &mut W) -> Result<()>
-                where W: Write
+            where
+                W: Write,
             {
                 let data = serde_cbor::to_vec(self)?;
                 write.write(&data)?;
                 Ok(())
             }
         }
-    }
+    };
 }
 
 cbor_write!(ArcEagerSystem);
@@ -103,8 +106,9 @@ cbor_write!(StackProjectiveSystem);
 cbor_write!(StackSwapSystem);
 cbor_write!(LookupTable);
 
-pub trait SerializableTransitionSystem
-    : Default + TransitionSystem + CborRead<Value = Self> + CborWrite {
+pub trait SerializableTransitionSystem:
+    Default + TransitionSystem + CborRead<Value = Self> + CborWrite
+{
 }
 
 impl<T> SerializableTransitionSystem for T

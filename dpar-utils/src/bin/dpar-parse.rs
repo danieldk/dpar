@@ -7,20 +7,21 @@ extern crate stdinout;
 
 use std::env::args;
 use std::fs::File;
-use std::path::Path;
 use std::io::{BufRead, BufWriter, Write};
+use std::path::Path;
 use std::process;
 use std::time::Instant;
 
 use conllx::{Deprojectivize, HeadProjectivizer, ReadSentence, Sentence, WriteSentence};
-use getopts::Options;
 use dpar::features::InputVectorizer;
-use dpar::guide::BatchGuide;
 use dpar::guide::tensorflow::{LayerOps, TensorflowGuide};
+use dpar::guide::BatchGuide;
 use dpar::parser::{GreedyParser, ParseBatch};
 use dpar::system::{DependencySet, TransitionSystem};
-use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
-                    StackSwapSystem};
+use dpar::systems::{
+    ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
+};
+use getopts::Options;
 use stdinout::{Input, Output};
 
 use dpar_utils::{Config, OrExit, Result, SerializableTransitionSystem, TomlRead};
@@ -101,24 +102,29 @@ where
     let start = Instant::now();
 
     {
-    let mut sent_proc = SentProcessor::new(
-        parser,
-        config.parser.pproj,
-        config.parser.parse_batch_size,
-        writer,
-    );
+        let mut sent_proc = SentProcessor::new(
+            parser,
+            config.parser.pproj,
+            config.parser.parse_batch_size,
+            writer,
+        );
 
-    for sentence in reader.sentences() {
-        let mut sentence = sentence.or_exit();
-        sent_proc.process(sentence).or_exit();
-        n_sents += 1;
-    }
+        for sentence in reader.sentences() {
+            let mut sentence = sentence.or_exit();
+            sent_proc.process(sentence).or_exit();
+            n_sents += 1;
+        }
     }
 
     let elapsed = start.elapsed();
     let elapsed_sec = elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000f32;
 
-    eprintln!("Parsed {} sentences in {:.1}s ({:.0} sents/s)", n_sents, elapsed_sec, n_sents as f32 / elapsed_sec);
+    eprintln!(
+        "Parsed {} sentences in {:.1}s ({:.0} sents/s)",
+        n_sents,
+        elapsed_sec,
+        n_sents as f32 / elapsed_sec
+    );
 
     Ok(())
 }
@@ -176,9 +182,8 @@ where
 
         for sentence in &self.batch_sents {
             if let Some(ref projectivizer) = self.projectivizer {
-                self.writer.write_sentence(
-                    &projectivizer.deprojectivize(&sentence)?,
-                )?;
+                self.writer
+                    .write_sentence(&projectivizer.deprojectivize(&sentence)?)?;
             } else {
                 self.writer.write_sentence(&sentence)?;
             }

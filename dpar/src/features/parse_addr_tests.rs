@@ -11,42 +11,36 @@ static CORRECT_STRING5: &'static str = "[STACK 0] FEATURE num";
 static CORRECT_STRING6: &'static str = "[STACK 0] CHAR 1 2";
 
 lazy_static! {
-    static ref CORRECT1: Vec<AddressedValue> = vec![AddressedValue{
+    static ref CORRECT1: Vec<AddressedValue> = vec![AddressedValue {
         address: vec![Source::Stack(0)],
-        layer:   Layer::Token,
+        layer: Layer::Token,
     }];
-
-    static ref CORRECT2: Vec<AddressedValue> = vec![AddressedValue{
+    static ref CORRECT2: Vec<AddressedValue> = vec![AddressedValue {
         address: vec![Source::Buffer(1)],
-        layer:   Layer::Tag,
+        layer: Layer::Tag,
     }];
-
-    static ref CORRECT3: Vec<AddressedValue> = vec![AddressedValue{
+    static ref CORRECT3: Vec<AddressedValue> = vec![AddressedValue {
         address: vec![Source::Stack(0), Source::LDep(0)],
-        layer:   Layer::DepRel,
+        layer: Layer::DepRel,
     }];
-
     static ref CORRECT4: Vec<AddressedValue> = vec![
-        AddressedValue{
+        AddressedValue {
             address: vec![Source::Stack(0), Source::LDep(0)],
-            layer:   Layer::DepRel,
+            layer: Layer::DepRel,
         },
-        AddressedValue{
+        AddressedValue {
             address: vec![Source::Stack(0), Source::RDep(0)],
-            layer:   Layer::DepRel,
-        }
+            layer: Layer::DepRel,
+        },
     ];
-
-    static ref CORRECT5: Vec<AddressedValue> = vec![AddressedValue{
+    static ref CORRECT5: Vec<AddressedValue> = vec![AddressedValue {
         address: vec![Source::Stack(0)],
-        layer:   Layer::Feature("num".to_owned()),
+        layer: Layer::Feature("num".to_owned()),
     }];
-
-    static ref CORRECT6: Vec<AddressedValue> = vec![AddressedValue{
+    static ref CORRECT6: Vec<AddressedValue> = vec![AddressedValue {
         address: vec![Source::Stack(0)],
-        layer:   Layer::Char(1, 2),
+        layer: Layer::Char(1, 2),
     }];
-
     static ref CORRECT_CASES: HashMap<&'static str, Vec<AddressedValue>> = hashmap! {
         CORRECT_STRING1 => CORRECT1.clone(),
         CORRECT_STRING2 => CORRECT2.clone(),
@@ -55,7 +49,6 @@ lazy_static! {
         CORRECT_STRING5 => CORRECT5.clone(),
         CORRECT_STRING6 => CORRECT6.clone(),
     };
-
     static ref INCORRECT_CASES: Vec<&'static str> = vec![
         "[] TOKEN",
         "[STACK 0,] TOKEN",

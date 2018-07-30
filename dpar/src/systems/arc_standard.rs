@@ -13,7 +13,9 @@ pub struct ArcStandardSystem {
 
 impl ArcStandardSystem {
     pub fn new() -> Self {
-        ArcStandardSystem { transitions: Numberer::new(0) }
+        ArcStandardSystem {
+            transitions: Numberer::new(0),
+        }
     }
 }
 
@@ -37,12 +39,10 @@ impl TransitionSystem for ArcStandardSystem {
 
     fn transitions(&self) -> &Numberer<Self::T> {
         &self.transitions
-
     }
 
     fn transitions_mut(&mut self) -> &mut Numberer<Self::T> {
         &mut self.transitions
-
     }
 }
 
@@ -113,7 +113,9 @@ pub struct ArcStandardOracle {
 
 impl ArcStandardOracle {
     pub fn new(gold_dependencies: &DependencySet) -> ArcStandardOracle {
-        ArcStandardOracle { dependencies: dep_head_mapping(gold_dependencies) }
+        ArcStandardOracle {
+            dependencies: dep_head_mapping(gold_dependencies),
+        }
     }
 
     fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
@@ -151,8 +153,9 @@ impl Guide for ArcStandardOracle {
             if let Some(dep) = self.dependencies.get(&buffer_head) {
                 let ra = ArcStandardTransition::RightArc(dep.relation.clone());
 
-                if dep.head == stack_tip && ra.is_possible(state) &&
-                    !self.needed_for_attachment(state, buffer_head)
+                if dep.head == stack_tip
+                    && ra.is_possible(state)
+                    && !self.needed_for_attachment(state, buffer_head)
                 {
                     return ra;
                 }

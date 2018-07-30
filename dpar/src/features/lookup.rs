@@ -64,7 +64,9 @@ pub struct MutableLookupTable {
 
 impl MutableLookupTable {
     pub fn new() -> Self {
-        MutableLookupTable { numberer: RefCell::new(Numberer::new(1)) }
+        MutableLookupTable {
+            numberer: RefCell::new(Numberer::new(1)),
+        }
     }
 }
 
@@ -85,7 +87,7 @@ impl Lookup for MutableLookupTable {
     fn unknown(&self) -> usize {
         // No better possible value until we mark low-frequency tokens,
         // features, etc. as unknown. Luckily, unknowns do not really
-        // happen 
+        // happen
         0
     }
 }
@@ -111,18 +113,18 @@ impl Lookup for LookupTable {
     fn unknown(&self) -> usize {
         // No better possible value until we mark low-frequency tokens,
         // features, etc. as unknown. Luckily, unknowns do not really
-        // happen 
+        // happen
         0
     }
 }
 
 impl From<MutableLookupTable> for LookupTable {
     fn from(t: MutableLookupTable) -> Self {
-        LookupTable { numberer: t.numberer.into_inner() }
+        LookupTable {
+            numberer: t.numberer.into_inner(),
+        }
     }
 }
-
-
 
 pub struct BoxedLookup(Option<Box<Lookup>>);
 

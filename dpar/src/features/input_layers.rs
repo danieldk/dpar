@@ -4,12 +4,12 @@ use std::io::BufRead;
 use std::result;
 
 use enum_map::EnumMap;
-use features::Lookup;
 use features::addr;
 use features::lookup::BoxedLookup;
 use features::parse_addr::parse_addressed_value_templates;
-use {ErrorKind, Result};
+use features::Lookup;
 use system::ParserState;
+use {ErrorKind, Result};
 
 /// Multiple addressable parts of the parser state.
 ///
@@ -43,7 +43,6 @@ impl AddressedValues {
 
             let mut layer_addrs = parse_addressed_value_templates(line.as_bytes())?;
 
-
             if layer_addrs.len() != 1 {
                 bail!(ErrorKind::ConfigError(format!(
                     "Combinatory features are not \
@@ -73,7 +72,9 @@ pub struct InputVector {
 impl InputVector {
     /// Construct a new input vector.
     pub fn new() -> Self {
-        InputVector { layers: EnumMap::new() }
+        InputVector {
+            layers: EnumMap::new(),
+        }
     }
 }
 
@@ -204,35 +205,29 @@ impl InputVectorizer {
             let mut offset = &mut layer_offsets[(&layer.layer).into()];
 
             match layer.layer {
-                addr::Layer::Char(prefix_len, suffix_len) => {
-                    match val {
-                        Some(chars) => {
-                            for ch in chars.as_ref().chars() {
-                                slices[Layer::Char].as_mut()[*offset] =
-                                    lookup_char(
-                                        self.layer_lookups.layer_lookup(Layer::Char).unwrap(),
-                                        ch,
-                                    );
+                addr::Layer::Char(prefix_len, suffix_len) => match val {
+                    Some(chars) => {
+                        for ch in chars.as_ref().chars() {
+                            slices[Layer::Char].as_mut()[*offset] = lookup_char(
+                                self.layer_lookups.layer_lookup(Layer::Char).unwrap(),
+                                ch,
+                            );
 
-                                *offset += 1;
-                            }
-                        }
-                        None => {
-                            let null_char =
-                                self.layer_lookups.layer_lookup(Layer::Char).unwrap().null() as i32;
-                            for _ in 0..(prefix_len + suffix_len) {
-                                slices[Layer::Char].as_mut()[*offset] = null_char;
-                                *offset += 1;
-                            }
+                            *offset += 1;
                         }
                     }
-                }
+                    None => {
+                        let null_char =
+                            self.layer_lookups.layer_lookup(Layer::Char).unwrap().null() as i32;
+                        for _ in 0..(prefix_len + suffix_len) {
+                            slices[Layer::Char].as_mut()[*offset] = null_char;
+                            *offset += 1;
+                        }
+                    }
+                },
                 ref layer => {
                     slices[layer.into()].as_mut()[*offset] =
-                        lookup_value(
-                            self.layer_lookups.layer_lookup(layer.into()).unwrap(),
-                            val,
-                        );
+                        lookup_value(self.layer_lookups.layer_lookup(layer.into()).unwrap(), val);
                     *offset += 1;
                 }
             }

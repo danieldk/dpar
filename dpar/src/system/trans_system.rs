@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use guide::Guide;
 use numberer::Numberer;

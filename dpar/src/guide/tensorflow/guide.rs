@@ -3,15 +3,17 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 
 use enum_map::EnumMap;
-use tensorflow::{Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, StepWithGraph,
-                 Tensor, TensorType};
+use tensorflow::{
+    Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, StepWithGraph, Tensor,
+    TensorType,
+};
 
-use Result;
+use super::model::tf_model_to_protobuf;
+use super::Model;
 use features::{InputVectorizer, Layer, LayerLookups};
 use guide::{BatchGuide, Guide};
 use system::{ParserState, Transition, TransitionSystem};
-use super::Model;
-use super::model::tf_model_to_protobuf;
+use Result;
 
 /// Layer op in the parsing model
 ///
@@ -169,11 +171,9 @@ where
         let n_predictions = logits.as_ref().len();
         let n_transitions = self.system.transitions().len() + self.system.transitions().start_at();
         assert_eq!(
-            n_predictions,
-            n_transitions,
+            n_predictions, n_transitions,
             "Number of transitions ({}) and predictions ({}) are inequal.",
-            n_transitions,
-            n_predictions
+            n_transitions, n_predictions
         );
 
         let mut best = self.system.transitions().value(0).unwrap();
@@ -326,7 +326,6 @@ fn add_to_step<'a>(
         }
     }
 }
-
 
 fn slice_to_tensor<T>(slice: &[T]) -> Tensor<T>
 where

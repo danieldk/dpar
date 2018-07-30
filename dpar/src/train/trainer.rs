@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
-use Result;
 use guide::Guide;
 use system::{DependencySet, ParserState, Transition, TransitionSystem};
 use train::InstanceCollector;
+use Result;
 
 pub struct GreedyTrainer<T, C>
 where

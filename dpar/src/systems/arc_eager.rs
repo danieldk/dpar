@@ -12,7 +12,9 @@ pub struct ArcEagerSystem {
 
 impl ArcEagerSystem {
     pub fn new() -> Self {
-        ArcEagerSystem { transitions: Numberer::new(0) }
+        ArcEagerSystem {
+            transitions: Numberer::new(0),
+        }
     }
 }
 
@@ -39,12 +41,10 @@ impl TransitionSystem for ArcEagerSystem {
 
     fn transitions(&self) -> &Numberer<Self::T> {
         &self.transitions
-
     }
 
     fn transitions_mut(&mut self) -> &mut Numberer<Self::T> {
         &mut self.transitions
-
     }
 }
 
@@ -65,8 +65,9 @@ impl Transition for ArcEagerTransition {
 
         match self {
             &ArcEagerTransition::LeftArc(_) => {
-                stack_len > 1 && buffer_len > 0 &&
-                    state.head(state.stack()[stack_len - 1]).is_none()
+                stack_len > 1
+                    && buffer_len > 0
+                    && state.head(state.stack()[stack_len - 1]).is_none()
             }
             &ArcEagerTransition::RightArc(_) => stack_len > 0 && buffer_len > 0,
             &ArcEagerTransition::Shift => buffer_len > 0,
@@ -119,7 +120,9 @@ pub struct ArcEagerOracle {
 
 impl ArcEagerOracle {
     pub fn new(gold_dependencies: &DependencySet) -> ArcEagerOracle {
-        ArcEagerOracle { dependencies: dep_head_mapping(gold_dependencies) }
+        ArcEagerOracle {
+            dependencies: dep_head_mapping(gold_dependencies),
+        }
     }
 
     fn next_attached(&self, state: &ParserState) -> bool {

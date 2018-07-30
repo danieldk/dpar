@@ -12,12 +12,13 @@ use std::path::Path;
 use std::process;
 
 use conllx::{HeadProjectivizer, Projectivize, ReadSentence};
-use dpar::train::HDF5Collector;
 use dpar::features::InputVectorizer;
 use dpar::system::{sentence_to_dependencies, ParserState};
-use dpar::systems::{ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem,
-                    StackSwapSystem};
+use dpar::systems::{
+    ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
+};
 use dpar::train::GreedyTrainer;
+use dpar::train::HDF5Collector;
 use getopts::Options;
 use stdinout::Input;
 

@@ -165,7 +165,10 @@ pub enum Lookup {
         op: String,
         embed_op: String,
     },
-    Table { filename: String, op: String },
+    Table {
+        filename: String,
+        op: String,
+    },
 }
 
 fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Result<()> {
@@ -200,17 +203,15 @@ fn relativize_path(config_path: &Path, filename: &str) -> Result<String> {
     }
 
     let abs_config_path = config_path.canonicalize()?;
-    Ok(
-        abs_config_path
-            .parent()
-            .ok_or(ErrorKind::ConfigError(String::from(
-                "Cannot get the parent path of the configuration file",
-            )))?
-            .join(path)
-            .to_str()
-            .ok_or(ErrorKind::ConfigError(
-                String::from("Cannot convert path to string"),
-            ))?
-            .to_owned(),
-    )
+    Ok(abs_config_path
+        .parent()
+        .ok_or(ErrorKind::ConfigError(String::from(
+            "Cannot get the parent path of the configuration file",
+        )))?
+        .join(path)
+        .to_str()
+        .ok_or(ErrorKind::ConfigError(String::from(
+            "Cannot convert path to string",
+        )))?
+        .to_owned())
 }

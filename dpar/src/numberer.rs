@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::hash::Hash;
 
 /// Numberer for categorical values, such as features or class labels.
@@ -41,7 +41,7 @@ where
     }
 
     /// Get the number of different items numbered.
-    /// 
+    ///
     /// If the numberer started at *2* and this method returns *5*,
     /// then the first item was numbered *2* and the last *6*.
     pub fn len(&self) -> usize {

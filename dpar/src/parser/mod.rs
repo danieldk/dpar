@@ -5,8 +5,8 @@
 
 use conllx::Sentence;
 
-use Result;
 use system::DependencySet;
+use Result;
 
 /// A dependency parser without batch processing.
 pub trait Parse {

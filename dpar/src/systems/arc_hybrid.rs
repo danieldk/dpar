@@ -165,7 +165,8 @@ impl Guide for ArcHybridOracle {
             if let Some(dep) = self.dependencies.get(&stack0) {
                 let ra = ArcHybridTransition::RightArc(dep.relation.clone());
 
-                if dep.head == stack1 && ra.is_possible(state)
+                if dep.head == stack1
+                    && ra.is_possible(state)
                     && !self.needed_for_attachment(state, stack0)
                 {
                     return ra;

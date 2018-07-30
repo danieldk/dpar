@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use petgraph::{Directed, Graph};
 use petgraph::graph::node_index;
 use petgraph::visit::Dfs;
+use petgraph::{Directed, Graph};
 
 use guide::Guide;
 use numberer::Numberer;
@@ -24,7 +24,9 @@ pub struct StackSwapSystem {
 
 impl StackSwapSystem {
     pub fn new() -> Self {
-        StackSwapSystem { transitions: Numberer::new(0) }
+        StackSwapSystem {
+            transitions: Numberer::new(0),
+        }
     }
 }
 
@@ -48,12 +50,10 @@ impl TransitionSystem for StackSwapSystem {
 
     fn transitions(&self) -> &Numberer<Self::T> {
         &self.transitions
-
     }
 
     fn transitions_mut(&mut self) -> &mut Numberer<Self::T> {
         &mut self.transitions
-
     }
 }
 
@@ -129,7 +129,6 @@ impl StackSwapOracle {
             dependencies: dep_head_mapping(gold_dependencies),
             projective_order: extract_projective_order(gold_dependencies),
         }
-
     }
 
     fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
@@ -167,8 +166,9 @@ impl Guide for StackSwapOracle {
             if let Some(dep) = self.dependencies.get(&stack1) {
                 let la = StackSwapTransition::LeftArc(dep.relation.clone());
 
-                if dep.head == stack0 && la.is_possible(state) &&
-                    !self.needed_for_attachment(state, stack1)
+                if dep.head == stack0
+                    && la.is_possible(state)
+                    && !self.needed_for_attachment(state, stack1)
                 {
                     return la;
                 }
@@ -177,8 +177,9 @@ impl Guide for StackSwapOracle {
             if let Some(dep) = self.dependencies.get(&stack0) {
                 let ra = StackSwapTransition::RightArc(dep.relation.clone());
 
-                if dep.head == stack1 && ra.is_possible(state) &&
-                    !self.needed_for_attachment(state, stack0)
+                if dep.head == stack1
+                    && ra.is_possible(state)
+                    && !self.needed_for_attachment(state, stack0)
                 {
                     return ra;
                 }
@@ -223,6 +224,4 @@ fn extract_projective_order(dependencies: &DependencySet) -> Vec<usize> {
     }
 
     order_mapping
-
-
 }

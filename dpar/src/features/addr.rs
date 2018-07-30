@@ -1,5 +1,5 @@
-use std::cmp::min;
 use std::borrow::Cow;
+use std::cmp::min;
 use std::iter::FromIterator;
 
 use conllx::Features;
@@ -51,7 +51,6 @@ pub enum Layer {
     /// prefix/suffix length.
     Char(usize, usize),
 }
-
 
 /// An `AddressedValue` represents a value in the parser state.
 ///
@@ -121,11 +120,9 @@ impl AddressedValue {
             // token is a bug. So we want things to burst in flames.
             Layer::Token => Some(Cow::Borrowed(state.tokens()[token])),
             Layer::Tag => Some(Cow::Borrowed(state.tags()[token])),
-            Layer::DepRel => {
-                state.head(token).map(
-                    |dep| Cow::Borrowed(dep.relation.as_str()),
-                )
-            }
+            Layer::DepRel => state
+                .head(token)
+                .map(|dep| Cow::Borrowed(dep.relation.as_str())),
             Layer::Feature(ref feat) => {
                 let feature_map = try_ok!(state.features()[token].map(Features::as_map));
 
@@ -150,10 +147,8 @@ impl AddressedValue {
 
                 let suffix_len = min(suffix_len, token_chars.len());
                 let chars_len = chars.len();
-                chars[chars_len - suffix_len..].copy_from_slice(
-                    &token_chars
-                        [token_chars.len() - suffix_len..],
-                );
+                chars[chars_len - suffix_len..]
+                    .copy_from_slice(&token_chars[token_chars.len() - suffix_len..]);
 
                 Some(Cow::Owned(String::from_iter(chars)))
             }

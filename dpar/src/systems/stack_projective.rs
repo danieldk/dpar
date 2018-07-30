@@ -13,7 +13,9 @@ pub struct StackProjectiveSystem {
 
 impl StackProjectiveSystem {
     pub fn new() -> Self {
-        StackProjectiveSystem { transitions: Numberer::new(0) }
+        StackProjectiveSystem {
+            transitions: Numberer::new(0),
+        }
     }
 }
 
@@ -37,12 +39,10 @@ impl TransitionSystem for StackProjectiveSystem {
 
     fn transitions(&self) -> &Numberer<Self::T> {
         &self.transitions
-
     }
 
     fn transitions_mut(&mut self) -> &mut Numberer<Self::T> {
         &mut self.transitions
-
     }
 }
 
@@ -66,7 +66,6 @@ impl Transition for StackProjectiveTransition {
     }
 
     fn apply(&self, state: &mut ParserState) {
-
         let stack_size = state.stack().len();
         match self {
             &StackProjectiveTransition::LeftArc(ref rel) => {
@@ -107,7 +106,9 @@ pub struct StackProjectiveOracle {
 
 impl StackProjectiveOracle {
     pub fn new(gold_dependencies: &DependencySet) -> StackProjectiveOracle {
-        StackProjectiveOracle { dependencies: dep_head_mapping(gold_dependencies) }
+        StackProjectiveOracle {
+            dependencies: dep_head_mapping(gold_dependencies),
+        }
     }
 
     fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
@@ -144,8 +145,9 @@ impl Guide for StackProjectiveOracle {
             if let Some(dep) = self.dependencies.get(&stack0) {
                 let ra = StackProjectiveTransition::RightArc(dep.relation.clone());
 
-                if dep.head == stack1 && ra.is_possible(state) &&
-                    !self.needed_for_attachment(state, stack0)
+                if dep.head == stack1
+                    && ra.is_possible(state)
+                    && !self.needed_for_attachment(state, stack0)
                 {
                     return ra;
                 }

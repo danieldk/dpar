@@ -4,9 +4,9 @@ use dpar::guide::tensorflow::Model;
 
 use super::{Config, Lookup, Lookups, Parser, TomlRead};
 
-lazy_static!{
+lazy_static! {
     static ref BASIC_PARSER_CHECK: Config = Config {
-        parser: Parser{
+        parser: Parser {
             pproj: true,
             system: String::from("stackproj"),
             inputs: String::from("parser.inputs"),
@@ -14,25 +14,25 @@ lazy_static!{
             train_batch_size: 8000,
             parse_batch_size: 4000,
         },
-        model: Model{
+        model: Model {
             filename: String::from("model.bin"),
             intra_op_parallelism_threads: 4,
             inter_op_parallelism_threads: 6,
         },
-        lookups: Lookups{
-            word: Some(Lookup::Embedding{
+        lookups: Lookups {
+            word: Some(Lookup::Embedding {
                 filename: String::from("word-vectors.bin"),
                 normalize: true,
                 op: String::from("word_op"),
                 embed_op: String::from("word_embed_op"),
             }),
-            tag: Some(Lookup::Embedding{
+            tag: Some(Lookup::Embedding {
                 filename: String::from("tag-vectors.bin"),
                 normalize: true,
                 op: String::from("tag_op"),
                 embed_op: String::from("tag_embed_op"),
             }),
-            deprel: Some(Lookup::Embedding{
+            deprel: Some(Lookup::Embedding {
                 filename: String::from("deprel-vectors.bin.real"),
                 normalize: false,
                 op: String::from("deprel_op"),

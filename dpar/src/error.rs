@@ -1,7 +1,7 @@
 use std::error::Error as StdError;
+use std::io;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
-use std::io;
 
 use hdf5;
 use protobuf::ProtobufError;

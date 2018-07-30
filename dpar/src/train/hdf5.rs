@@ -4,10 +4,10 @@ use std::path::Path;
 use hdf5;
 use hdf5::IntoData;
 
-use Result;
 use features::{InputVector, InputVectorizer};
 use system::{ParserState, TransitionSystem};
 use train::InstanceCollector;
+use Result;
 
 pub struct HDF5Collector<T>
 where
