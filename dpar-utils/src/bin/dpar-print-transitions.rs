@@ -88,32 +88,54 @@ where
         let mut oracle = S::oracle(&gold_dependencies);
 
         let mut state = ParserState::new(&sentence);
+
+        // Print initial state.
+        print_tokens(&mut writer, &state, Source::Stack)?;
+        print_tokens(&mut writer, &state, Source::Buffer)?;
+
         while !S::is_terminal(&state) {
             let next_transition = oracle.best_transition(&state);
-            writeln!(writer, "{}", format!("{:?}", next_transition).purple())?;
-            writeln!(
-                writer,
-                "Stack: {}",
-                state
-                    .stack()
-                    .iter()
-                    .map(|&idx| state.tokens()[idx])
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )?;
-            writeln!(
-                writer,
-                "Buffer: {}",
-                state
-                    .buffer()
-                    .iter()
-                    .map(|&idx| state.tokens()[idx])
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )?;
             next_transition.apply(&mut state);
+
+            // Print transition and state.
+            writeln!(writer, "{}", format!("{:?}", next_transition).purple())?;
+            print_tokens(&mut writer, &state, Source::Stack)?;
+            print_tokens(&mut writer, &state, Source::Buffer)?;
         }
     }
+
+    Ok(())
+}
+
+enum Source {
+    Buffer,
+    Stack,
+}
+
+fn print_tokens<W>(writer: &mut W, state: &ParserState, source: Source) -> Result<()>
+where
+    W: Write,
+{
+    let prefix = match source {
+        Source::Buffer => "Buffer",
+        Source::Stack => "Stack",
+    };
+
+    let indices = match source {
+        Source::Buffer => state.buffer(),
+        Source::Stack => state.stack(),
+    };
+
+    writeln!(
+        writer,
+        "{}: {}",
+        prefix,
+        indices
+            .iter()
+            .map(|&idx| state.tokens()[idx])
+            .collect::<Vec<_>>()
+            .join(", ")
+    )?;
 
     Ok(())
 }
