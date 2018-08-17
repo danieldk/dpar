@@ -101,7 +101,11 @@ impl AddressedValue {
         token: usize,
     ) -> Option<usize> {
         match source {
-            Source::Stack(n) => state.stack().get(state.stack().len() - n - 1).cloned(),
+            Source::Stack(n) => {
+                // Stack(0) corresponds to stack.len() - 1.
+                let n = state.stack().len().checked_sub(n + 1)?;
+                state.stack().get(n).cloned()
+            }
             Source::Buffer(n) => state.buffer().get(n).cloned(),
             Source::LDep(n) => {
                 assert!(idx != 0, "LDEP cannot be the initial address component");

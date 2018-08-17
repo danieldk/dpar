@@ -29,6 +29,40 @@ lazy_static! {
     ]);
 }
 
+fn buffer(idx: usize, layer: Layer) -> AddressedValue {
+    AddressedValue {
+        address: vec![Source::Buffer(idx)],
+        layer,
+    }
+}
+
+fn stack(idx: usize, layer: Layer) -> AddressedValue {
+    AddressedValue {
+        address: vec![Source::Stack(idx)],
+        layer,
+    }
+}
+
+#[test]
+fn test_addr() {
+    let buffer0 = buffer(0, Layer::Token);
+    let buffer1 = buffer(1, Layer::Token);
+    let buffer2 = buffer(2, Layer::Token);
+    let buffer3 = buffer(3, Layer::Token);
+
+    let stack0 = stack(0, Layer::Token);
+    let stack1 = stack(1, Layer::Token);
+
+    let state = ParserState::new(&THREE_TOKEN_SENTENCE);
+    assert_eq!(Some(Cow::Borrowed("a")), buffer0.get(&state));
+    assert_eq!(Some(Cow::Borrowed("b")), buffer1.get(&state));
+    assert_eq!(Some(Cow::Borrowed("c")), buffer2.get(&state));
+    assert_eq!(None, buffer3.get(&state));
+
+    assert_eq!(Some(Cow::Borrowed("ROOT")), stack0.get(&state));
+    assert_eq!(None, stack1.get(&state));
+}
+
 #[test]
 fn test_char() {
     assert_eq!(
@@ -43,20 +77,9 @@ fn test_char() {
 
 #[test]
 fn test_features() {
-    let buffer0a = AddressedValue {
-        address: vec![Source::Buffer(0)],
-        layer: Layer::Feature("a".to_owned()),
-    };
-
-    let buffer0b = AddressedValue {
-        address: vec![Source::Buffer(0)],
-        layer: Layer::Feature("b".to_owned()),
-    };
-
-    let buffer2e = AddressedValue {
-        address: vec![Source::Buffer(0)],
-        layer: Layer::Feature("e".to_owned()),
-    };
+    let buffer0a = buffer(0, Layer::Feature("a".to_owned()));
+    let buffer0b = buffer(0, Layer::Feature("b".to_owned()));
+    let buffer2e = buffer(2, Layer::Feature("e".to_owned()));
 
     let state = ParserState::new(&THREE_TOKEN_SENTENCE);
 
@@ -87,6 +110,11 @@ fn test_ldep_rdep() {
         layer: Layer::DepRel,
     };
 
+    let rdep2 = AddressedValue {
+        address: vec![Source::Stack(0), Source::RDep(2)],
+        layer: Layer::DepRel,
+    };
+
     let mut state = ParserState::new(&THREE_TOKEN_SENTENCE);
     StackProjectiveTransition::Shift.apply(&mut state);
     StackProjectiveTransition::Shift.apply(&mut state);
@@ -98,4 +126,5 @@ fn test_ldep_rdep() {
     assert_eq!(Some(Cow::Borrowed("Bar")), ldep1.get(&state));
     assert_eq!(Some(Cow::Borrowed("Bar")), rdep0.get(&state));
     assert_eq!(Some(Cow::Borrowed("Foo")), rdep1.get(&state));
+    assert_eq!(None, rdep2.get(&state));
 }

@@ -82,7 +82,8 @@ impl<'a> ParserState<'a> {
 
     pub fn rightmost_dependent(&self, head: usize, idx: usize) -> Option<usize> {
         let deps = &self.head_deps[head];
-        deps.get(deps.len() - idx - 1).cloned()
+        let idx = deps.len().checked_sub(idx + 1)?;
+        deps.get(idx).cloned()
     }
 
     pub fn stack(&self) -> &Vec<usize> {
