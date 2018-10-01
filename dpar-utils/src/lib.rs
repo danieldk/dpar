@@ -5,6 +5,8 @@ extern crate dpar;
 #[macro_use]
 extern crate error_chain;
 
+extern crate failure;
+
 extern crate serde;
 
 extern crate serde_cbor;

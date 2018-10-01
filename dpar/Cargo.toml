@@ -6,16 +6,17 @@ description = "Neural network dependency parser"
 
 [dependencies]
 conllx = "0.9"
-enum-map = "0.2"
+enum-map = "0.4"
 error-chain = "0.11"
+failure = "0.1"
 hdf5 = "0.4"
-maplit = "1.0"
+maplit = "1"
 petgraph = "0.4"
 protobuf = "1.4"
-serde = "1.0"
-serde_derive = "1.0"
-tensorflow = "0.7"
-tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.2.0" }
+serde = "1"
+serde_derive = "1"
+tensorflow = "0.10"
+tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.4.0" }
 tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
 
 [dev-dependencies]

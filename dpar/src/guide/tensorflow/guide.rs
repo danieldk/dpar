@@ -4,7 +4,7 @@ use std::io::{BufReader, Read};
 
 use enum_map::EnumMap;
 use tensorflow::{
-    Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, StepWithGraph, Tensor,
+    Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, SessionRunArgs, Tensor,
     TensorType,
 };
 
@@ -208,18 +208,18 @@ where
             input_tensors[layer] = TensorWrap(slice_to_tensor(&vector));
         }
 
-        let mut step = StepWithGraph::new();
-        add_to_step(
-            &mut step,
+        let mut args = SessionRunArgs::new();
+        add_to_args(
+            &mut args,
             &self.layer_ops,
             self.vectorizer.layer_lookups(),
             &mut input_tensors,
         );
-        let logits_token = step.request_output(&self.logits_op, 0);
+        let logits_token = args.request_fetch(&self.logits_op, 0);
 
-        self.session.run(&mut step).expect("Cannot run graph");
+        self.session.run(&mut args).expect("Cannot run graph");
 
-        let logits: Tensor<f32> = step.take_output(logits_token)
+        let logits: Tensor<f32> = args.fetch(logits_token)
             .expect("Unable to retrieve output");
 
         self.logits_best_transition(state, &*logits)
@@ -251,19 +251,19 @@ where
             );
         }
 
-        // Prepare step.
-        let mut step = StepWithGraph::new();
-        add_to_step(
-            &mut step,
+        // Prepare args.
+        let mut args = SessionRunArgs::new();
+        add_to_args(
+            &mut args,
             &self.layer_ops,
             self.vectorizer.layer_lookups(),
             &mut input_tensors,
         );
-        let logits_token = step.request_output(&self.logits_op, 0);
+        let logits_token = args.request_fetch(&self.logits_op, 0);
 
-        self.session.run(&mut step).expect("Cannot run graph");
+        self.session.run(&mut args).expect("Cannot run graph");
 
-        let logits: Tensor<f32> = step.take_output(logits_token)
+        let logits: Tensor<f32> = args.fetch(logits_token)
             .expect("Unable to retrieve output");
 
         // Get the best transition for each parser state.
@@ -279,12 +279,12 @@ where
     }
 }
 
-// Unfortunately, add_to_step cannot be a method of TensorflowGuide with
+// Unfortunately, add_to_args cannot be a method of TensorflowGuide with
 // the following signature:
 //
-// add_to_step<'a>(&'a self, step: &mut StepWithGraph<'a>, ...)
+// add_to_args<'a>(&'a self, step: &mut SessionRunArgs<'a>, ...)
 //
-// Because step would hold a reference to &self, which disallows us to run
+// Because args would hold a reference to &self, which disallows us to run
 // the session, because session running requires &mut self. The following
 // RFC would solve this:
 //
@@ -292,8 +292,8 @@ where
 //
 // Another possibility would be to use interior mutability for the
 // Tensorflow Session, but I'd like to avoid this.
-fn add_to_step<'a>(
-    step: &mut StepWithGraph<'a>,
+fn add_to_args<'a>(
+    args: &mut SessionRunArgs<'a>,
     layer_ops: &LayerOps<Operation>,
     layer_lookups: &'a LayerLookups,
     input_tensors: &'a EnumMap<Layer, TensorWrap>,
@@ -307,7 +307,7 @@ fn add_to_step<'a>(
                 ref embed_op,
             } => {
                 // Fill the layer vector placeholder.
-                step.add_input(op, 0, &input_tensors[layer].0);
+                args.add_feed(op, 0, &input_tensors[layer].0);
 
                 // Fill the embedding placeholder. If we have an op for
                 // the embedding of a layer, there should always be a
@@ -317,11 +317,11 @@ fn add_to_step<'a>(
                     .unwrap()
                     .embed_matrix()
                     .unwrap();
-                step.add_input(embed_op, 0, embed_matrix);
+                args.add_feed(embed_op, 0, embed_matrix);
             }
             &LayerOp::Table { ref op } => {
                 // Fill the layer vector placeholder.
-                step.add_input(op, 0, &input_tensors[layer].0);
+                args.add_feed(op, 0, &input_tensors[layer].0);
             }
         }
     }

@@ -78,7 +78,7 @@ impl InputVector {
     }
 }
 
-#[derive(Clone, Copy, Debug, EnumMap, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Enum, Eq, PartialEq)]
 pub enum Layer {
     Token,
     Tag,

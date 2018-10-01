@@ -2,8 +2,8 @@ use std::io;
 
 use conllx;
 use dpar;
+use failure;
 use serde_cbor;
-use tf_embed;
 use toml;
 
 error_chain! {
@@ -14,7 +14,6 @@ error_chain! {
         TOML(toml::de::Error);
         TOMLSerde(toml::ser::Error);
         CBORSerde(serde_cbor::Error);
-        Embed(tf_embed::Error);
     }
 
     errors {
@@ -22,5 +21,15 @@ error_chain! {
             description("configuration error")
                 display("configuration error: {}", m)
         }
+        FailureError(e: failure::Error) {
+            description("failure error")
+            display("{}", e)
+        }
+    }
+}
+
+impl From<failure::Error> for Error {
+    fn from(error: failure::Error) -> Self {
+        ErrorKind::FailureError(error).into()
     }
 }

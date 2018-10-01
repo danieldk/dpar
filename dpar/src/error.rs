@@ -3,10 +3,10 @@ use std::io;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
+use failure;
 use hdf5;
 use protobuf::ProtobufError;
 use tensorflow;
-use tf_embed;
 
 error_chain! {
     foreign_links {
@@ -14,7 +14,6 @@ error_chain! {
         Io(io::Error);
         ParseInt(ParseIntError);
         Protobuf(ProtobufError);
-        Embed(tf_embed::Error);
         Utf8(FromUtf8Error);
     }
 
@@ -25,11 +24,21 @@ error_chain! {
             description("tensorflow error")
             display("tensorflow error: '{}'", t)
         }
+        FailureError(e: failure::Error) {
+            description("failure error")
+            display("{}", e)
+        }
     }
 }
 
 impl From<tensorflow::Status> for Error {
     fn from(status: tensorflow::Status) -> Self {
         ErrorKind::TensorflowError(status.description().to_owned()).into()
+    }
+}
+
+impl From<failure::Error> for Error {
+    fn from(error: failure::Error) -> Self {
+        ErrorKind::FailureError(error).into()
     }
 }

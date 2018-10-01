@@ -6,6 +6,8 @@ extern crate enum_map;
 #[macro_use]
 extern crate error_chain;
 
+extern crate failure;
+
 extern crate hdf5;
 
 extern crate petgraph;
