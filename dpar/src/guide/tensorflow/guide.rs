@@ -219,8 +219,7 @@ where
 
         self.session.run(&mut args).expect("Cannot run graph");
 
-        let logits: Tensor<f32> = args.fetch(logits_token)
-            .expect("Unable to retrieve output");
+        let logits: Tensor<f32> = args.fetch(logits_token).expect("Unable to retrieve output");
 
         self.logits_best_transition(state, &*logits)
     }
@@ -263,8 +262,7 @@ where
 
         self.session.run(&mut args).expect("Cannot run graph");
 
-        let logits: Tensor<f32> = args.fetch(logits_token)
-            .expect("Unable to retrieve output");
+        let logits: Tensor<f32> = args.fetch(logits_token).expect("Unable to retrieve output");
 
         // Get the best transition for each parser state.
         let n_labels = logits.dims()[1] as usize;
@@ -274,8 +272,7 @@ where
             .map(|(idx, state)| {
                 let offset = idx * n_labels;
                 self.logits_best_transition(state, &logits[offset..offset + n_labels])
-            })
-            .collect()
+            }).collect()
     }
 }
 

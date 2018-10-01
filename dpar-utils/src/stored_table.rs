@@ -47,7 +47,7 @@ impl StoredLookupTable {
 
 impl Drop for StoredLookupTable {
     fn drop(&mut self) {
-        if let &mut StoredLookupTable::FreshTable {
+        if let StoredLookupTable::FreshTable {
             ref mut write,
             ref mut table,
         } = self
@@ -70,22 +70,22 @@ impl Lookup for StoredLookupTable {
 
     fn lookup(&self, feature: &str) -> Option<usize> {
         match self {
-            &StoredLookupTable::Table(ref table) => table.lookup(feature),
-            &StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
+            StoredLookupTable::Table(ref table) => table.lookup(feature),
+            StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
         }
     }
 
     fn null(&self) -> usize {
         match self {
-            &StoredLookupTable::Table(ref table) => table.null(),
-            &StoredLookupTable::FreshTable { ref table, .. } => table.null(),
+            StoredLookupTable::Table(ref table) => table.null(),
+            StoredLookupTable::FreshTable { ref table, .. } => table.null(),
         }
     }
 
     fn unknown(&self) -> usize {
         match self {
-            &StoredLookupTable::Table(ref table) => table.unknown(),
-            &StoredLookupTable::FreshTable { ref table, .. } => table.unknown(),
+            StoredLookupTable::Table(ref table) => table.unknown(),
+            StoredLookupTable::FreshTable { ref table, .. } => table.unknown(),
         }
     }
 }

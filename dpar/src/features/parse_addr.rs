@@ -287,7 +287,7 @@ pub fn parse_addressed_value_templates(data: &[u8]) -> Result<Vec<AddressedValue
                                             _lower = _mid + 1;
                                         } else {
                                             {
-                                                _trans += ((_mid - _keys)) as u32;
+                                                _trans += (_mid - _keys) as u32;
                                                 _have = 1;
                                             }
                                         }
@@ -324,7 +324,7 @@ pub fn parse_addressed_value_templates(data: &[u8]) -> Result<Vec<AddressedValue
                                                     _lower = _mid + 2;
                                                 } else {
                                                     {
-                                                        _trans += (((_mid - _keys) >> 1)) as u32;
+                                                        _trans += ((_mid - _keys) >> 1) as u32;
                                                         _have = 1;
                                                     }
                                                 }
@@ -359,7 +359,7 @@ pub fn parse_addressed_value_templates(data: &[u8]) -> Result<Vec<AddressedValue
                                         _lower = _mid + 1;
                                     } else {
                                         {
-                                            _cond += ((_mid - _ckeys)) as u32;
+                                            _cond += (_mid - _ckeys) as u32;
                                             _have = 1;
                                         }
                                     }
@@ -385,7 +385,7 @@ pub fn parse_addressed_value_templates(data: &[u8]) -> Result<Vec<AddressedValue
                                     _acts += 1;
                                     while (_nacts > 0) {
                                         match (_addressed_value_actions[(_acts) as usize]) {
-                                            0 => buf.push(((data[(p) as usize]))),
+                                            0 => buf.push((data[(p) as usize])),
                                             1 => {
                                                 keyword = String::from_utf8(buf)?;
                                                 buf = Vec::new();

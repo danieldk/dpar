@@ -79,7 +79,7 @@ where
         W: Write,
     {
         let data = serde_cbor::to_vec(self)?;
-        write.write(&data)?;
+        write.write_all(&data)?;
         Ok(())
     }
 }
@@ -92,7 +92,7 @@ macro_rules! cbor_write {
                 W: Write,
             {
                 let data = serde_cbor::to_vec(self)?;
-                write.write(&data)?;
+                write.write_all(&data)?;
                 Ok(())
             }
         }
@@ -111,8 +111,6 @@ pub trait SerializableTransitionSystem:
 {
 }
 
-impl<T> SerializableTransitionSystem for T
-where
-    T: Default + TransitionSystem + CborRead<Value = T> + CborWrite,
-{
-}
+impl<T> SerializableTransitionSystem for T where
+    T: Default + TransitionSystem + CborRead<Value = T> + CborWrite
+{}

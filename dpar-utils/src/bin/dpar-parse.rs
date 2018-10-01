@@ -26,7 +26,7 @@ use stdinout::{Input, Output};
 
 use dpar_utils::{Config, OrExit, Result, SerializableTransitionSystem, TomlRead};
 
-fn print_usage(program: &str, opts: Options) {
+fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] CONFIG [INPUT]", program);
     print!("{}", opts.usage(&brief));
 }
@@ -40,12 +40,12 @@ fn main() {
     let matches = opts.parse(&args[1..]).or_exit();
 
     if matches.opt_present("h") {
-        print_usage(&program, opts);
+        print_usage(&program, &opts);
         return;
     }
 
-    if matches.free.len() < 1 || matches.free.len() > 3 {
-        print_usage(&program, opts);
+    if matches.free.is_empty() || matches.free.len() > 3 {
+        print_usage(&program, &opts);
         return;
     }
 
@@ -210,7 +210,7 @@ where
     }
 }
 
-fn load_model<'a, T>(
+fn load_model<T>(
     config: &Config,
     system: T,
     vectorizer: InputVectorizer,

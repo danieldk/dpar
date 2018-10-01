@@ -207,11 +207,9 @@ fn relativize_path(config_path: &Path, filename: &str) -> Result<String> {
         .parent()
         .ok_or(ErrorKind::ConfigError(String::from(
             "Cannot get the parent path of the configuration file",
-        )))?
-        .join(path)
+        )))?.join(path)
         .to_str()
         .ok_or(ErrorKind::ConfigError(String::from(
             "Cannot convert path to string",
-        )))?
-        .to_owned())
+        )))?.to_owned())
 }
