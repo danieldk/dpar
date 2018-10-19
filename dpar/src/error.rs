@@ -20,6 +20,7 @@ error_chain! {
      errors {
         ParseError(t: String)
         ConfigError(t: String)
+        FilenameEncodingError(t: String)
         TensorflowError(t: String) {
             description("tensorflow error")
             display("tensorflow error: '{}'", t)
