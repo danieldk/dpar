@@ -53,6 +53,9 @@ pub mod train;
 extern crate approx;
 
 #[cfg(test)]
+extern crate flate2;
+
+#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
