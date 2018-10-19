@@ -35,6 +35,8 @@ pub mod features;
 
 pub mod guide;
 
+pub mod models;
+
 mod numberer;
 pub use numberer::Numberer;
 
@@ -45,6 +47,10 @@ pub mod systems;
 pub mod parser;
 
 pub mod train;
+
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
 
 #[cfg(test)]
 #[macro_use]
