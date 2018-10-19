@@ -20,5 +20,6 @@ tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.4.0" }
 tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
 
 [dev-dependencies]
+approx = "0.3"
 lazy_static = "0.2"
 pretty_assertions = "0.5"
