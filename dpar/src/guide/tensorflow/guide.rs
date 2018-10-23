@@ -163,7 +163,7 @@ where
     }
 
     /// Find the best transition given a slice of transition logits.
-    fn logits_best_transition<S>(&self, state: &ParserState, logits: S) -> T::T
+    fn logits_best_transition<S>(&self, state: &ParserState, logits: S) -> T::Transition
     where
         S: AsRef<[f32]>,
     {
@@ -197,9 +197,9 @@ impl<T> Guide for TensorflowGuide<T>
 where
     T: TransitionSystem,
 {
-    type T = T::T;
+    type Transition = T::Transition;
 
-    fn best_transition(&mut self, state: &ParserState) -> Self::T {
+    fn best_transition(&mut self, state: &ParserState) -> Self::Transition {
         let v = self.vectorizer.realize(state);
 
         let mut input_tensors = EnumMap::new();
@@ -229,9 +229,9 @@ impl<T> BatchGuide for TensorflowGuide<T>
 where
     T: TransitionSystem,
 {
-    type T = T::T;
+    type Transition = T::Transition;
 
-    fn best_transitions(&mut self, states: &[&ParserState]) -> Vec<Self::T> {
+    fn best_transitions(&mut self, states: &[&ParserState]) -> Vec<Self::Transition> {
         if states.is_empty() {
             return Vec::new();
         }
