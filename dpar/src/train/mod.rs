@@ -11,5 +11,5 @@ pub trait InstanceCollector<T>
 where
     T: TransitionSystem,
 {
-    fn collect(&mut self, t: &T::T, state: &ParserState) -> Result<()>;
+    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<()>;
 }

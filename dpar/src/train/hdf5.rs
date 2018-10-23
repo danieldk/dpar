@@ -47,7 +47,7 @@ impl<T> InstanceCollector<T> for HDF5Collector<T>
 where
     T: TransitionSystem,
 {
-    fn collect(&mut self, t: &T::T, state: &ParserState) -> Result<()> {
+    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<()> {
         let label = self.transition_system.transitions_mut().add(t.clone());
         let v = self.vectorizer.realize(state);
         self.writer.write(label, v)

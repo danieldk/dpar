@@ -9,13 +9,13 @@ use numberer::Numberer;
 use system::{DependencySet, ParserState};
 
 pub trait TransitionSystem {
-    type T: Transition;
-    type O: Guide<T = Self::T>;
+    type Transition: Transition;
+    type Oracle: Guide<Transition = Self::Transition>;
 
     fn is_terminal(state: &ParserState) -> bool;
-    fn oracle(gold_dependencies: &DependencySet) -> Self::O;
-    fn transitions(&self) -> &Numberer<Self::T>;
-    fn transitions_mut(&mut self) -> &mut Numberer<Self::T>;
+    fn oracle(gold_dependencies: &DependencySet) -> Self::Oracle;
+    fn transitions(&self) -> &Numberer<Self::Transition>;
+    fn transitions_mut(&mut self) -> &mut Numberer<Self::Transition>;
 }
 
 pub trait Transition: Clone + Debug + Eq + Hash + Serialize + DeserializeOwned {

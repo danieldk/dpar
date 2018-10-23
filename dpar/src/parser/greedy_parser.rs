@@ -30,7 +30,7 @@ where
     fn parse(&mut self, sentence: &Sentence) -> Result<DependencySet> {
         let mut state = ParserState::new(sentence);
 
-        while !<<G as Guide>::T as Transition>::S::is_terminal(&state) {
+        while !<<G as Guide>::Transition as Transition>::S::is_terminal(&state) {
             self.guide.best_transition(&state).apply(&mut state);
         }
 
@@ -51,7 +51,7 @@ where
                 let mut mapping = Vec::new();
 
                 for (idx, state) in states.iter().enumerate() {
-                    if !<<G as BatchGuide>::T as Transition>::S::is_terminal(state) {
+                    if !<<G as BatchGuide>::Transition as Transition>::S::is_terminal(state) {
                         active_states.push(state);
                         mapping.push(idx);
                     }
