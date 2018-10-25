@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
 use guide::Guide;
-use numberer::Numberer;
-use system::{Dependency, DependencySet, ParserState, Transition, TransitionSystem};
+use system::{
+    Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
+};
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct ArcEagerSystem {
-    transitions: Numberer<ArcEagerTransition>,
+    transitions: TransitionLookup<ArcEagerTransition>,
 }
 
 impl ArcEagerSystem {
     pub fn new() -> Self {
         ArcEagerSystem {
-            transitions: Numberer::new(0),
+            transitions: TransitionLookup::default(),
         }
     }
 }
@@ -39,12 +40,8 @@ impl TransitionSystem for ArcEagerSystem {
         ArcEagerOracle::new(gold_dependencies)
     }
 
-    fn transitions(&self) -> &Numberer<Self::Transition> {
+    fn transitions(&self) -> &TransitionLookup<Self::Transition> {
         &self.transitions
-    }
-
-    fn transitions_mut(&mut self) -> &mut Numberer<Self::Transition> {
-        &mut self.transitions
     }
 }
 

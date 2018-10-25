@@ -413,7 +413,7 @@ where
             }
         }
 
-        best.clone()
+        best.into_owned()
     }
 
     /// Compute transition logits from the feature representations of the
