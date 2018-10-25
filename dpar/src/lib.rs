@@ -66,3 +66,6 @@ extern crate maplit;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
+
+#[cfg(test)]
+extern crate serde_yaml;

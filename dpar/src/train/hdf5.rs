@@ -48,7 +48,7 @@ where
     T: TransitionSystem,
 {
     fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<()> {
-        let label = self.transition_system.transitions_mut().add(t.clone());
+        let label = self.transition_system.transitions().lookup(t.clone());
         let v = self.vectorizer.realize(state);
         self.writer.write(label, v)
     }

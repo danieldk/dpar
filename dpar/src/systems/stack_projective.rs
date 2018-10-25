@@ -1,20 +1,21 @@
 use std::collections::HashMap;
 
 use guide::Guide;
-use numberer::Numberer;
-use system::{Dependency, DependencySet, ParserState, Transition, TransitionSystem};
+use system::{
+    Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
+};
 
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct StackProjectiveSystem {
-    transitions: Numberer<StackProjectiveTransition>,
+    transitions: TransitionLookup<StackProjectiveTransition>,
 }
 
 impl StackProjectiveSystem {
     pub fn new() -> Self {
         StackProjectiveSystem {
-            transitions: Numberer::new(0),
+            transitions: TransitionLookup::default(),
         }
     }
 }
@@ -37,12 +38,8 @@ impl TransitionSystem for StackProjectiveSystem {
         StackProjectiveOracle::new(gold_dependencies)
     }
 
-    fn transitions(&self) -> &Numberer<Self::Transition> {
+    fn transitions(&self) -> &TransitionLookup<Self::Transition> {
         &self.transitions
-    }
-
-    fn transitions_mut(&mut self) -> &mut Numberer<Self::Transition> {
-        &mut self.transitions
     }
 }
 

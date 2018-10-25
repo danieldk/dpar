@@ -169,7 +169,7 @@ where
     {
         // Invariant: we should have as many predictions as transitions.
         let n_predictions = logits.as_ref().len();
-        let n_transitions = self.system.transitions().len() + self.system.transitions().start_at();
+        let n_transitions = self.system.transitions().len();
         assert_eq!(
             n_predictions, n_transitions,
             "Number of transitions ({}) and predictions ({}) are inequal.",
@@ -189,7 +189,7 @@ where
             }
         }
 
-        best.clone()
+        best.into_owned()
     }
 }
 

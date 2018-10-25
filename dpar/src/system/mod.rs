@@ -11,7 +11,7 @@ mod parser_state;
 pub use self::parser_state::ParserState;
 
 mod trans_system;
-pub use self::trans_system::{Transition, TransitionSystem};
+pub use self::trans_system::{Transition, TransitionLookup, TransitionSystem};
 
 pub fn sentence_to_dependencies(sentence: &Sentence) -> Result<DependencySet> {
     let mut dependencies = HashSet::new();

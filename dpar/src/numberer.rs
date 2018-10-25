@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 /// Numberer for categorical values, such as features or class labels.
-#[derive(Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Numberer<T>
 where
     T: Eq + Hash,

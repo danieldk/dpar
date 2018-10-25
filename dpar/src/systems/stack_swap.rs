@@ -5,8 +5,9 @@ use petgraph::visit::Dfs;
 use petgraph::{Directed, Graph};
 
 use guide::Guide;
-use numberer::Numberer;
-use system::{Dependency, DependencySet, ParserState, Transition, TransitionSystem};
+use system::{
+    Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
+};
 use systems::util::dep_head_mapping;
 
 /// The stack-swap transition system for non-projective parsing.
@@ -19,13 +20,13 @@ use systems::util::dep_head_mapping;
 /// Joakim Nivre, Non-projective dependency parsing in expected linear time, 2009
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct StackSwapSystem {
-    transitions: Numberer<StackSwapTransition>,
+    transitions: TransitionLookup<StackSwapTransition>,
 }
 
 impl StackSwapSystem {
     pub fn new() -> Self {
         StackSwapSystem {
-            transitions: Numberer::new(0),
+            transitions: TransitionLookup::default(),
         }
     }
 }
@@ -48,12 +49,8 @@ impl TransitionSystem for StackSwapSystem {
         StackSwapOracle::new(gold_dependencies)
     }
 
-    fn transitions(&self) -> &Numberer<Self::Transition> {
+    fn transitions(&self) -> &TransitionLookup<Self::Transition> {
         &self.transitions
-    }
-
-    fn transitions_mut(&mut self) -> &mut Numberer<Self::Transition> {
-        &mut self.transitions
     }
 }
 
