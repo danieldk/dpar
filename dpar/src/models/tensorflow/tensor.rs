@@ -5,6 +5,53 @@ use enum_map::EnumMap;
 use features::Layer;
 use tensorflow::{Tensor, TensorType};
 
+/// Ad-hoc trait for copying a subset of batches.
+pub trait CopyBatches {
+    fn copy_batches(&self, n_batches: u64) -> Self;
+}
+
+impl<T> CopyBatches for Tensor<T>
+where
+    T: Copy + TensorType,
+{
+    fn copy_batches(&self, n_batches: u64) -> Self {
+        assert!(n_batches <= self.dims()[0]);
+
+        let mut new_shape = self.dims().to_owned();
+        new_shape[0] = n_batches;
+        let mut copy = Tensor::new(&new_shape);
+
+        copy.copy_from_slice(&self[..new_shape.iter().cloned().product::<u64>() as usize]);
+
+        copy
+    }
+}
+
+impl<T> CopyBatches for TensorWrap<T>
+where
+    T: Copy + TensorType,
+{
+    fn copy_batches(&self, n_batches: u64) -> Self {
+        TensorWrap(self.0.copy_batches(n_batches))
+    }
+}
+
+impl<T> CopyBatches for LayerTensors<T>
+where
+    T: Copy + TensorType,
+{
+    fn copy_batches(&self, n_batches: u64) -> Self {
+        let mut copy = LayerTensors::new();
+
+        // Note: EnumMap does not support FromIterator.
+        for (layer, tensor) in self.iter() {
+            copy[layer] = tensor.copy_batches(n_batches);
+        }
+
+        copy
+    }
+}
+
 /// Ad-hoc trait for converting extracting slices from tensors.
 pub trait InstanceSlices<T> {
     /// Extract for each layer the slice corresponding to the `idx`-th
@@ -72,5 +119,22 @@ where
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tensorflow::Tensor;
+
+    use super::CopyBatches;
+
+    #[test]
+    fn copy_batches() {
+        let original = Tensor::new(&[4, 2])
+            .with_values(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+            .expect("Cannot initialize tensor.");
+        let copy = original.copy_batches(2);
+
+        assert_eq!(&*copy, &[1.0, 2.0, 3.0, 4.0]);
     }
 }
