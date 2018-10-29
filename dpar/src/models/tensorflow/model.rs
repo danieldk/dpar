@@ -1,14 +1,13 @@
 use std::f32;
-use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use enum_map::EnumMap;
 use tensorflow::{
     Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, SessionRunArgs, Tensor,
-    TensorType,
 };
 
 use features::{InputVectorizer, Layer, LayerLookups};
+use models::tensorflow::LayerTensors;
 use models::ModelPerformance;
 use system::{ParserState, Transition, TransitionSystem};
 use {ErrorKind, Result};
@@ -38,41 +37,6 @@ mod opnames {
 
     /// Training.
     pub static TRAIN: &str = "model/train";
-}
-
-/// Layer-wise batch tensors.
-///
-/// Instances of this type store the per-layer inputs for a batch.
-pub struct LayerTensors(pub EnumMap<Layer, TensorWrap<i32>>);
-
-impl LayerTensors {
-    /// Extract for each layer the slice corresponding to the `idx`-th
-    /// instance from the batch.
-    pub fn to_instance_slices(&mut self, idx: usize) -> EnumMap<Layer, &mut [i32]> {
-        let mut slices = EnumMap::new();
-
-        for (layer, tensor) in self.iter_mut() {
-            let layer_size = tensor.dims()[1] as usize;
-            let offset = idx * layer_size;
-            slices[layer] = &mut tensor[offset..offset + layer_size];
-        }
-
-        slices
-    }
-}
-
-impl Deref for LayerTensors {
-    type Target = EnumMap<Layer, TensorWrap<i32>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for LayerTensors {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
 }
 
 /// Layer op in the parsing model
@@ -153,50 +117,6 @@ impl<S> LayerOps<S> {
     /// Get the op for a layer.
     pub fn layer_lookup(&self, layer: Layer) -> Option<&LayerOp<S>> {
         self.0[layer].as_ref()
-    }
-}
-
-/// Simple wrapper for `Tensor` that implements the `Default`
-/// trait.
-pub struct TensorWrap<T>(pub Tensor<T>)
-where
-    T: TensorType;
-
-impl<T> Default for TensorWrap<T>
-where
-    T: TensorType,
-{
-    fn default() -> Self {
-        TensorWrap(Tensor::new(&[]))
-    }
-}
-
-impl<T> From<Tensor<T>> for TensorWrap<T>
-where
-    T: TensorType,
-{
-    fn from(tensor: Tensor<T>) -> Self {
-        TensorWrap(tensor)
-    }
-}
-
-impl<T> Deref for TensorWrap<T>
-where
-    T: TensorType,
-{
-    type Target = Tensor<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T> DerefMut for TensorWrap<T>
-where
-    T: TensorType,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
@@ -362,7 +282,11 @@ where
     /// Both the parser states and the feature representations of the parser
     /// states should be provided. Returns the best (possible) transition for
     /// each parser state.
-    pub fn predict(&mut self, states: &[&ParserState], input_tensors: &LayerTensors) -> Vec<T::Transition> {
+    pub fn predict(
+        &mut self,
+        states: &[&ParserState],
+        input_tensors: &LayerTensors<i32>,
+    ) -> Vec<T::Transition> {
         let logits = self.logits(input_tensors);
 
         let n_labels = logits.dims()[1] as usize;
@@ -421,7 +345,7 @@ where
     ///
     /// Each input tensor has shape *[batch_size, layer_size]*. Returns a logits
     /// tensor with shape *[batch_size, n_transitions]*.
-    fn logits(&mut self, input_tensors: &LayerTensors) -> Tensor<f32> {
+    fn logits(&mut self, input_tensors: &LayerTensors<i32>) -> Tensor<f32> {
         let mut is_training = Tensor::new(&[]);
         is_training[0] = false;
 
@@ -465,7 +389,7 @@ where
     /// The loss and accuracy on the gold standard labels are returned.
     pub fn train(
         &mut self,
-        input_tensors: &LayerTensors,
+        input_tensors: &LayerTensors<i32>,
         targets: &Tensor<i32>,
         learning_rate: f32,
     ) -> ModelPerformance {
@@ -490,7 +414,7 @@ where
     /// (`input_tensors`).
     pub fn validate(
         &mut self,
-        input_tensors: &LayerTensors,
+        input_tensors: &LayerTensors<i32>,
         targets: &Tensor<i32>,
     ) -> ModelPerformance {
         let mut is_training = Tensor::new(&[]);
@@ -504,7 +428,7 @@ where
     fn validate_<'l>(
         &'l mut self,
         mut args: SessionRunArgs<'l>,
-        input_tensors: &'l LayerTensors,
+        input_tensors: &'l LayerTensors<i32>,
         targets: &'l Tensor<i32>,
     ) -> ModelPerformance {
         // Add inputs.
@@ -554,7 +478,7 @@ fn add_to_args<'l>(
     args: &mut SessionRunArgs<'l>,
     layer_ops: &LayerOps<Operation>,
     layer_lookups: &'l LayerLookups,
-    input_tensors: &'l LayerTensors,
+    input_tensors: &'l LayerTensors<i32>,
 ) {
     for (layer, layer_op) in &layer_ops.0 {
         let layer_op = ok_or_continue!(layer_op.as_ref());
