@@ -4,12 +4,12 @@ stdenv.mkDerivation rec {
   env = buildEnv { name = name; paths = buildInputs; };
 
   nativeBuildInputs = [
-    cargo
     pkgconfig
-    ragelDev
+    latest.rustChannels.stable.rust
   ];
 
   buildInputs = [
+    curl
     hdf5
     libtensorflow
     openssl
