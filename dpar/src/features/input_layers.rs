@@ -209,7 +209,9 @@ impl InputVectorizer {
                     Some(chars) => {
                         for ch in chars.as_ref().chars() {
                             slices[Layer::Char].as_mut()[*offset] = lookup_char(
-                                self.layer_lookups.layer_lookup(Layer::Char).unwrap(),
+                                self.layer_lookups
+                                    .layer_lookup(Layer::Char)
+                                    .expect("Missing layer lookup for: Char"),
                                 ch,
                             );
 
@@ -217,8 +219,11 @@ impl InputVectorizer {
                         }
                     }
                     None => {
-                        let null_char =
-                            self.layer_lookups.layer_lookup(Layer::Char).unwrap().null() as i32;
+                        let null_char = self
+                            .layer_lookups
+                            .layer_lookup(Layer::Char)
+                            .expect("Missing layer lookup for: Char")
+                            .null() as i32;
                         for _ in 0..(prefix_len + suffix_len) {
                             slices[Layer::Char].as_mut()[*offset] = null_char;
                             *offset += 1;
@@ -226,8 +231,12 @@ impl InputVectorizer {
                     }
                 },
                 ref layer => {
-                    slices[layer.into()].as_mut()[*offset] =
-                        lookup_value(self.layer_lookups.layer_lookup(layer.into()).unwrap(), val);
+                    slices[layer.into()].as_mut()[*offset] = lookup_value(
+                        self.layer_lookups
+                            .layer_lookup(layer.into())
+                            .expect(&format!("Missing layer lookup for: {:?}", layer)),
+                        val,
+                    );
                     *offset += 1;
                 }
             }
