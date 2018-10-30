@@ -30,6 +30,10 @@ where
         &self.collector
     }
 
+    pub fn into_collector(self) -> C {
+        self.collector
+    }
+
     pub fn parse_state(
         &mut self,
         gold_dependencies: &DependencySet,

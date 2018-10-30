@@ -3,6 +3,7 @@ use std::io;
 use conllx;
 use dpar;
 use failure;
+use protobuf::ProtobufError;
 use serde_cbor;
 use toml;
 
@@ -11,6 +12,7 @@ error_chain! {
         Conllx(conllx::Error);
         IO(io::Error);
         Dpar(dpar::Error);
+        Protobuf(ProtobufError);
         TOML(toml::de::Error);
         TOMLSerde(toml::ser::Error);
         CBORSerde(serde_cbor::Error);

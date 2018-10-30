@@ -30,6 +30,9 @@ pub trait Lookup {
     /// matrix.
     fn embed_matrix(&self) -> Option<&Tensor<f32>>;
 
+    // Size of the table.
+    fn len(&self) -> usize;
+
     /// Lookup a feature index.
     fn lookup(&self, feature: &str) -> Option<usize>;
 
@@ -43,6 +46,10 @@ pub trait Lookup {
 impl Lookup for Embeddings {
     fn embed_matrix(&self) -> Option<&Tensor<f32>> {
         Some(self.data())
+    }
+
+    fn len(&self) -> usize {
+        self.len()
     }
 
     fn lookup(&self, feature: &str) -> Option<usize> {
@@ -75,6 +82,10 @@ impl Lookup for MutableLookupTable {
         None
     }
 
+    fn len(&self) -> usize {
+        self.numberer.borrow().len() + 1
+    }
+
     fn lookup(&self, feature: &str) -> Option<usize> {
         let mut numberer = self.numberer.borrow_mut();
         Some(numberer.add(feature.to_owned()))
@@ -100,6 +111,10 @@ pub struct LookupTable {
 impl Lookup for LookupTable {
     fn embed_matrix(&self) -> Option<&Tensor<f32>> {
         None
+    }
+
+    fn len(&self) -> usize {
+        self.numberer.len() + 1
     }
 
     fn lookup(&self, feature: &str) -> Option<usize> {
