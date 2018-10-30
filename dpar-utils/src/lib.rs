@@ -7,6 +7,12 @@ extern crate error_chain;
 
 extern crate failure;
 
+extern crate indicatif;
+
+extern crate ordered_float;
+
+extern crate protobuf;
+
 extern crate serde;
 
 extern crate serde_cbor;
@@ -18,13 +24,18 @@ extern crate tensorflow;
 
 extern crate tf_embed;
 
+extern crate tf_proto;
+
 extern crate toml;
 
 mod config;
-pub use config::{Config, Lookup, Lookups, Parser};
+pub use config::{Config, Lookup, Lookups, Model, Parser, Train};
 
 mod error;
 pub use error::*;
+
+mod progress;
+pub use progress::FileProgress;
 
 mod serialization;
 pub use serialization::{CborRead, CborWrite, SerializableTransitionSystem, TomlRead};

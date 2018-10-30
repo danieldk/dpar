@@ -14,8 +14,8 @@ use std::time::Instant;
 
 use conllx::{Deprojectivize, HeadProjectivizer, ReadSentence, Sentence, WriteSentence};
 use dpar::features::InputVectorizer;
-use dpar::guide::tensorflow::{LayerOps, TensorflowGuide};
 use dpar::guide::BatchGuide;
+use dpar::models::tensorflow::{LayerOps, TensorflowModel};
 use dpar::parser::{GreedyParser, ParseBatch};
 use dpar::system::{DependencySet, TransitionSystem};
 use dpar::systems::{
@@ -67,17 +67,19 @@ where
     R: BufRead,
     W: Write,
 {
-    match config.parser.system.as_ref() {
-        "arceager" => parse_with_system::<R, W, ArcEagerSystem>(config, reader, writer),
-        "archybrid" => parse_with_system::<R, W, ArcHybridSystem>(config, reader, writer),
-        "arcstandard" => parse_with_system::<R, W, ArcStandardSystem>(config, reader, writer),
-        "stackproj" => parse_with_system::<R, W, StackProjectiveSystem>(config, reader, writer),
-        "stackswap" => parse_with_system::<R, W, StackSwapSystem>(config, reader, writer),
+    let parse_fun: Box<Fn(_, _, _) -> Result<_>> = match config.parser.system.as_ref() {
+        "arceager" => Box::new(parse_with_system::<R, W, ArcEagerSystem>),
+        "archybrid" => Box::new(parse_with_system::<R, W, ArcHybridSystem>),
+        "arcstandard" => Box::new(parse_with_system::<R, W, ArcStandardSystem>),
+        "stackproj" => Box::new(parse_with_system::<R, W, StackProjectiveSystem>),
+        "stackswap" => Box::new(parse_with_system::<R, W, StackSwapSystem>),
         _ => {
             stderr!("Unsupported transition system: {}", config.parser.system);
             process::exit(1);
         }
-    }
+    };
+
+    parse_fun(config, reader, writer)
 }
 
 fn parse_with_system<R, W, S>(
@@ -215,12 +217,14 @@ fn load_model<T>(
     system: T,
     vectorizer: InputVectorizer,
     layer_ops: &LayerOps<String>,
-) -> Result<TensorflowGuide<T>>
+) -> Result<TensorflowModel<T>>
 where
     T: TransitionSystem,
 {
-    Ok(TensorflowGuide::load_graph(
-        &config.model,
+    Ok(TensorflowModel::load_graph_with_weights(
+        &config.model.config_to_protobuf()?,
+        &config.model.model_to_protobuf()?,
+        &config.model.parameters,
         system,
         vectorizer,
         &layer_ops,

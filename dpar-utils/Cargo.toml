@@ -10,12 +10,16 @@ conllx = "0.9"
 error-chain = "0.11"
 failure = "0.1"
 getopts = "0.2"
+indicatif = "0.9"
+ordered-float = { version = "1", features = ["serde"] }
+protobuf = "1.4"
 serde = "1.0"
 serde_cbor = "0.6"
 serde_derive = "1.0"
 stdinout = "0.4"
 tensorflow = "0.10"
 tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.4.0" }
+tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
 toml = "0.4"
 
 [dev-dependencies]
