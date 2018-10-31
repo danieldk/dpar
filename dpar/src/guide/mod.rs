@@ -26,5 +26,3 @@ pub trait BatchGuide {
     /// for the *0th* parser state.
     fn best_transitions(&mut self, states: &[&ParserState]) -> Vec<Self::Transition>;
 }
-
-pub mod tensorflow;

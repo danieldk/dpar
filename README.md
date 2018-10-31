@@ -10,13 +10,11 @@ original Go version can be found in the `oldgo` branch.
 ### Build-time
 
 * A modern Rust [toolchain](https://rustup.rs).
-* libhdf5
 * Many Rust crates.
 
 ### Run-time
 
 * Tensorflow
-* libhdf5 (for training of new parser models)
 
 ## Building dpar
 

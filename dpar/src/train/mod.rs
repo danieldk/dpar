@@ -1,9 +1,6 @@
 use system::{ParserState, TransitionSystem};
 use Result;
 
-mod hdf5;
-pub use self::hdf5::HDF5Collector;
-
 mod trainer;
 pub use self::trainer::GreedyTrainer;
 

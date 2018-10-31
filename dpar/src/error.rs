@@ -4,13 +4,11 @@ use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 use failure;
-use hdf5;
 use protobuf::ProtobufError;
 use tensorflow;
 
 error_chain! {
     foreign_links {
-        HDF5(hdf5::Error);
         Io(io::Error);
         ParseInt(ParseIntError);
         Protobuf(ProtobufError);

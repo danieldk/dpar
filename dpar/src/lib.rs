@@ -8,8 +8,6 @@ extern crate error_chain;
 
 extern crate failure;
 
-extern crate hdf5;
-
 extern crate petgraph;
 
 extern crate protobuf;
