@@ -10,7 +10,6 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     curl
-    hdf5
     libtensorflow
     openssl
   ] ++ lib.optional stdenv.isDarwin darwin.apple_sdk.frameworks.Security;
