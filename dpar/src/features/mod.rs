@@ -16,8 +16,7 @@ pub use self::input_layers::{AddressedValues, InputVector, InputVectorizer, Laye
 mod lookup;
 pub use self::lookup::{Lookup, LookupTable, MutableLookupTable};
 
-#[allow(dead_code, non_upper_case_globals, unused_parens)]
-mod parse_addr;
+pub(crate) mod parse_addr;
 
 #[cfg(test)]
 mod addr_tests;
