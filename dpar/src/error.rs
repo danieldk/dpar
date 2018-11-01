@@ -4,13 +4,17 @@ use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 use failure;
+use pest::error::Error as PestError;
 use protobuf::ProtobufError;
 use tensorflow;
+
+use features::parse_addr::Rule;
 
 error_chain! {
     foreign_links {
         Io(io::Error);
         ParseInt(ParseIntError);
+        Pest(PestError<Rule>);
         Protobuf(ProtobufError);
         Utf8(FromUtf8Error);
     }

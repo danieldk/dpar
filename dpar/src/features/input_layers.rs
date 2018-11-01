@@ -6,10 +6,10 @@ use std::result;
 use enum_map::EnumMap;
 use features::addr;
 use features::lookup::BoxedLookup;
-use features::parse_addr::parse_addressed_value_templates;
+use features::parse_addr::parse_addressed_values;
 use features::Lookup;
 use system::ParserState;
-use {ErrorKind, Result};
+use Result;
 
 /// Multiple addressable parts of the parser state.
 ///
@@ -28,33 +28,13 @@ impl AddressedValues {
     ///
     /// Multiple addresses are used to e.g. address the left/rightmost
     /// dependency of a token on the stack or buffer.
-    pub fn from_buf_read<R>(read: R) -> Result<Self>
+    pub fn from_buf_read<R>(mut read: R) -> Result<Self>
     where
         R: BufRead,
     {
-        let mut addrs = Vec::new();
-
-        for line in read.lines() {
-            let line = line?;
-
-            if line.trim().is_empty() {
-                continue;
-            }
-
-            let mut layer_addrs = parse_addressed_value_templates(line.as_bytes())?;
-
-            if layer_addrs.len() != 1 {
-                bail!(ErrorKind::ConfigError(format!(
-                    "Combinatory features are not \
-                     supported/necessary: {}",
-                    line
-                )));
-            }
-
-            addrs.push(layer_addrs.remove(0));
-        }
-
-        Ok(AddressedValues(addrs))
+        let mut data = String::new();
+        read.read_to_string(&mut data)?;
+        Ok(AddressedValues(parse_addressed_values(&data)?))
     }
 }
 

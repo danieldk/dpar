@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use features::addr::{AddressedValue, Layer, Source};
-use features::parse_addr::parse_addressed_value_templates;
+use features::parse_addr::parse_addressed_values;
 
 static CORRECT_STRING1: &'static str = "[STACK 0] TOKEN";
 static CORRECT_STRING2: &'static str = "[BUFFER 1] TAG";
@@ -9,6 +9,8 @@ static CORRECT_STRING3: &'static str = "[STACK 0, LDEP 0] DEPREL";
 static CORRECT_STRING4: &'static str = "[STACK 0, LDEP 0] DEPREL [STACK 0, RDEP 0] DEPREL";
 static CORRECT_STRING5: &'static str = "[STACK 0] FEATURE num";
 static CORRECT_STRING6: &'static str = "[STACK 0] CHAR 1 2";
+static CORRECT_STRING7: &'static str =
+    "[STACK 0,\n  LDEP 0]\n  DEPREL\n  [STACK 0,\n RDEP 0] DEPREL";
 
 lazy_static! {
     static ref CORRECT1: Vec<AddressedValue> = vec![AddressedValue {
@@ -48,6 +50,7 @@ lazy_static! {
         CORRECT_STRING4 => CORRECT4.clone(),
         CORRECT_STRING5 => CORRECT5.clone(),
         CORRECT_STRING6 => CORRECT6.clone(),
+        CORRECT_STRING7 => CORRECT4.clone(),
     };
     static ref INCORRECT_CASES: Vec<&'static str> = vec![
         "[] TOKEN",
@@ -66,13 +69,21 @@ lazy_static! {
         "[STACK 0] TOKEN num",
         "[STACK 0] TAG num",
         "[STACK 0] DEPREL num",
+        "[STACK 0, STACK 0] TOKEN",
+        "[BUFFER 0, BUFFER 0] TOKEN",
+        "[STACK 0, LDEP 0, BUFFER 0] TOKEN",
+        "[STACK 0, LDEP 0, BUFFER 0] TOKEN",
+        "[STACK\n0, LDEP 0] DEPREL",
+        "[STACK 0, LDEP 0] FEATURE\ntf",
+        "[STACK 0, LDEP 0] CHAR 4\n4",
+        "[STACK 0, LDEP 0] CHAR\n4 4",
     ];
 }
 
 #[test]
 fn test_correct() {
     for (data, correct) in CORRECT_CASES.iter() {
-        let result = parse_addressed_value_templates(data.as_bytes()).unwrap();
+        let result = parse_addressed_values(&data).unwrap();
         assert_eq!(*correct, result);
     }
 }
@@ -80,6 +91,6 @@ fn test_correct() {
 #[test]
 fn incorrect_cases() {
     for data in INCORRECT_CASES.iter() {
-        assert!(parse_addressed_value_templates(data.as_bytes()).is_err());
+        assert!(parse_addressed_values(&data).is_err());
     }
 }

@@ -12,6 +12,7 @@ failure = "0.1"
 getopts = "0.2"
 indicatif = "0.9"
 ordered-float = { version = "1", features = ["serde"] }
+pest = "2"
 protobuf = "1.4"
 serde = "1.0"
 serde_cbor = "0.6"

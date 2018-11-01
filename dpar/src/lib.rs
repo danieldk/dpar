@@ -8,6 +8,11 @@ extern crate error_chain;
 
 extern crate failure;
 
+extern crate pest;
+
+#[macro_use]
+extern crate pest_derive;
+
 extern crate petgraph;
 
 extern crate protobuf;
