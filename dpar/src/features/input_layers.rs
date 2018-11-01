@@ -4,6 +4,7 @@ use std::io::BufRead;
 use std::result;
 
 use enum_map::EnumMap;
+
 use features::addr;
 use features::lookup::BoxedLookup;
 use features::parse_addr::parse_addressed_values;
@@ -42,7 +43,7 @@ impl AddressedValues {
 ///
 /// `InputVector` instances represent feature vectors, also called
 /// input layers in neural networks. The input vector is split in
-/// vectors for differnt layers. In each layer, the feature is encoded
+/// vectors for different layers. In each layer, the feature is encoded
 /// as a 32-bit identifier, which is typically the row of the layer
 /// value in an embedding matrix.
 pub struct InputVector {
@@ -138,6 +139,10 @@ impl InputVectorizer {
             layer_lookups: layer_lookups,
             input_layer_addrs: input_addrs,
         }
+    }
+
+    pub fn layer_addrs(&self) -> &AddressedValues {
+        &self.input_layer_addrs
     }
 
     /// Get the layer lookups.
