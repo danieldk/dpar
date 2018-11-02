@@ -1,13 +1,12 @@
 use enum_map::EnumMap;
 use tensorflow::Tensor;
 
+use failure::Error;
 use features::{InputVectorizer, Layer};
 use models::tensorflow::{CopyBatches, InstanceSlices, LayerTensors, TensorWrap};
 use system::ParserState;
 use system::TransitionSystem;
 use train::InstanceCollector;
-
-use Result;
 
 /// Collect gold-standard instances into Tensorflow tensors.
 ///
@@ -94,7 +93,7 @@ impl<T> InstanceCollector<T> for TensorCollector<T>
 where
     T: TransitionSystem,
 {
-    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<()> {
+    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
         // Lazily add a new batch tensor.
         if self.instance_idx == 0 {
             let layer_tensors = self.new_layer_tensors(self.batch_size);
@@ -123,7 +122,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use conllx::{Sentence, Token};
+    use conllx::Token;
 
     use features::addr::{AddressedValue, Layer, Source};
     use features::{
@@ -145,7 +144,7 @@ mod tests {
 
     #[test]
     fn collect_two() {
-        let sent = Sentence::new(vec![Token::new("een"), Token::new("test")]);
+        let sent = vec![Token::new("een"), Token::new("test")];
         let mut state = ParserState::new(&sent);
 
         let mut collector = test_collector();
@@ -173,11 +172,11 @@ mod tests {
 
     #[test]
     fn collect_three() {
-        let sent = Sentence::new(vec![
+        let sent = vec![
             Token::new("een"),
             Token::new("collector"),
             Token::new("test"),
-        ]);
+        ];
         let mut state = ParserState::new(&sent);
 
         let mut collector = test_collector();

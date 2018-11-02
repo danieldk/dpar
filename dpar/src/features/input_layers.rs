@@ -4,13 +4,13 @@ use std::io::BufRead;
 use std::result;
 
 use enum_map::EnumMap;
+use failure::Error;
 
 use features::addr;
 use features::lookup::BoxedLookup;
 use features::parse_addr::parse_addressed_values;
 use features::Lookup;
 use system::ParserState;
-use Result;
 
 /// Multiple addressable parts of the parser state.
 ///
@@ -29,7 +29,7 @@ impl AddressedValues {
     ///
     /// Multiple addresses are used to e.g. address the left/rightmost
     /// dependency of a token on the stack or buffer.
-    pub fn from_buf_read<R>(mut read: R) -> Result<Self>
+    pub fn from_buf_read<R>(mut read: R) -> Result<Self, Error>
     where
         R: BufRead,
     {

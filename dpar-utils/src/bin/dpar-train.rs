@@ -2,6 +2,7 @@ extern crate conllx;
 extern crate dpar;
 #[macro_use]
 extern crate dpar_utils;
+extern crate failure;
 extern crate getopts;
 extern crate indicatif;
 extern crate stdinout;
@@ -22,11 +23,12 @@ use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
 use dpar::train::GreedyTrainer;
+use failure::Error;
 use getopts::Options;
 use indicatif::{ProgressBar, ProgressStyle};
 use tensorflow::Tensor;
 
-use dpar_utils::{Config, FileProgress, OrExit, Result, SerializableTransitionSystem, TomlRead};
+use dpar_utils::{Config, FileProgress, OrExit, SerializableTransitionSystem, TomlRead};
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] CONFIG TRAIN_DATA VALID_DATA", program);
@@ -80,8 +82,8 @@ fn train(
     train_inputs: Vec<LayerTensors<i32>>,
     validation_labels: Vec<Tensor<i32>>,
     validation_inputs: Vec<LayerTensors<i32>>,
-) -> Result<()> {
-    let train_fun: Box<Fn(_, _, _, _, _) -> Result<_>> = match config.parser.system.as_ref() {
+) -> Result<(), Error> {
+    let train_fun: Box<Fn(_, _, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
         "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
         "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
@@ -108,7 +110,7 @@ fn train_with_system<S>(
     train_inputs: Vec<LayerTensors<i32>>,
     validation_labels: Vec<Tensor<i32>>,
     validation_inputs: Vec<LayerTensors<i32>>,
-) -> Result<()>
+) -> Result<(), Error>
 where
     S: SerializableTransitionSystem,
 {
@@ -213,11 +215,11 @@ where
 fn collect_data<R>(
     config: &Config,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>)>
+) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
 where
     R: BufRead,
 {
-    let collect_fun: Box<Fn(_, _) -> Result<_>> = match config.parser.system.as_ref() {
+    let collect_fun: Box<Fn(_, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(collect_with_system::<R, ArcEagerSystem>),
         "archybrid" => Box::new(collect_with_system::<R, ArcHybridSystem>),
         "arcstandard" => Box::new(collect_with_system::<R, ArcStandardSystem>),
@@ -235,7 +237,7 @@ where
 fn collect_with_system<R, S>(
     config: &Config,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>)>
+) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
 where
     R: BufRead,
     S: SerializableTransitionSystem,
@@ -264,7 +266,7 @@ where
     Ok(trainer.into_collector().into_data())
 }
 
-fn load_transition_system_or_new<T>(config: &Config) -> Result<T>
+fn load_transition_system_or_new<T>(config: &Config) -> Result<T, Error>
 where
     T: SerializableTransitionSystem,
 {

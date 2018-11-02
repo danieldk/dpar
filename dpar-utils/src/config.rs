@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
+use failure::Error;
 use ordered_float::NotNan;
 use protobuf::core::Message;
 use tf_embed;
@@ -13,7 +14,7 @@ use dpar::features::{AddressedValues, Layer, LayerLookups};
 use dpar::models::lr::ExponentialDecay;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
-use {ErrorKind, Result, StoredLookupTable};
+use StoredLookupTable;
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
@@ -24,7 +25,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn relativize_paths<P>(&mut self, config_path: P) -> Result<()>
+    pub fn relativize_paths<P>(&mut self, config_path: P) -> Result<(), Error>
     where
         P: AsRef<Path>,
     {
@@ -56,7 +57,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn load_inputs(&self) -> Result<AddressedValues> {
+    pub fn load_inputs(&self) -> Result<AddressedValues, Error> {
         let f = File::open(&self.inputs)?;
         Ok(AddressedValues::from_buf_read(BufReader::new(f))?)
     }
@@ -72,9 +73,9 @@ pub struct Lookups {
 }
 
 impl Lookups {
-    pub fn construct_lookups_with<F>(&self, load_fun: F) -> Result<LayerLookups>
+    pub fn construct_lookups_with<F>(&self, load_fun: F) -> Result<LayerLookups, Error>
     where
-        F: Fn(&Lookup) -> Result<Box<features::Lookup>>,
+        F: Fn(&Lookup) -> Result<Box<features::Lookup>, Error>,
     {
         let mut lookups = LayerLookups::new();
 
@@ -101,11 +102,11 @@ impl Lookups {
         Ok(lookups)
     }
 
-    pub fn create_lookups(&self) -> Result<LayerLookups> {
+    pub fn create_lookups(&self) -> Result<LayerLookups, Error> {
         self.construct_lookups_with(|l| self.create_layer_tables(l))
     }
 
-    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>> {
+    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match lookup {
             &Lookup::Embedding {
                 ref filename,
@@ -118,7 +119,7 @@ impl Lookups {
         }
     }
 
-    pub fn load_lookups(&self) -> Result<LayerLookups> {
+    pub fn load_lookups(&self) -> Result<LayerLookups, Error> {
         self.construct_lookups_with(|l| self.load_layer_tables(l))
     }
 
@@ -162,7 +163,7 @@ impl Lookups {
         }
     }
 
-    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>> {
+    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match lookup {
             &Lookup::Embedding {
                 ref filename,
@@ -173,7 +174,7 @@ impl Lookups {
         }
     }
 
-    fn load_embeddings(filename: &str, normalize: bool) -> Result<tf_embed::Embeddings> {
+    fn load_embeddings(filename: &str, normalize: bool) -> Result<tf_embed::Embeddings, Error> {
         let f = File::open(filename)?;
         let mut embeds = tf_embed::Embeddings::read_word2vec_binary(&mut BufReader::new(f))?;
 
@@ -200,7 +201,7 @@ pub enum Lookup {
     },
 }
 
-fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Result<()> {
+fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Result<(), Error> {
     if let Some(embed) = embed.as_mut() {
         match embed {
             &mut Lookup::Embedding {
@@ -219,7 +220,7 @@ fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Resu
     Ok(())
 }
 
-fn relativize_path(config_path: &Path, filename: &str) -> Result<String> {
+fn relativize_path(config_path: &Path, filename: &str) -> Result<String, Error> {
     if filename.is_empty() {
         return Ok(filename.to_owned());
     }
@@ -234,13 +235,15 @@ fn relativize_path(config_path: &Path, filename: &str) -> Result<String> {
     let abs_config_path = config_path.canonicalize()?;
     Ok(abs_config_path
         .parent()
-        .ok_or(ErrorKind::ConfigError(String::from(
-            "Cannot get the parent path of the configuration file",
-        )))?.join(path)
+        .ok_or(format_err!(
+            "Cannot get the parent path for the configuration file {}",
+            config_path.display()
+        ))?.join(path)
         .to_str()
-        .ok_or(ErrorKind::ConfigError(String::from(
-            "Cannot convert path to string",
-        )))?.to_owned())
+        .ok_or(format_err!(
+            "Cannot convert parent path of configuration file to string: {}",
+            config_path.display()
+        ))?.to_owned())
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -261,14 +264,14 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn model_to_protobuf(&self) -> Result<Vec<u8>> {
+    pub fn model_to_protobuf(&self) -> Result<Vec<u8>, Error> {
         let mut f = BufReader::new(File::open(&self.graph)?);
         let mut data = Vec::new();
         f.read_to_end(&mut data)?;
         Ok(data)
     }
 
-    pub fn config_to_protobuf(&self) -> Result<Vec<u8>> {
+    pub fn config_to_protobuf(&self) -> Result<Vec<u8>, Error> {
         let mut config_proto = ConfigProto::new();
         config_proto.intra_op_parallelism_threads = self.intra_op_parallelism_threads as i32;
         config_proto.inter_op_parallelism_threads = self.inter_op_parallelism_threads as i32;

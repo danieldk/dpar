@@ -1,9 +1,9 @@
 use conllx::Sentence;
+use failure::Error;
 
 use guide::{BatchGuide, Guide};
 use parser::{Parse, ParseBatch};
 use system::{DependencySet, ParserState, Transition, TransitionSystem};
-use Result;
 
 pub struct GreedyParser<G> {
     guide: G,
@@ -27,7 +27,7 @@ impl<G> Parse for GreedyParser<G>
 where
     G: Guide,
 {
-    fn parse(&mut self, sentence: &Sentence) -> Result<DependencySet> {
+    fn parse(&mut self, sentence: &Sentence) -> Result<DependencySet, Error> {
         let mut state = ParserState::new(sentence);
 
         while !<<G as Guide>::Transition as Transition>::S::is_terminal(&state) {
@@ -42,7 +42,7 @@ impl<G> ParseBatch for GreedyParser<G>
 where
     G: BatchGuide,
 {
-    fn parse_batch(&mut self, sentences: &[Sentence]) -> Result<Vec<DependencySet>> {
+    fn parse_batch(&mut self, sentences: &[Sentence]) -> Result<Vec<DependencySet>, Error> {
         let mut states: Vec<_> = sentences.iter().map(|s| ParserState::new(s)).collect();
 
         loop {

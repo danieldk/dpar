@@ -1,7 +1,8 @@
+use failure::Error;
+
 use features::InputVectorizer;
 use system::{ParserState, TransitionSystem};
 use train::InstanceCollector;
-use Result;
 
 /// No-op collector.
 ///
@@ -19,7 +20,7 @@ where
     T: TransitionSystem,
 {
     /// Create a new `NoopCollector`.
-    pub fn new(transition_system: T, vectorizer: InputVectorizer) -> Result<Self> {
+    pub fn new(transition_system: T, vectorizer: InputVectorizer) -> Result<Self, Error> {
         Ok(NoopCollector {
             transition_system: transition_system,
             vectorizer: vectorizer,
@@ -41,7 +42,7 @@ impl<T> InstanceCollector<T> for NoopCollector<T>
 where
     T: TransitionSystem,
 {
-    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<()> {
+    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
         self.transition_system.transitions().lookup(t.clone());
         self.vectorizer.realize(state);
         Ok(())

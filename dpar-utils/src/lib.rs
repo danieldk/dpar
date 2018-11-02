@@ -3,8 +3,6 @@ extern crate conllx;
 extern crate dpar;
 
 #[macro_use]
-extern crate error_chain;
-
 extern crate failure;
 
 extern crate indicatif;
@@ -30,9 +28,6 @@ extern crate toml;
 
 mod config;
 pub use config::{Config, Lookup, Lookups, Model, Parser, Train};
-
-mod error;
-pub use error::*;
 
 mod progress;
 pub use progress::FileProgress;

@@ -4,8 +4,6 @@ extern crate conllx;
 extern crate enum_map;
 
 #[macro_use]
-extern crate error_chain;
-
 extern crate failure;
 
 extern crate pest;
@@ -30,9 +28,6 @@ extern crate tf_proto;
 
 #[macro_use]
 mod macros;
-
-mod error;
-pub use error::*;
 
 pub mod features;
 
