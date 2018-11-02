@@ -2,15 +2,16 @@ use std::f32;
 use std::path::Path;
 
 use enum_map::EnumMap;
+use failure::{err_msg, Error};
 use tensorflow::{
-    Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, SessionRunArgs, Tensor,
+    Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, SessionRunArgs, Status,
+    Tensor,
 };
 
 use features::{InputVectorizer, Layer, LayerLookups};
 use models::tensorflow::LayerTensors;
 use models::ModelPerformance;
 use system::{ParserState, Transition, TransitionSystem};
-use {ErrorKind, Result};
 
 mod opnames {
     /// Graph initialization.
@@ -65,17 +66,23 @@ where
     S: AsRef<str>,
 {
     /// Convert a graph op identifier to a graph op.
-    fn to_graph_op(&self, graph: &Graph) -> Result<LayerOp<Operation>> {
+    fn to_graph_op(&self, graph: &Graph) -> Result<LayerOp<Operation>, Error> {
         match self {
             &LayerOp::Embedding {
                 ref op,
                 ref embed_op,
             } => Ok(LayerOp::Embedding {
-                op: graph.operation_by_name_required(op.as_ref())?,
-                embed_op: graph.operation_by_name_required(embed_op.as_ref())?,
+                op: graph
+                    .operation_by_name_required(op.as_ref())
+                    .map_err(status_to_error)?,
+                embed_op: graph
+                    .operation_by_name_required(embed_op.as_ref())
+                    .map_err(status_to_error)?,
             }),
             &LayerOp::Table { ref op } => Ok(LayerOp::Table {
-                op: graph.operation_by_name_required(op.as_ref())?,
+                op: graph
+                    .operation_by_name_required(op.as_ref())
+                    .map_err(status_to_error)?,
             }),
         }
     }
@@ -89,7 +96,7 @@ where
     S: AsRef<str>,
 {
     /// Convert a graph op identifiers for all layers to a graph ops.
-    fn to_graph_ops(&self, graph: &Graph) -> Result<LayerOps<Operation>> {
+    fn to_graph_ops(&self, graph: &Graph) -> Result<LayerOps<Operation>, Error> {
         let mut graph_ops = EnumMap::new();
 
         for (layer, op_name) in &self.0 {
@@ -162,7 +169,7 @@ where
         system: T,
         vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
-    ) -> Result<Self>
+    ) -> Result<Self, Error>
     where
         S: AsRef<str>,
     {
@@ -196,7 +203,7 @@ where
         system: T,
         vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
-    ) -> Result<Self>
+    ) -> Result<Self, Error>
     where
         P: AsRef<Path>,
         S: AsRef<str>,
@@ -214,9 +221,15 @@ where
         let mut args = SessionRunArgs::new();
         args.add_feed(&model.save_file_path_op, 0, &path_tensor);
         args.add_target(&model.restore_op);
-        model.session.run(&mut args)?;
+        model.session.run(&mut args).map_err(status_to_error)?;
 
         Ok(model)
+    }
+
+    fn add_op(graph: &Graph, name: &str) -> Result<Operation, Error> {
+        graph
+            .operation_by_name_required(name)
+            .map_err(status_to_error)
     }
 
     /// Load a Tensorflow graph.
@@ -229,34 +242,38 @@ where
         system: T,
         vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
-    ) -> Result<Self>
+    ) -> Result<Self, Error>
     where
         S: AsRef<str>,
     {
         let opts = ImportGraphDefOptions::new();
         let mut graph = Graph::new();
-        graph.import_graph_def(model_protobuf, &opts)?;
+        graph
+            .import_graph_def(model_protobuf, &opts)
+            .map_err(status_to_error)?;
 
         let mut session_opts = SessionOptions::new();
-        session_opts.set_config(config_protobuf)?;
-        let session = Session::new(&session_opts, &graph)?;
+        session_opts
+            .set_config(config_protobuf)
+            .map_err(status_to_error)?;
+        let session = Session::new(&session_opts, &graph).map_err(status_to_error)?;
 
         let layer_ops = op_names.to_graph_ops(&graph)?;
 
-        let init_op = graph.operation_by_name_required(opnames::INIT)?;
-        let restore_op = graph.operation_by_name_required(opnames::RESTORE)?;
-        let save_op = graph.operation_by_name_required(opnames::SAVE)?;
-        let save_file_path_op = graph.operation_by_name_required(opnames::SAVE_FILE_PATH)?;
+        let init_op = Self::add_op(&graph, opnames::INIT)?;
+        let restore_op = Self::add_op(&graph, opnames::RESTORE)?;
+        let save_op = Self::add_op(&graph, opnames::SAVE)?;
+        let save_file_path_op = Self::add_op(&graph, opnames::SAVE_FILE_PATH)?;
 
-        let is_training_op = graph.operation_by_name_required(opnames::IS_TRAINING)?;
-        let lr_op = graph.operation_by_name_required(opnames::LR)?;
+        let is_training_op = Self::add_op(&graph, opnames::IS_TRAINING)?;
+        let lr_op = Self::add_op(&graph, opnames::LR)?;
 
-        let accuracy_op = graph.operation_by_name_required(opnames::ACCURACY)?;
-        let logits_op = graph.operation_by_name_required(opnames::LOGITS)?;
-        let loss_op = graph.operation_by_name_required(opnames::LOSS)?;
-        let targets_op = graph.operation_by_name_required(opnames::TARGETS)?;
+        let accuracy_op = Self::add_op(&graph, opnames::ACCURACY)?;
+        let logits_op = Self::add_op(&graph, opnames::LOGITS)?;
+        let loss_op = Self::add_op(&graph, opnames::LOSS)?;
+        let targets_op = Self::add_op(&graph, opnames::TARGETS)?;
 
-        let train_op = graph.operation_by_name_required(opnames::TRAIN)?;
+        let train_op = Self::add_op(&graph, opnames::TRAIN)?;
 
         Ok(TensorflowModel {
             system,
@@ -366,7 +383,7 @@ where
     /// Save the model parameters.
     ///
     /// The model parameters are stored as the given path.
-    pub fn save<P>(&mut self, path: P) -> Result<()>
+    pub fn save<P>(&mut self, path: P) -> Result<(), Error>
     where
         P: AsRef<Path>,
     {
@@ -377,7 +394,7 @@ where
         let mut args = SessionRunArgs::new();
         args.add_feed(&self.save_file_path_op, 0, &path_tensor);
         args.add_target(&self.save_op);
-        self.session.run(&mut args).map_err(|s| s.into())
+        self.session.run(&mut args).map_err(status_to_error)
     }
 
     /// Perform a training step.
@@ -510,7 +527,7 @@ fn add_to_args<'l>(
 }
 
 /// Tensorflow requires a path that contains a directory component.
-fn prepare_path<P>(path: P) -> Result<String>
+fn prepare_path<P>(path: P) -> Result<String, Error>
 where
     P: AsRef<Path>,
 {
@@ -522,10 +539,15 @@ where
     };
 
     path.to_str()
-        .ok_or(
-            ErrorKind::FilenameEncodingError("Filename contains non-unicode characters".to_owned())
-                .into(),
-        ).map(ToOwned::to_owned)
+        .ok_or(err_msg("Filename contains non-unicode characters"))
+        .map(ToOwned::to_owned)
+}
+
+/// Convert Tensorflow status to a string.
+///
+/// tensorflow::Status is not Sync, which is required by failure.
+fn status_to_error(status: Status) -> Error {
+    format_err!("{}", status)
 }
 
 #[cfg(test)]

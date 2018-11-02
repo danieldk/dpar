@@ -17,7 +17,7 @@ pub struct ParserState<'a> {
 
 impl<'a> ParserState<'a> {
     pub fn new(sentence: &Sentence) -> ParserState {
-        let n_tokens = sentence.as_tokens().len() + 1;
+        let n_tokens = sentence.len() + 1;
 
         let buffer = (1..n_tokens).collect();
         let stack = vec![0];

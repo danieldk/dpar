@@ -1,6 +1,7 @@
 extern crate conllx;
 extern crate dpar;
 extern crate dpar_utils;
+extern crate failure;
 extern crate getopts;
 #[macro_use]
 extern crate serde_derive;
@@ -22,10 +23,11 @@ use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
 use dpar::train::{GreedyTrainer, NoopCollector};
+use failure::{err_msg, Error};
 use getopts::Options;
 use stdinout::{Input, Output};
 
-use dpar_utils::{Config, ErrorKind, OrExit, Result, SerializableTransitionSystem, TomlRead};
+use dpar_utils::{Config, OrExit, SerializableTransitionSystem, TomlRead};
 
 /// Ad-hoc shapes structure, which can be used to construct the
 /// Tensorflow parsing graph.
@@ -79,12 +81,16 @@ fn main() {
     prepare(&config, treebank_reader, shapes_writer).or_exit();
 }
 
-fn prepare<R, W>(config: &Config, treebank_reader: conllx::Reader<R>, shapes_write: W) -> Result<()>
+fn prepare<R, W>(
+    config: &Config,
+    treebank_reader: conllx::Reader<R>,
+    shapes_write: W,
+) -> Result<(), Error>
 where
     R: BufRead,
     W: Write,
 {
-    let prepare_fun: Box<Fn(_, _, _) -> Result<_>> = match config.parser.system.as_ref() {
+    let prepare_fun: Box<Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(prepare_with_system::<R, W, ArcEagerSystem>),
         "archybrid" => Box::new(prepare_with_system::<R, W, ArcHybridSystem>),
         "arcstandard" => Box::new(prepare_with_system::<R, W, ArcStandardSystem>),
@@ -103,7 +109,7 @@ fn prepare_with_system<R, W, S>(
     config: &Config,
     treebank_reader: conllx::Reader<R>,
     shapes_write: W,
-) -> Result<()>
+) -> Result<(), Error>
 where
     R: BufRead,
     S: SerializableTransitionSystem,
@@ -140,7 +146,7 @@ fn write_shapes<W, S>(
     config: &Config,
     trainer: GreedyTrainer<S, NoopCollector<S>>,
     mut shapes_write: W,
-) -> Result<()>
+) -> Result<(), Error>
 where
     W: Write,
     S: SerializableTransitionSystem,
@@ -176,7 +182,7 @@ where
     Ok(())
 }
 
-fn affix_lengths(addrs: &AddressedValues) -> Result<(usize, usize)> {
+fn affix_lengths(addrs: &AddressedValues) -> Result<(usize, usize), Error> {
     let mut prefix_lens = BTreeSet::new();
     let mut suffix_lens = BTreeSet::new();
 
@@ -188,9 +194,9 @@ fn affix_lengths(addrs: &AddressedValues) -> Result<(usize, usize)> {
     }
 
     if prefix_lens.len() != 1 || suffix_lens.len() != 1 {
-        Err(ErrorKind::ConfigError(
-            "Models with varying prefix or suffix lengths are not supported".into(),
-        ).into())
+        Err(err_msg(
+            "Models with varying prefix or suffix lengths are not supported",
+        ))
     } else {
         Ok((
             prefix_lens.into_iter().next().unwrap(),
@@ -199,7 +205,7 @@ fn affix_lengths(addrs: &AddressedValues) -> Result<(usize, usize)> {
     }
 }
 
-fn write_transition_system<T>(config: &Config, system: &T) -> Result<()>
+fn write_transition_system<T>(config: &Config, system: &T) -> Result<(), Error>
 where
     T: SerializableTransitionSystem,
 {

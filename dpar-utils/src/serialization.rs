@@ -7,22 +7,22 @@ use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
 use dpar::Numberer;
-
+use failure::Error;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 use toml;
 
-use super::{Config, Result};
+use super::Config;
 
 pub trait TomlRead {
-    fn from_toml_read<R>(read: R) -> Result<Config>
+    fn from_toml_read<R>(read: R) -> Result<Config, Error>
     where
         R: Read;
 }
 
 impl TomlRead for Config {
-    fn from_toml_read<R>(mut read: R) -> Result<Self>
+    fn from_toml_read<R>(mut read: R) -> Result<Self, Error>
     where
         R: Read,
     {
@@ -36,7 +36,7 @@ impl TomlRead for Config {
 pub trait CborRead {
     type Value;
 
-    fn from_cbor_read<R>(read: R) -> Result<Self::Value>
+    fn from_cbor_read<R>(read: R) -> Result<Self::Value, Error>
     where
         R: Read;
 }
@@ -46,7 +46,7 @@ macro_rules! cbor_read {
         impl CborRead for $type {
             type Value = $type;
 
-            fn from_cbor_read<R>(read: R) -> Result<$type>
+            fn from_cbor_read<R>(read: R) -> Result<$type, Error>
             where
                 R: Read,
             {
@@ -65,7 +65,7 @@ cbor_read!(StackSwapSystem);
 cbor_read!(LookupTable);
 
 pub trait CborWrite {
-    fn to_cbor_write<W>(&self, write: &mut W) -> Result<()>
+    fn to_cbor_write<W>(&self, write: &mut W) -> Result<(), Error>
     where
         W: Write;
 }
@@ -74,7 +74,7 @@ impl<T> CborWrite for Numberer<T>
 where
     T: Eq + Hash + Serialize + DeserializeOwned,
 {
-    fn to_cbor_write<W>(&self, write: &mut W) -> Result<()>
+    fn to_cbor_write<W>(&self, write: &mut W) -> Result<(), Error>
     where
         W: Write,
     {
@@ -87,7 +87,7 @@ where
 macro_rules! cbor_write {
     ($type:ty) => {
         impl CborWrite for $type {
-            fn to_cbor_write<W>(&self, write: &mut W) -> Result<()>
+            fn to_cbor_write<W>(&self, write: &mut W) -> Result<(), Error>
             where
                 W: Write,
             {

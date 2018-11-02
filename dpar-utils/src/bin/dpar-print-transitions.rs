@@ -3,6 +3,7 @@ extern crate conllx;
 extern crate dpar;
 #[macro_use]
 extern crate dpar_utils;
+extern crate failure;
 extern crate getopts;
 extern crate stdinout;
 
@@ -17,10 +18,11 @@ use dpar::system::{sentence_to_dependencies, ParserState, Transition, Transition
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
+use failure::Error;
 use getopts::Options;
 use stdinout::{Input, Output};
 
-use dpar_utils::{OrExit, Result};
+use dpar_utils::OrExit;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] SYSTEM [INPUT]", program);
@@ -54,7 +56,7 @@ fn main() {
     parse(&matches.free[0], reader, writer).or_exit();
 }
 
-fn parse<R, W>(system: &str, reader: conllx::Reader<R>, writer: BufWriter<W>) -> Result<()>
+fn parse<R, W>(system: &str, reader: conllx::Reader<R>, writer: BufWriter<W>) -> Result<(), Error>
 where
     R: BufRead,
     W: Write,
@@ -72,7 +74,10 @@ where
     }
 }
 
-fn parse_with_system<R, W, S>(reader: conllx::Reader<R>, mut writer: BufWriter<W>) -> Result<()>
+fn parse_with_system<R, W, S>(
+    reader: conllx::Reader<R>,
+    mut writer: BufWriter<W>,
+) -> Result<(), Error>
 where
     R: BufRead,
     W: Write,
@@ -112,7 +117,7 @@ enum Source {
     Stack,
 }
 
-fn print_tokens<W>(writer: &mut W, state: &ParserState, source: Source) -> Result<()>
+fn print_tokens<W>(writer: &mut W, state: &ParserState, source: Source) -> Result<(), Error>
 where
     W: Write,
 {

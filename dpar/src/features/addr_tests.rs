@@ -1,24 +1,23 @@
 use std::borrow::Cow;
 
-use conllx::{Features, Sentence, TokenBuilder};
+use conllx::{Features, Token, TokenBuilder};
 
 use features::addr::{AddressedValue, Layer, Source};
 use system::{ParserState, Transition};
 use systems::stack_projective::StackProjectiveTransition;
 
 lazy_static! {
-    static ref CHAR_TEST_SENTENCE: Sentence =
-        Sentence::new(vec![TokenBuilder::new("Orientierungswoche").token()]);
+    static ref CHAR_TEST_SENTENCE: Vec<Token> =
+        vec![TokenBuilder::new("Orientierungswoche").token()];
     static ref CHAR_TEST_PARSER_STATE: ParserState<'static> = ParserState::new(&CHAR_TEST_SENTENCE);
-    static ref SHORT_CHAR_TEST_SENTENCE: Sentence =
-        Sentence::new(vec![TokenBuilder::new("zu").token()]);
+    static ref SHORT_CHAR_TEST_SENTENCE: Vec<Token> = vec![TokenBuilder::new("zu").token()];
     static ref SHORT_CHAR_TEST_PARSER_STATE: ParserState<'static> =
         ParserState::new(&SHORT_CHAR_TEST_SENTENCE);
     static ref CHAR_TEST_ADDR: AddressedValue = AddressedValue {
         address: vec![Source::Buffer(0)],
         layer: Layer::Char(3, 4),
     };
-    static ref THREE_TOKEN_SENTENCE: Sentence = Sentence::new(vec![
+    static ref THREE_TOKEN_SENTENCE: Vec<Token> = vec![
         TokenBuilder::new("a")
             .features(Features::from_string("a:x|b"))
             .token(),
@@ -26,7 +25,7 @@ lazy_static! {
             .features(Features::from_string("c:y|d"))
             .token(),
         TokenBuilder::new("c").token(),
-    ]);
+    ];
 }
 
 fn buffer(idx: usize, layer: Layer) -> AddressedValue {

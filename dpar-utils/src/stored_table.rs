@@ -4,9 +4,10 @@ use std::mem;
 use std::path::Path;
 
 use dpar::features::{Lookup, LookupTable, MutableLookupTable};
+use failure::Error;
 use tensorflow::Tensor;
 
-use {CborRead, CborWrite, Result};
+use {CborRead, CborWrite};
 
 pub enum StoredLookupTable {
     Table(LookupTable),
@@ -17,7 +18,7 @@ pub enum StoredLookupTable {
 }
 
 impl StoredLookupTable {
-    pub fn open<P>(path: P) -> Result<Self>
+    pub fn open<P>(path: P) -> Result<Self, Error>
     where
         P: AsRef<Path>,
     {
@@ -25,7 +26,7 @@ impl StoredLookupTable {
         Ok(StoredLookupTable::Table(LookupTable::from_cbor_read(f)?))
     }
 
-    pub fn create<P>(path: P) -> Result<Self>
+    pub fn create<P>(path: P) -> Result<Self, Error>
     where
         P: AsRef<Path>,
     {

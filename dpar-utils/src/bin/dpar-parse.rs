@@ -2,6 +2,7 @@ extern crate conllx;
 extern crate dpar;
 #[macro_use]
 extern crate dpar_utils;
+extern crate failure;
 extern crate getopts;
 extern crate stdinout;
 
@@ -21,10 +22,11 @@ use dpar::system::{DependencySet, TransitionSystem};
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
+use failure::Error;
 use getopts::Options;
 use stdinout::{Input, Output};
 
-use dpar_utils::{Config, OrExit, Result, SerializableTransitionSystem, TomlRead};
+use dpar_utils::{Config, OrExit, SerializableTransitionSystem, TomlRead};
 
 fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] CONFIG [INPUT]", program);
@@ -62,12 +64,16 @@ fn main() {
     parse(&config, reader, writer).or_exit();
 }
 
-fn parse<R, W>(config: &Config, reader: conllx::Reader<R>, writer: conllx::Writer<W>) -> Result<()>
+fn parse<R, W>(
+    config: &Config,
+    reader: conllx::Reader<R>,
+    writer: conllx::Writer<W>,
+) -> Result<(), Error>
 where
     R: BufRead,
     W: Write,
 {
-    let parse_fun: Box<Fn(_, _, _) -> Result<_>> = match config.parser.system.as_ref() {
+    let parse_fun: Box<Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(parse_with_system::<R, W, ArcEagerSystem>),
         "archybrid" => Box::new(parse_with_system::<R, W, ArcHybridSystem>),
         "arcstandard" => Box::new(parse_with_system::<R, W, ArcStandardSystem>),
@@ -86,7 +92,7 @@ fn parse_with_system<R, W, S>(
     config: &Config,
     reader: conllx::Reader<R>,
     writer: conllx::Writer<W>,
-) -> Result<()>
+) -> Result<(), Error>
 where
     R: BufRead,
     W: Write,
@@ -168,7 +174,7 @@ where
         }
     }
 
-    pub fn process(&mut self, sent: Sentence) -> Result<()> {
+    pub fn process(&mut self, sent: Sentence) -> Result<(), Error> {
         self.batch_sents.push(sent);
 
         if self.batch_sents.len() == self.batch_size {
@@ -178,7 +184,7 @@ where
         Ok(())
     }
 
-    fn parse_batch(&mut self) -> Result<()> {
+    fn parse_batch(&mut self) -> Result<(), Error> {
         let dependencies = self.parser.parse_batch(&self.batch_sents).or_exit();
         update_sentences(&mut self.batch_sents, dependencies);
 
@@ -217,7 +223,7 @@ fn load_model<T>(
     system: T,
     vectorizer: InputVectorizer,
     layer_ops: &LayerOps<String>,
-) -> Result<TensorflowModel<T>>
+) -> Result<TensorflowModel<T>, Error>
 where
     T: TransitionSystem,
 {
@@ -231,7 +237,7 @@ where
     )?)
 }
 
-fn load_system_generic<T>(config: &Config) -> Result<T>
+fn load_system_generic<T>(config: &Config) -> Result<T, Error>
 where
     T: SerializableTransitionSystem,
 {

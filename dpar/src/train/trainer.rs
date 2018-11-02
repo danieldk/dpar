@@ -1,9 +1,10 @@
 use std::marker::PhantomData;
 
+use failure::Error;
+
 use guide::Guide;
 use system::{DependencySet, ParserState, Transition, TransitionSystem};
 use train::InstanceCollector;
-use Result;
 
 pub struct GreedyTrainer<T, C>
 where
@@ -38,7 +39,7 @@ where
         &mut self,
         gold_dependencies: &DependencySet,
         state: &mut ParserState,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let mut oracle = T::oracle(gold_dependencies);
 
         while !T::is_terminal(state) {

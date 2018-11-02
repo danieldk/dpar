@@ -6,8 +6,7 @@ authors = ["Daniël de Kok <me@danieldk.eu>"]
 [dependencies]
 dpar = {path = "../dpar"}
 colored = "1"
-conllx = "0.9"
-error-chain = "0.12"
+conllx = "0.10"
 failure = "0.1"
 getopts = "0.2"
 indicatif = "0.9"
