@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+#  -*- coding: utf-8 -*-
+
+import argparse
+import sys
+import tensorflow as tf
+import toml
+
+from config import DefaultConfig
+from model import ParseModel
+
+
+def usage():
+    print("Usage: %s write-graph SHAPES GRAPH" % sys.argv[0])
+    sys.exit(1)
+
+
+def create_graph(config, shapes, graph_filename):
+    gpuopts = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
+    tfconfig = tf.ConfigProto(gpu_options=gpuopts)
+
+    with tf.Graph().as_default(), tf.Session(config=tfconfig) as session:
+        initializer = tf.random_uniform_initializer(-config.init_scale,
+                                                    config.init_scale)
+
+        with tf.variable_scope("model", reuse=None, initializer=initializer):
+            m = ParseModel(config=config, shapes=shapes)
+
+        init = tf.variables_initializer(tf.global_variables(), name='init')
+
+        saver = tf.train.Saver(tf.global_variables())
+
+        tf.train.write_graph(
+            session.graph_def,
+            './',
+            graph_filename,
+            as_text=False)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'shape_file',
+        metavar='SHAPE_FILE',
+        type=str,
+        help='shape file')
+    parser.add_argument(
+        'output_graph_file',
+        metavar='OUTPUT_GRAPH_FILE',
+        type=str,
+        help='output graph file')
+    parser.add_argument(
+        "--deprel_embed_size",
+        type=int,
+        help="size of dependency relation embeddings",
+        default=50)
+    parser.add_argument(
+        "--hidden_size",
+        type=int,
+        help="neurons in the hidden layer",
+        default=200)
+    parser.add_argument(
+        "--keep_prob",
+        type=int,
+        help="dropout keep probability",
+        default=0.95)
+    parser.add_argument(
+        "--keep_prob_input",
+        type=int,
+        help="input keep probability",
+        default=0.90)
+    parser.add_argument(
+        "--morph_hidden_size",
+        type=int,
+        help="neurons in the morphology layer",
+        default=50)
+    args = parser.parse_args()
+
+    config = DefaultConfig()
+    config.hidden_size = args.hidden_size
+    config.morph_hidden_size = args.morph_hidden_size
+    config.deprel_embed_size = args.deprel_embed_size
+    config.keep_prob = args.keep_prob
+    config.keep_prob_input = args.keep_prob_input
+
+    with open(args.shape_file) as shapesfile:
+        shapes = toml.loads(shapesfile.read())
+
+    create_graph(config, shapes, args.output_graph_file)
