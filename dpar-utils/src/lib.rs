@@ -38,9 +38,6 @@ pub use serialization::{CborRead, CborWrite, SerializableTransitionSystem, TomlR
 mod stored_table;
 pub use stored_table::StoredLookupTable;
 
-#[macro_use]
-mod util;
-
 mod or_exit;
 pub use or_exit::OrExit;
 
