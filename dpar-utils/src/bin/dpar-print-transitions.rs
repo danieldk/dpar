@@ -1,7 +1,6 @@
 extern crate colored;
 extern crate conllx;
 extern crate dpar;
-#[macro_use]
 extern crate dpar_utils;
 extern crate failure;
 extern crate getopts;
@@ -68,7 +67,7 @@ where
         "stackproj" => parse_with_system::<R, W, StackProjectiveSystem>(reader, writer),
         "stackswap" => parse_with_system::<R, W, StackSwapSystem>(reader, writer),
         _ => {
-            stderr!("Unsupported transition system: {}", system);
+            eprintln!("Unsupported transition system: {}", system);
             process::exit(1);
         }
     }

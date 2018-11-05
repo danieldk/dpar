@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io::Write;
 use std::process;
 
 pub trait OrExit<T> {
@@ -12,7 +11,7 @@ where
 {
     fn or_exit(self) -> T {
         self.unwrap_or_else(|e: E| -> T {
-            stderr!("Error: {}", e);
+            eprintln!("Error: {}", e);
             process::exit(1);
         })
     }

@@ -1,6 +1,5 @@
 extern crate conllx;
 extern crate dpar;
-#[macro_use]
 extern crate dpar_utils;
 extern crate failure;
 extern crate getopts;
@@ -80,7 +79,7 @@ where
         "stackproj" => Box::new(parse_with_system::<R, W, StackProjectiveSystem>),
         "stackswap" => Box::new(parse_with_system::<R, W, StackSwapSystem>),
         _ => {
-            stderr!("Unsupported transition system: {}", config.parser.system);
+            eprintln!("Unsupported transition system: {}", config.parser.system);
             process::exit(1);
         }
     };
@@ -243,7 +242,7 @@ where
 {
     let transitions_path = Path::new(&config.parser.transitions);
 
-    stderr!("Loading transitions from: {:?}", transitions_path);
+    eprintln!("Loading transitions from: {:?}", transitions_path);
 
     let f = File::open(transitions_path)?;
     let system = T::from_cbor_read(f)?;

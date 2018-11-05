@@ -1,6 +1,5 @@
 extern crate conllx;
 extern crate dpar;
-#[macro_use]
 extern crate dpar_utils;
 extern crate failure;
 extern crate getopts;
@@ -10,7 +9,7 @@ extern crate tensorflow;
 
 use std::env::args;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process;
 
@@ -90,7 +89,7 @@ fn train(
         "stackproj" => Box::new(train_with_system::<StackProjectiveSystem>),
         "stackswap" => Box::new(train_with_system::<StackSwapSystem>),
         _ => {
-            stderr!("Unsupported transition system: {}", config.parser.system);
+            eprintln!("Unsupported transition system: {}", config.parser.system);
             process::exit(1);
         }
     };
@@ -226,7 +225,7 @@ where
         "stackproj" => Box::new(collect_with_system::<R, StackProjectiveSystem>),
         "stackswap" => Box::new(collect_with_system::<R, StackSwapSystem>),
         _ => {
-            stderr!("Unsupported transition system: {}", config.parser.system);
+            eprintln!("Unsupported transition system: {}", config.parser.system);
             process::exit(1);
         }
     };
