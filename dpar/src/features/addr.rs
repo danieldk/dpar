@@ -128,7 +128,7 @@ impl AddressedValue {
                 .head(token)
                 .map(|dep| Cow::Borrowed(dep.relation.as_str())),
             Layer::Feature(ref feat) => {
-                let feature_map = try_ok!(state.features()[token].map(Features::as_map));
+                let feature_map = state.features()[token].map(Features::as_map)?;
 
                 // Return None when the feature or the feature value is absent.
                 feature_map
