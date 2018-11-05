@@ -13,7 +13,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process;
 
-use conllx::{HeadProjectivizer, Projectivize, ReadSentence};
+use conllx::{DisplaySentence, HeadProjectivizer, Projectivize, ReadSentence};
 use dpar::features::InputVectorizer;
 use dpar::models::lr::LearningRateSchedule;
 use dpar::models::tensorflow::{LayerTensors, TensorCollector, TensorflowModel};
@@ -25,9 +25,10 @@ use dpar::train::GreedyTrainer;
 use failure::Error;
 use getopts::Options;
 use indicatif::{ProgressBar, ProgressStyle};
+use stdinout::OrExit;
 use tensorflow::Tensor;
 
-use dpar_utils::{Config, FileProgress, OrExit, SerializableTransitionSystem, TomlRead};
+use dpar_utils::{Config, FileProgress, SerializableTransitionSystem, TomlRead};
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] CONFIG TRAIN_DATA VALID_DATA", program);
@@ -40,7 +41,7 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    let matches = opts.parse(&args[1..]).or_exit();
+    let matches = opts.parse(&args[1..]).or_exit("Cannot parse options", 1);
 
     if matches.opt_present("h") {
         print_usage(&program, opts);
@@ -52,19 +53,28 @@ fn main() {
         return;
     }
 
-    let config_file = File::open(&matches.free[0]).or_exit();
-    let mut config = Config::from_toml_read(config_file).or_exit();
-    config.relativize_paths(&matches.free[0]).or_exit();
+    let config_file = File::open(&matches.free[0]).or_exit("Cannot open configuration file", 1);
+    let mut config =
+        Config::from_toml_read(config_file).or_exit("Cannot read configuration file as TOML", 1);
+    config
+        .relativize_paths(&matches.free[0])
+        .or_exit("Cannot relativize paths in the configuration file", 1);
 
-    let input_file = File::open(&matches.free[1]).or_exit();
-    let reader = conllx::Reader::new(BufReader::new(FileProgress::new(input_file).or_exit()));
+    let input_file = File::open(&matches.free[1]).or_exit("Cannot open training treebank", 1);
+    let reader = conllx::Reader::new(BufReader::new(
+        FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
+    ));
     eprintln!("Vectorizing training data...");
-    let (train_labels, train_inputs) = collect_data(&config, reader).or_exit();
+    let (train_labels, train_inputs) =
+        collect_data(&config, reader).or_exit("Tensor collection failed", 1);
 
-    let input_file = File::open(&matches.free[2]).or_exit();
-    let reader = conllx::Reader::new(BufReader::new(FileProgress::new(input_file).or_exit()));
+    let input_file = File::open(&matches.free[2]).or_exit("Cannot open validation treebank", 1);
+    let reader = conllx::Reader::new(BufReader::new(
+        FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
+    ));
     eprintln!("Vectorizing validation data...");
-    let (validation_labels, validation_inputs) = collect_data(&config, reader).or_exit();
+    let (validation_labels, validation_inputs) =
+        collect_data(&config, reader).or_exit("Tensor collection failed", 1);
 
     train(
         &config,
@@ -72,7 +82,7 @@ fn main() {
         train_inputs,
         validation_labels,
         validation_inputs,
-    ).or_exit();
+    ).or_exit("Training failed", 1);
 }
 
 fn train(
@@ -118,8 +128,14 @@ where
     let inputs = config.parser.load_inputs()?;
     let vectorizer = InputVectorizer::new(lookups, inputs);
     let mut model = TensorflowModel::load_graph(
-        &config.model.config_to_protobuf().or_exit(),
-        &config.model.model_to_protobuf().or_exit(),
+        &config
+            .model
+            .config_to_protobuf()
+            .or_exit("Cannot convert Tensorflow configuration to protobuf", 1),
+        &config
+            .model
+            .read_graph()
+            .or_exit("Cannot read Tensorflow graph", 1),
         system,
         vectorizer,
         &config.lookups.layer_ops(),
@@ -138,7 +154,9 @@ where
             "Epoch {} (train, lr: {}): loss: {:.4}, acc: {:.4}",
             epoch, lr, loss, acc
         );
-        model.save(format!("epoch-{}", epoch)).or_exit();
+        model
+            .save(format!("epoch-{}", epoch))
+            .or_exit(format!("Cannot save model for epoch {}", epoch), 1);
 
         let (_, acc) = run_epoch(
             &mut model,
@@ -256,7 +274,13 @@ where
             sentence?
         };
 
-        let dependencies = sentence_to_dependencies(&sentence).or_exit();
+        let dependencies = sentence_to_dependencies(&sentence).or_exit(
+            format!(
+                "Cannot convert sentence to dependencies:\n{}",
+                DisplaySentence(&sentence)
+            ),
+            1,
+        );
 
         let mut state = ParserState::new(&sentence);
         trainer.parse_state(&dependencies, &mut state)?;

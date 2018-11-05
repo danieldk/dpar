@@ -264,7 +264,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn model_to_protobuf(&self) -> Result<Vec<u8>, Error> {
+    pub fn read_graph(&self) -> Result<Vec<u8>, Error> {
         let mut f = BufReader::new(File::open(&self.graph)?);
         let mut data = Vec::new();
         f.read_to_end(&mut data)?;

@@ -11,7 +11,7 @@ use std::io::{BufRead, BufWriter, Write};
 use std::process;
 
 use colored::*;
-use conllx::{HeadProjectivizer, Projectivize, ReadSentence};
+use conllx::{DisplaySentence, HeadProjectivizer, Projectivize, ReadSentence};
 use dpar::guide::Guide;
 use dpar::system::{sentence_to_dependencies, ParserState, Transition, TransitionSystem};
 use dpar::systems::{
@@ -19,9 +19,7 @@ use dpar::systems::{
 };
 use failure::Error;
 use getopts::Options;
-use stdinout::{Input, Output};
-
-use dpar_utils::OrExit;
+use stdinout::{Input, OrExit, Output};
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] SYSTEM [INPUT]", program);
@@ -34,7 +32,7 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    let matches = opts.parse(&args[1..]).or_exit();
+    let matches = opts.parse(&args[1..]).or_exit("Cannot parse options", 1);
 
     if matches.opt_present("h") {
         print_usage(&program, opts);
@@ -47,12 +45,12 @@ fn main() {
     }
 
     let input = Input::from(matches.free.get(1));
-    let reader = conllx::Reader::new(input.buf_read().or_exit());
+    let reader = conllx::Reader::new(input.buf_read().or_exit("Cannot open treebank", 1));
 
     let output = Output::from(matches.free.get(2));
-    let writer = BufWriter::new(output.write().or_exit());
+    let writer = BufWriter::new(output.write().or_exit("Cannot create transition output", 1));
 
-    parse(&matches.free[0], reader, writer).or_exit();
+    parse(&matches.free[0], reader, writer).or_exit("Cannot print transitions", 1);
 }
 
 fn parse<R, W>(system: &str, reader: conllx::Reader<R>, writer: BufWriter<W>) -> Result<(), Error>
@@ -85,10 +83,15 @@ where
     let projectivizer = HeadProjectivizer::new();
 
     for sentence in reader.sentences() {
-        //let sentence = sentence;
         let sentence = projectivizer.projectivize(&sentence?)?;
 
-        let gold_dependencies = sentence_to_dependencies(&sentence).or_exit();
+        let gold_dependencies = sentence_to_dependencies(&sentence).or_exit(
+            format!(
+                "Cannot extract gold dependencies:\n{}",
+                DisplaySentence(&sentence)
+            ),
+            1,
+        );
         let mut oracle = S::oracle(&gold_dependencies);
 
         let mut state = ParserState::new(&sentence);

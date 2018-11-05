@@ -38,9 +38,6 @@ pub use serialization::{CborRead, CborWrite, SerializableTransitionSystem, TomlR
 mod stored_table;
 pub use stored_table::StoredLookupTable;
 
-mod or_exit;
-pub use or_exit::OrExit;
-
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
