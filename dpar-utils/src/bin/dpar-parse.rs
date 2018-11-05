@@ -23,9 +23,9 @@ use dpar::systems::{
 };
 use failure::Error;
 use getopts::Options;
-use stdinout::{Input, Output};
+use stdinout::{Input, OrExit, Output};
 
-use dpar_utils::{Config, OrExit, SerializableTransitionSystem, TomlRead};
+use dpar_utils::{Config, SerializableTransitionSystem, TomlRead};
 
 fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] CONFIG [INPUT]", program);
@@ -38,7 +38,7 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    let matches = opts.parse(&args[1..]).or_exit();
+    let matches = opts.parse(&args[1..]).or_exit("Cannot parse options", 1);
 
     if matches.opt_present("h") {
         print_usage(&program, &opts);
@@ -50,17 +50,24 @@ fn main() {
         return;
     }
 
-    let config_file = File::open(&matches.free[0]).or_exit();
-    let mut config = Config::from_toml_read(config_file).or_exit();
-    config.relativize_paths(&matches.free[0]).or_exit();
+    let config_file = File::open(&matches.free[0]).or_exit("Cannot open configuration file", 1);
+    let mut config =
+        Config::from_toml_read(config_file).or_exit("Cannot read configuration file as TOML", 1);
+    config
+        .relativize_paths(&matches.free[0])
+        .or_exit("Cannot relativize paths in the configuration file", 1);
 
     let input = Input::from(matches.free.get(1));
-    let reader = conllx::Reader::new(input.buf_read().or_exit());
+    let reader = conllx::Reader::new(input.buf_read().or_exit("Cannot open treebank", 1));
 
     let output = Output::from(matches.free.get(2));
-    let writer = conllx::Writer::new(BufWriter::new(output.write().or_exit()));
+    let writer = conllx::Writer::new(BufWriter::new(
+        output
+            .write()
+            .or_exit("Cannot open output treebank for writing", 1),
+    ));
 
-    parse(&config, reader, writer).or_exit();
+    parse(&config, reader, writer).or_exit("Parsing failed", 1);
 }
 
 fn parse<R, W>(
@@ -117,8 +124,10 @@ where
         );
 
         for sentence in reader.sentences() {
-            let mut sentence = sentence.or_exit();
-            sent_proc.process(sentence).or_exit();
+            let mut sentence = sentence.or_exit("Cannot read sentence", 1);
+            sent_proc
+                .process(sentence)
+                .or_exit("Cannot parse sentence", 1);
             n_sents += 1;
         }
     }
@@ -184,7 +193,10 @@ where
     }
 
     fn parse_batch(&mut self) -> Result<(), Error> {
-        let dependencies = self.parser.parse_batch(&self.batch_sents).or_exit();
+        let dependencies = self
+            .parser
+            .parse_batch(&self.batch_sents)
+            .or_exit("Batch parsing failed", 1);
         update_sentences(&mut self.batch_sents, dependencies);
 
         for sentence in &self.batch_sents {
@@ -228,7 +240,7 @@ where
 {
     Ok(TensorflowModel::load_graph_with_weights(
         &config.model.config_to_protobuf()?,
-        &config.model.model_to_protobuf()?,
+        &config.model.read_graph()?,
         &config.model.parameters,
         system,
         vectorizer,
