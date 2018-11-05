@@ -100,7 +100,7 @@ where
         let mut graph_ops = EnumMap::new();
 
         for (layer, op_name) in &self.0 {
-            let op_name = ok_or_continue!(op_name.as_ref());
+            let op_name = ok_or!(op_name.as_ref(), continue);
             graph_ops[layer] = Some(op_name.to_graph_op(graph)?);
         }
 
@@ -498,7 +498,7 @@ fn add_to_args<'l>(
     input_tensors: &'l LayerTensors<i32>,
 ) {
     for (layer, layer_op) in &layer_ops.0 {
-        let layer_op = ok_or_continue!(layer_op.as_ref());
+        let layer_op = ok_or!(layer_op.as_ref(), continue);
 
         match layer_op {
             &LayerOp::Embedding {
