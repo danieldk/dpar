@@ -1,15 +1,11 @@
-use std::hash::Hash;
 use std::io::{Read, Write};
 
-use dpar::features::LookupTable;
+use dpar::lookup::FreezableLookup;
 use dpar::system::TransitionSystem;
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
-use dpar::Numberer;
 use failure::Error;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use serde_cbor;
 use toml;
 
@@ -62,26 +58,12 @@ cbor_read!(ArcHybridSystem);
 cbor_read!(ArcStandardSystem);
 cbor_read!(StackProjectiveSystem);
 cbor_read!(StackSwapSystem);
-cbor_read!(LookupTable);
+cbor_read!(FreezableLookup<String>);
 
 pub trait CborWrite {
     fn to_cbor_write<W>(&self, write: &mut W) -> Result<(), Error>
     where
         W: Write;
-}
-
-impl<T> CborWrite for Numberer<T>
-where
-    T: Eq + Hash + Serialize + DeserializeOwned,
-{
-    fn to_cbor_write<W>(&self, write: &mut W) -> Result<(), Error>
-    where
-        W: Write,
-    {
-        let data = serde_cbor::to_vec(self)?;
-        write.write_all(&data)?;
-        Ok(())
-    }
 }
 
 macro_rules! cbor_write {
@@ -104,7 +86,7 @@ cbor_write!(ArcHybridSystem);
 cbor_write!(ArcStandardSystem);
 cbor_write!(StackProjectiveSystem);
 cbor_write!(StackSwapSystem);
-cbor_write!(LookupTable);
+cbor_write!(FreezableLookup<String>);
 
 pub trait SerializableTransitionSystem:
     Default + TransitionSystem + CborRead<Value = Self> + CborWrite

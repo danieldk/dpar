@@ -14,7 +14,7 @@ mod input_layers;
 pub use self::input_layers::{AddressedValues, InputVector, InputVectorizer, Layer, LayerLookups};
 
 mod lookup;
-pub use self::lookup::{Lookup, LookupTable, MutableLookupTable};
+pub use self::lookup::{Embeddings, FeatureLookup};
 
 pub(crate) mod parse_addr;
 

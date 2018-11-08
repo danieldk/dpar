@@ -1,20 +1,19 @@
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::mem;
 use std::path::Path;
 
-use dpar::features::{Lookup, LookupTable, MutableLookupTable};
+use dpar::features::FeatureLookup;
+use dpar::lookup::{FreezableLookup, LookupLen, LookupValue};
 use failure::Error;
 use tensorflow::Tensor;
 
 use {CborRead, CborWrite};
 
-pub enum StoredLookupTable {
-    Table(LookupTable),
-    FreshTable {
-        write: Box<Write>,
-        table: MutableLookupTable,
-    },
+pub struct StoredLookupTable {
+    table: FreezableLookup<String>,
+    write: Option<Box<Write>>,
 }
 
 impl StoredLookupTable {
@@ -23,7 +22,10 @@ impl StoredLookupTable {
         P: AsRef<Path>,
     {
         let f = File::open(path)?;
-        Ok(StoredLookupTable::Table(LookupTable::from_cbor_read(f)?))
+        Ok(StoredLookupTable {
+            table: FreezableLookup::from_cbor_read(f)?,
+            write: None,
+        })
     }
 
     pub fn create<P>(path: P) -> Result<Self, Error>
@@ -32,23 +34,20 @@ impl StoredLookupTable {
     {
         let f = File::create(path)?;
         let write = BufWriter::new(f);
-        Ok(StoredLookupTable::FreshTable {
-            write: Box::new(write),
-            table: MutableLookupTable::new(),
+        Ok(StoredLookupTable {
+            table: FreezableLookup::default(),
+            write: Some(Box::new(write)),
         })
     }
 }
 
 impl Drop for StoredLookupTable {
     fn drop(&mut self) {
-        if let StoredLookupTable::FreshTable {
-            ref mut write,
-            ref mut table,
-        } = self
-        {
-            // We want to serialize an immutable table. So, get the inner MutableLookupTable,
-            // convert it into a LookupTable.
-            let table: LookupTable = mem::replace(table, MutableLookupTable::new()).into();
+        if let Some(ref mut write) = &mut self.write {
+            // We want to serialize an immutable table. So, freeze the table
+            // and serialize the frozen table.
+            let mut table = mem::replace(&mut self.table, FreezableLookup::default());
+            let table = table.freeze();
 
             if let Err(err) = table.to_cbor_write(write) {
                 eprintln!("Error writing lookup table: {}", err);
@@ -57,36 +56,32 @@ impl Drop for StoredLookupTable {
     }
 }
 
-impl Lookup for StoredLookupTable {
-    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
-        None
-    }
-
+impl LookupLen for StoredLookupTable {
     fn len(&self) -> usize {
-        match self {
-            StoredLookupTable::Table(ref table) => table.len(),
-            StoredLookupTable::FreshTable { ref table, .. } => table.len(),
-        }
+        self.table.len()
+    }
+}
+
+impl LookupValue<str> for StoredLookupTable {
+    fn lookup(&self, v: &str) -> usize {
+        self.table.lookup(v)
     }
 
-    fn lookup(&self, feature: &str) -> Option<usize> {
-        match self {
-            StoredLookupTable::Table(ref table) => table.lookup(feature),
-            StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
-        }
+    fn value(&self, id: usize) -> Option<Cow<str>> {
+        self.table.value(id)
+    }
+}
+
+impl FeatureLookup for StoredLookupTable {
+    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
+        self.table.embed_matrix()
     }
 
     fn null(&self) -> usize {
-        match self {
-            StoredLookupTable::Table(ref table) => table.null(),
-            StoredLookupTable::FreshTable { ref table, .. } => table.null(),
-        }
+        self.table.null()
     }
 
     fn unknown(&self) -> usize {
-        match self {
-            StoredLookupTable::Table(ref table) => table.unknown(),
-            StoredLookupTable::FreshTable { ref table, .. } => table.unknown(),
-        }
+        self.table.unknown()
     }
 }

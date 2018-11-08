@@ -1,20 +1,19 @@
 use std::collections::HashMap;
 
 use guide::Guide;
-use system::{
-    Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
-};
+use lookup::{FreezableLookup, Lookup};
+use system::{Dependency, DependencySet, ParserState, Transition, TransitionSystem};
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct ArcEagerSystem {
-    transitions: TransitionLookup<ArcEagerTransition>,
+    transitions: FreezableLookup<ArcEagerTransition>,
 }
 
 impl ArcEagerSystem {
     pub fn new() -> Self {
         ArcEagerSystem {
-            transitions: TransitionLookup::default(),
+            transitions: FreezableLookup::default(),
         }
     }
 }
@@ -40,7 +39,7 @@ impl TransitionSystem for ArcEagerSystem {
         ArcEagerOracle::new(gold_dependencies)
     }
 
-    fn transitions(&self) -> &TransitionLookup<Self::Transition> {
+    fn transitions(&self) -> &Lookup<ArcEagerTransition> {
         &self.transitions
     }
 }

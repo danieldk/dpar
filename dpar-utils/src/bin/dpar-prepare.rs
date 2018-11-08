@@ -17,7 +17,7 @@ use std::process;
 
 use conllx::{HeadProjectivizer, Projectivize, ReadSentence};
 use dpar::features::addr::Layer::Char;
-use dpar::features::{AddressedValues, InputVectorizer, Layer, Lookup};
+use dpar::features::{AddressedValues, FeatureLookup, InputVectorizer, Layer};
 use dpar::system::{sentence_to_dependencies, ParserState};
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
@@ -166,11 +166,11 @@ where
         chars: layer_sizes[Layer::Char],
         deprel_embeds: layer_lookups
             .layer_lookup(Layer::DepRel)
-            .map(Lookup::len)
+            .map(FeatureLookup::len)
             .unwrap_or(0),
         n_features: layer_lookups
             .layer_lookup(Layer::Feature)
-            .map(Lookup::len)
+            .map(FeatureLookup::len)
             .unwrap_or(0),
         n_labels: trainer.collector().transition_system().transitions().len(),
         prefix_len,

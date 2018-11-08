@@ -33,10 +33,9 @@ pub mod features;
 
 pub mod guide;
 
-pub mod models;
+pub mod lookup;
 
-mod numberer;
-pub use numberer::Numberer;
+pub mod models;
 
 pub mod system;
 

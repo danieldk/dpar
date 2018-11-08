@@ -1,21 +1,20 @@
 use std::collections::HashMap;
 
 use guide::Guide;
-use system::{
-    Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
-};
+use lookup::{FreezableLookup, Lookup};
+use system::{Dependency, DependencySet, ParserState, Transition, TransitionSystem};
 
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct StackProjectiveSystem {
-    transitions: TransitionLookup<StackProjectiveTransition>,
+    transitions: FreezableLookup<StackProjectiveTransition>,
 }
 
 impl StackProjectiveSystem {
     pub fn new() -> Self {
         StackProjectiveSystem {
-            transitions: TransitionLookup::default(),
+            transitions: FreezableLookup::default(),
         }
     }
 }
@@ -38,7 +37,7 @@ impl TransitionSystem for StackProjectiveSystem {
         StackProjectiveOracle::new(gold_dependencies)
     }
 
-    fn transitions(&self) -> &TransitionLookup<Self::Transition> {
+    fn transitions(&self) -> &Lookup<Self::Transition> {
         &self.transitions
     }
 }

@@ -7,9 +7,9 @@ use enum_map::EnumMap;
 use failure::Error;
 
 use features::addr;
-use features::lookup::BoxedLookup;
+use features::lookup::BoxedFeatureLookup;
 use features::parse_addr::parse_addressed_values;
-use features::Lookup;
+use features::FeatureLookup;
 use system::ParserState;
 
 /// Multiple addressable parts of the parser state.
@@ -100,7 +100,7 @@ impl<'a> From<&'a addr::Layer> for Layer {
 ///
 /// This data structure bundles lookups for the different layers (tokens,
 /// part-of-speech, etc).
-pub struct LayerLookups(EnumMap<Layer, BoxedLookup>);
+pub struct LayerLookups(EnumMap<Layer, BoxedFeatureLookup>);
 
 impl LayerLookups {
     pub fn new() -> Self {
@@ -109,13 +109,13 @@ impl LayerLookups {
 
     pub fn insert<L>(&mut self, layer: Layer, lookup: L)
     where
-        L: Into<Box<Lookup>>,
+        L: Into<Box<FeatureLookup>>,
     {
-        self.0[layer] = BoxedLookup::new(lookup);
+        self.0[layer] = BoxedFeatureLookup::new(lookup);
     }
 
     /// Get the lookup for a layer.
-    pub fn layer_lookup(&self, layer: Layer) -> Option<&Lookup> {
+    pub fn layer_lookup(&self, layer: Layer) -> Option<&FeatureLookup> {
         self.0[layer].as_ref()
     }
 }
@@ -229,22 +229,18 @@ impl InputVectorizer {
     }
 }
 
-fn lookup_char(lookup: &Lookup, feature: char) -> i32 {
+fn lookup_char(lookup: &FeatureLookup, feature: char) -> i32 {
     if feature == '\0' {
         return lookup.null() as i32;
     }
 
     let feature = feature.to_string();
-    if let Some(idx) = lookup.lookup(&feature) {
-        idx as i32
-    } else {
-        lookup.unknown() as i32
-    }
+    lookup.lookup(&feature) as i32
 }
 
-fn lookup_value(lookup: &Lookup, feature: Option<Cow<str>>) -> i32 {
+fn lookup_value(lookup: &FeatureLookup, feature: Option<Cow<str>>) -> i32 {
     match feature {
-        Some(f) => lookup.lookup(f.as_ref()).unwrap_or(lookup.unknown()) as i32,
+        Some(f) => lookup.lookup(f.as_ref()) as i32,
         None => lookup.null() as i32,
     }
 }

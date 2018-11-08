@@ -103,7 +103,7 @@ where
 
         let batch = self.labels.len() - 1;
 
-        let label = self.transition_system.transitions().lookup(t.clone());
+        let label = self.transition_system.transitions().lookup(&t);
         self.labels[batch][self.instance_idx] = label as i32;
 
         self.vectorizer.realize_into(
@@ -125,9 +125,8 @@ mod tests {
     use conllx::Token;
 
     use features::addr::{AddressedValue, Layer, Source};
-    use features::{
-        self, AddressedValues, InputVectorizer, LayerLookups, Lookup, MutableLookupTable,
-    };
+    use features::{self, AddressedValues, FeatureLookup, InputVectorizer, LayerLookups};
+    use lookup::FreezableLookup;
     use system::{ParserState, Transition};
     use systems::stack_projective::{StackProjectiveSystem, StackProjectiveTransition};
     use train::InstanceCollector;
@@ -222,7 +221,7 @@ mod tests {
         };
 
         let mut lookups = LayerLookups::new();
-        let table: Box<Lookup> = Box::new(MutableLookupTable::new());
+        let table: Box<FeatureLookup> = Box::new(FreezableLookup::default());
         lookups.insert(features::Layer::Token, table);
 
         let vectorizer = InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]));

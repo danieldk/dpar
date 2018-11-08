@@ -43,7 +43,7 @@ where
     T: TransitionSystem,
 {
     fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
-        self.transition_system.transitions().lookup(t.clone());
+        self.transition_system.transitions().lookup(&t);
         self.vectorizer.realize(state);
         Ok(())
     }

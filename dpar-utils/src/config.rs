@@ -9,8 +9,8 @@ use tf_embed;
 use tf_embed::ReadWord2Vec;
 use tf_proto::ConfigProto;
 
-use dpar::features;
-use dpar::features::{AddressedValues, Layer, LayerLookups};
+use dpar::features::FeatureLookup;
+use dpar::features::{AddressedValues, Embeddings, Layer, LayerLookups};
 use dpar::models::lr::ExponentialDecay;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
@@ -75,7 +75,7 @@ pub struct Lookups {
 impl Lookups {
     pub fn construct_lookups_with<F>(&self, load_fun: F) -> Result<LayerLookups, Error>
     where
-        F: Fn(&Lookup) -> Result<Box<features::Lookup>, Error>,
+        F: Fn(&Lookup) -> Result<Box<FeatureLookup>, Error>,
     {
         let mut lookups = LayerLookups::new();
 
@@ -106,7 +106,7 @@ impl Lookups {
         self.construct_lookups_with(|l| self.create_layer_tables(l))
     }
 
-    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
+    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<FeatureLookup>, Error> {
         match lookup {
             &Lookup::Embedding {
                 ref filename,
@@ -163,7 +163,7 @@ impl Lookups {
         }
     }
 
-    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
+    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<FeatureLookup>, Error> {
         match lookup {
             &Lookup::Embedding {
                 ref filename,
@@ -174,7 +174,7 @@ impl Lookups {
         }
     }
 
-    fn load_embeddings(filename: &str, normalize: bool) -> Result<tf_embed::Embeddings, Error> {
+    fn load_embeddings(filename: &str, normalize: bool) -> Result<Embeddings, Error> {
         let f = File::open(filename)?;
         let mut embeds = tf_embed::Embeddings::read_word2vec_binary(&mut BufReader::new(f))?;
 
@@ -182,7 +182,7 @@ impl Lookups {
             embeds.normalize()
         }
 
-        Ok(embeds)
+        Ok(embeds.into())
     }
 }
 
