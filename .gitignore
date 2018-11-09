@@ -1,4 +1,8 @@
 target
 Cargo.lock
 *.bk
+*.orig
+
+# Editor files
+*~
 .*
