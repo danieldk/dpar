@@ -50,6 +50,9 @@ pub enum Layer {
     /// Character-based prefix/suffix. The arguments specify the
     /// prefix/suffix length.
     Char(usize, usize),
+
+    /// Various input options, e.g. scores such as PMI
+    Var,
 }
 
 /// An `AddressedValue` represents a value in the parser state.
@@ -155,6 +158,9 @@ impl AddressedValue {
                     .copy_from_slice(&token_chars[token_chars.len() - suffix_len..]);
 
                 Some(Cow::Owned(String::from_iter(chars)))
+            }
+            Layer::Var => {
+                unimplemented!();
             }
         }
     }

@@ -66,6 +66,7 @@ pub enum Layer {
     DepRel,
     Feature,
     Char,
+    Var
 }
 
 impl fmt::Display for Layer {
@@ -76,6 +77,7 @@ impl fmt::Display for Layer {
             Layer::DepRel => "deprels",
             Layer::Feature => "features",
             Layer::Char => "chars",
+            Layer::Var => "various"
         };
 
         f.write_str(s)
@@ -92,6 +94,7 @@ impl<'a> From<&'a addr::Layer> for Layer {
             &addr::Layer::DepRel => Layer::DepRel,
             &addr::Layer::Feature(_) => Layer::Feature,
             &addr::Layer::Char(_, _) => Layer::Char,
+            &addr::Layer::Var => Layer::Var,
         }
     }
 }
