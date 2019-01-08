@@ -10,7 +10,7 @@ mod parser_state;
 pub use self::parser_state::ParserState;
 
 mod trans_system;
-pub use self::trans_system::{Transition, TransitionLookup, TransitionSystem};
+pub use self::trans_system::{AttachmentAddr, Transition, TransitionLookup, TransitionSystem};
 
 pub fn sentence_to_dependencies(sentence: &Sentence) -> Result<DependencySet, Error> {
     let mut dependencies = HashSet::new();
