@@ -6,6 +6,7 @@ use std::hash::Hash;
 use serde::de::DeserializeOwned;
 use serde::{Serialize, Serializer};
 
+use features::addr::Source;
 use guide::Guide;
 use numberer::Numberer;
 use system::{DependencySet, ParserState};
@@ -14,9 +15,39 @@ pub trait TransitionSystem {
     type Transition: Transition;
     type Oracle: Guide<Transition = Self::Transition>;
 
+    /// Parser state addresses undergoing attachment.
+    ///
+    /// This constant stores the addresses undergoing attachment in
+    /// the transition system, typically through a left-arc or
+    /// right-arc transition.
+    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr);
+
     fn is_terminal(state: &ParserState) -> bool;
     fn oracle(gold_dependencies: &DependencySet) -> Self::Oracle;
     fn transitions(&self) -> &TransitionLookup<Self::Transition>;
+}
+
+/// A pair of parser state addresses undergoing attachment.
+///
+/// Instances of this struct encode parser state addresses that
+/// undergo attachment. For example, the following instance:
+///
+/// ~~~
+/// use dpar::features::addr::Source;
+/// use dpar::system::AttachmentAddr;
+///
+/// AttachmentAddr {
+///   head: Source::Stack(0),
+///   dependent: Source::Stack(1),
+/// };
+/// ~~~
+///
+/// Encodes that attachments are made between the tip and second
+/// element of the stack, where the stack tip token acts as the head.
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct AttachmentAddr {
+    pub head: Source,
+    pub dependent: Source,
 }
 
 pub trait Transition: Clone + Debug + Eq + Hash + Serialize + DeserializeOwned {

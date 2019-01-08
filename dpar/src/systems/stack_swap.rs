@@ -8,6 +8,9 @@ use guide::Guide;
 use system::{
     Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
 };
+
+use features::addr::Source;
+use system::AttachmentAddr;
 use systems::util::dep_head_mapping;
 
 /// The stack-swap transition system for non-projective parsing.
@@ -40,6 +43,17 @@ impl Default for StackSwapSystem {
 impl TransitionSystem for StackSwapSystem {
     type Transition = StackSwapTransition;
     type Oracle = StackSwapOracle;
+
+    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+        AttachmentAddr {
+            head: Source::Stack(0),
+            dependent: Source::Stack(1),
+        },
+        AttachmentAddr {
+            head: Source::Stack(1),
+            dependent: Source::Stack(0),
+        },
+    );
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1

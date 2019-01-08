@@ -5,6 +5,8 @@ use system::{
     Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
 };
 
+use features::addr::Source;
+use system::AttachmentAddr;
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
@@ -29,6 +31,17 @@ impl Default for ArcStandardSystem {
 impl TransitionSystem for ArcStandardSystem {
     type Transition = ArcStandardTransition;
     type Oracle = ArcStandardOracle;
+
+    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+        AttachmentAddr {
+            head: Source::Buffer(0),
+            dependent: Source::Stack(0),
+        },
+        AttachmentAddr {
+            head: Source::Stack(0),
+            dependent: Source::Buffer(0),
+        },
+    );
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty()
@@ -68,6 +81,7 @@ impl Transition for ArcStandardTransition {
 
     fn apply(&self, state: &mut ParserState) {
         let stack_size = state.stack().len();
+
         match self {
             &ArcStandardTransition::LeftArc(ref rel) => {
                 let head = state.buffer()[0];

@@ -5,6 +5,8 @@ use system::{
     Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
 };
 
+use features::addr::Source;
+use system::AttachmentAddr;
 use systems::util::dep_head_mapping;
 
 /// The arc-hybrid transition system.
@@ -33,6 +35,17 @@ impl Default for ArcHybridSystem {
 impl TransitionSystem for ArcHybridSystem {
     type Transition = ArcHybridTransition;
     type Oracle = ArcHybridOracle;
+
+    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+        AttachmentAddr {
+            head: Source::Buffer(0),
+            dependent: Source::Stack(0),
+        },
+        AttachmentAddr {
+            head: Source::Stack(1),
+            dependent: Source::Stack(0),
+        },
+    );
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1

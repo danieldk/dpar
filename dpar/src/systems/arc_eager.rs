@@ -4,6 +4,9 @@ use guide::Guide;
 use system::{
     Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
 };
+
+use features::addr::Source;
+use system::AttachmentAddr;
 use systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
@@ -31,6 +34,17 @@ impl Default for ArcEagerSystem {
 impl TransitionSystem for ArcEagerSystem {
     type Transition = ArcEagerTransition;
     type Oracle = ArcEagerOracle;
+
+    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+        AttachmentAddr {
+            head: Source::Buffer(0),
+            dependent: Source::Stack(0),
+        },
+        AttachmentAddr {
+            head: Source::Stack(0),
+            dependent: Source::Buffer(0),
+        },
+    );
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty()
