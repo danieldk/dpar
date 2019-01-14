@@ -35,7 +35,7 @@ impl TransitionSystem for ArcEagerSystem {
     type Transition = ArcEagerTransition;
     type Oracle = ArcEagerOracle;
 
-    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+    const ATTACHMENT_ADDRS: [AttachmentAddr; 2] = [
         AttachmentAddr {
             head: Source::Buffer(0),
             dependent: Source::Stack(0),
@@ -44,7 +44,7 @@ impl TransitionSystem for ArcEagerSystem {
             head: Source::Stack(0),
             dependent: Source::Buffer(0),
         },
-    );
+    ];
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty()

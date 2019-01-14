@@ -20,7 +20,7 @@ pub trait TransitionSystem {
     /// This constant stores the addresses undergoing attachment in
     /// the transition system, typically through a left-arc or
     /// right-arc transition.
-    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr);
+    const ATTACHMENT_ADDRS: [AttachmentAddr; 2];
 
     fn is_terminal(state: &ParserState) -> bool;
     fn oracle(gold_dependencies: &DependencySet) -> Self::Oracle;

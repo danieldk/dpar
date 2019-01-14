@@ -32,7 +32,7 @@ impl TransitionSystem for StackProjectiveSystem {
     type Transition = StackProjectiveTransition;
     type Oracle = StackProjectiveOracle;
 
-    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+    const ATTACHMENT_ADDRS: [AttachmentAddr; 2] = [
         AttachmentAddr {
             head: Source::Stack(0),
             dependent: Source::Stack(1),
@@ -41,7 +41,7 @@ impl TransitionSystem for StackProjectiveSystem {
             head: Source::Stack(1),
             dependent: Source::Stack(0),
         },
-    );
+    ];
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1

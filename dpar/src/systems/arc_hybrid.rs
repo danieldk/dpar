@@ -36,7 +36,7 @@ impl TransitionSystem for ArcHybridSystem {
     type Transition = ArcHybridTransition;
     type Oracle = ArcHybridOracle;
 
-    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+    const ATTACHMENT_ADDRS: [AttachmentAddr; 2] = [
         AttachmentAddr {
             head: Source::Buffer(0),
             dependent: Source::Stack(0),
@@ -45,7 +45,7 @@ impl TransitionSystem for ArcHybridSystem {
             head: Source::Stack(1),
             dependent: Source::Stack(0),
         },
-    );
+    ];
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1

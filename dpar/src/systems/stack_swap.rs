@@ -44,7 +44,7 @@ impl TransitionSystem for StackSwapSystem {
     type Transition = StackSwapTransition;
     type Oracle = StackSwapOracle;
 
-    const ATTACHMENT_ADDRS: (AttachmentAddr, AttachmentAddr) = (
+    const ATTACHMENT_ADDRS: [AttachmentAddr; 2] = [
         AttachmentAddr {
             head: Source::Stack(0),
             dependent: Source::Stack(1),
@@ -53,7 +53,7 @@ impl TransitionSystem for StackSwapSystem {
             head: Source::Stack(1),
             dependent: Source::Stack(0),
         },
-    );
+    ];
 
     fn is_terminal(state: &ParserState) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1
