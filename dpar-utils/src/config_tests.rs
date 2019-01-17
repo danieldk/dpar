@@ -51,9 +51,70 @@ lazy_static! {
     };
 }
 
+lazy_static! {
+    static ref EXTENDED_PARSER_CHECK: Config = Config {
+        parser: Parser {
+            pproj: true,
+            system: String::from("stackproj"),
+            inputs: String::from("parser.inputs"),
+            transitions: String::from("parser.transitions"),
+            train_batch_size: 8192,
+            parse_batch_size: 8192,
+        },
+        model: Model {
+            graph: String::from("parser.graph"),
+            parameters: String::from("params"),
+            intra_op_parallelism_threads: 2,
+            inter_op_parallelism_threads: 2,
+        },
+        train: Train {
+            initial_lr: 0.05.into(),
+            decay_rate: 0.95.into(),
+            decay_steps: 10,
+            staircase: true,
+            patience: 5,
+        },
+        lookups: Lookups {
+            word: Some(Lookup::Embedding {
+                filename: String::from("word-vectors.bin"),
+                normalize: true,
+                op: String::from("prediction/model/tokens"),
+                embed_op: String::from("prediction/model/token_embeds"),
+            }),
+            tag: Some(Lookup::Embedding {
+                filename: String::from("tag-vectors.bin"),
+                normalize: true,
+                op: String::from("prediction/model/tags"),
+                embed_op: String::from("prediction/model/tag_embeds"),
+            }),
+            deprel: Some(Lookup::Table {
+                filename: String::from("deprels.lookup"),
+                op: String::from("prediction/model/deprels"),
+            }),
+            feature: Some(Lookup::Table {
+                filename: String::from("features.lookup"),
+                op: String::from("prediction/model/features"),
+            }),
+            chars: Some(Lookup::Embedding {
+                filename: String::from("char-vectors.bin"),
+                normalize: true,
+                op: String::from("prediction/model/chars"),
+                embed_op: String::from("prediction/model/char_embeds"),
+            })
+        }
+    };
+}
+
 #[test]
-fn test_parse_config() {
+fn test_parse_basic_config() {
     let f = File::open("testdata/basic-parse.conf").unwrap();
     let config = Config::from_toml_read(f).unwrap();
     assert_eq!(*BASIC_PARSER_CHECK, config);
+}
+
+#[test]
+fn test_parse_extended_config() {
+    let f = File::open("testdata/extended-parse.conf").unwrap();
+    let config = Config::from_toml_read(f).unwrap();
+    assert_eq!(*EXTENDED_PARSER_CHECK, config);
 }
