@@ -6,6 +6,9 @@ extern crate enum_map;
 #[macro_use]
 extern crate failure;
 
+#[macro_use]
+extern crate itertools;
+
 extern crate pest;
 
 #[macro_use]

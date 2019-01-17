@@ -7,6 +7,8 @@ extern crate failure;
 
 extern crate indicatif;
 
+extern crate itertools;
+
 extern crate ordered_float;
 
 extern crate protobuf;
@@ -37,6 +39,9 @@ pub use serialization::{CborRead, CborWrite, SerializableTransitionSystem, TomlR
 
 mod stored_table;
 pub use stored_table::StoredLookupTable;
+
+mod util;
+pub use util::associations_from_buf_read;
 
 #[cfg(test)]
 #[macro_use]

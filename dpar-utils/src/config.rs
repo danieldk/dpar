@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
@@ -14,6 +15,7 @@ use dpar::features::{AddressedValues, Layer, LayerLookups};
 use dpar::models::lr::ExponentialDecay;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
+use util::associations_from_buf_read;
 use StoredLookupTable;
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -35,6 +37,7 @@ impl Config {
         self.model.parameters = relativize_path(config_path, &self.model.parameters)?;
         self.parser.inputs = relativize_path(config_path, &self.parser.inputs)?;
         self.parser.transitions = relativize_path(config_path, &self.parser.transitions)?;
+        self.parser.associations = relativize_path(config_path, &self.parser.associations)?;
 
         relativize_embed_path(config_path, &mut self.lookups.word)?;
         relativize_embed_path(config_path, &mut self.lookups.tag)?;
@@ -52,6 +55,7 @@ pub struct Parser {
     pub system: String,
     pub inputs: String,
     pub transitions: String,
+    pub associations: String,
     pub train_batch_size: usize,
     pub parse_batch_size: usize,
 }
@@ -60,6 +64,11 @@ impl Parser {
     pub fn load_inputs(&self) -> Result<AddressedValues, Error> {
         let f = File::open(&self.inputs)?;
         Ok(AddressedValues::from_buf_read(BufReader::new(f))?)
+    }
+
+    pub fn load_associations(&self) -> Result<HashMap<(String, String, String), f32>, Error> {
+        let f = File::open(&self.associations)?;
+        Ok(associations_from_buf_read(f)?)
     }
 }
 

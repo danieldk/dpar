@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate itertools;
 extern crate conllx;
 extern crate dpar;
 extern crate dpar_utils;
@@ -73,10 +75,14 @@ fn main() {
         .parser
         .load_inputs()
         .or_exit("Cannot load lookups", 1);
-    let vectorizer = InputVectorizer::new(lookups, inputs);
+    let association_strengths = config
+        .parser
+        .load_associations()
+        .or_exit("Cannot load association strengths", 1);
+    let vectorizer = InputVectorizer::new(lookups, inputs, association_strengths);
 
     eprintln!("Vectorizing training data...");
-    let (train_labels, train_inputs) =
+    let (train_labels, train_lookup_inputs, train_non_lookup_inputs) =
         collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
     let input_file = File::open(&matches.free[2]).or_exit("Cannot open validation treebank", 1);
@@ -84,47 +90,53 @@ fn main() {
         FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
     ));
     eprintln!("Vectorizing validation data...");
-    let (validation_labels, validation_inputs) =
+    let (validation_labels, validation_lookup_inputs, validation_non_lookup_inputs) =
         collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
     train(
         &config,
         vectorizer,
         train_labels,
-        train_inputs,
+        train_lookup_inputs,
+        train_non_lookup_inputs,
         validation_labels,
-        validation_inputs,
-    )
-    .or_exit("Training failed", 1);
+        validation_lookup_inputs,
+        validation_non_lookup_inputs,
+    ).or_exit("Training failed", 1);
 }
 
 fn train(
     config: &Config,
     vectorizer: InputVectorizer,
     train_labels: Vec<Tensor<i32>>,
-    train_inputs: Vec<LayerTensors<i32>>,
+    train_lookup_inputs: Vec<LayerTensors<i32>>,
+    train_non_lookup_inputs: Vec<Tensor<f32>>,
     validation_labels: Vec<Tensor<i32>>,
-    validation_inputs: Vec<LayerTensors<i32>>,
+    validation_lookup_inputs: Vec<LayerTensors<i32>>,
+    validation_non_lookup_inputs: Vec<Tensor<f32>>,
 ) -> Result<(), Error> {
-    let train_fun: Box<Fn(_, _, _, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
-        "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
-        "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
-        "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
-        "stackproj" => Box::new(train_with_system::<StackProjectiveSystem>),
-        "stackswap" => Box::new(train_with_system::<StackSwapSystem>),
-        _ => {
-            eprintln!("Unsupported transition system: {}", config.parser.system);
-            process::exit(1);
-        }
-    };
+    let train_fun: Box<Fn(_, _, _, _, _, _, _, _) -> Result<_, _>> =
+        match config.parser.system.as_ref() {
+            "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
+            "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
+            "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
+            "stackproj" => Box::new(train_with_system::<StackProjectiveSystem>),
+            "stackswap" => Box::new(train_with_system::<StackSwapSystem>),
+            _ => {
+                eprintln!("Unsupported transition system: {}", config.parser.system);
+                process::exit(1);
+            }
+        };
 
     train_fun(
         config,
         vectorizer,
         train_labels,
-        train_inputs,
+        train_lookup_inputs,
+        train_non_lookup_inputs,
         validation_labels,
-        validation_inputs,
+        validation_lookup_inputs,
+        validation_non_lookup_inputs,
     )
 }
 
@@ -132,9 +144,11 @@ fn train_with_system<S>(
     config: &Config,
     vectorizer: InputVectorizer,
     train_labels: Vec<Tensor<i32>>,
-    train_inputs: Vec<LayerTensors<i32>>,
+    train_lookup_inputs: Vec<LayerTensors<i32>>,
+    train_non_lookup_inputs: Vec<Tensor<f32>>,
     validation_labels: Vec<Tensor<i32>>,
-    validation_inputs: Vec<LayerTensors<i32>>,
+    validation_lookup_inputs: Vec<LayerTensors<i32>>,
+    validation_non_lookup_inputs: Vec<Tensor<f32>>,
 ) -> Result<(), Error>
 where
     S: SerializableTransitionSystem,
@@ -162,7 +176,14 @@ where
     for epoch in 0.. {
         let lr = lr_schedule.learning_rate(epoch);
 
-        let (loss, acc) = run_epoch(&mut model, &train_labels, &train_inputs, true, lr);
+        let (loss, acc) = run_epoch(
+            &mut model,
+            &train_labels,
+            &train_lookup_inputs,
+            &train_non_lookup_inputs,
+            true,
+            lr,
+        );
         eprintln!(
             "Epoch {} (train, lr: {}): loss: {:.4}, acc: {:.4}",
             epoch, lr, loss, acc
@@ -174,7 +195,8 @@ where
         let (_, acc) = run_epoch(
             &mut model,
             &validation_labels,
-            &validation_inputs,
+            &validation_lookup_inputs,
+            &validation_non_lookup_inputs,
             false,
             lr,
         );
@@ -204,7 +226,8 @@ where
 fn run_epoch<S>(
     model: &mut TensorflowModel<S>,
     labels: &[Tensor<i32>],
-    inputs: &[LayerTensors<i32>],
+    lookup_inputs: &[LayerTensors<i32>],
+    non_lookup_inputs: &[Tensor<f32>],
     is_training: bool,
     lr: f32,
 ) -> (f32, f32)
@@ -222,11 +245,15 @@ where
         ProgressStyle::default_bar()
             .template(&format!("{{bar}} {} batch {{pos}}/{{len}}", epoch_type)),
     );
-    for (labels, inputs) in labels.iter().zip(inputs.iter()) {
+    for (labels, lookup_inputs, non_lookup_inputs) in izip!(
+        labels.iter(),
+        lookup_inputs.iter(),
+        non_lookup_inputs.iter()
+    ) {
         let batch_perf = if is_training {
-            model.train(inputs, labels, lr)
+            model.train(lookup_inputs, non_lookup_inputs, labels, lr)
         } else {
-            model.validate(inputs, labels)
+            model.validate(lookup_inputs, non_lookup_inputs, labels)
         };
 
         loss += batch_perf.loss * labels.dims()[0] as f32;
@@ -246,7 +273,7 @@ fn collect_data<R>(
     config: &Config,
     vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
+) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>, Vec<Tensor<f32>>), Error>
 where
     R: BufRead,
 {
@@ -269,7 +296,7 @@ fn collect_with_system<R, S>(
     config: &Config,
     vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
+) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>, Vec<Tensor<f32>>), Error>
 where
     R: BufRead,
     S: SerializableTransitionSystem,

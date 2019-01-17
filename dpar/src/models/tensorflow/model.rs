@@ -38,6 +38,9 @@ mod opnames {
 
     /// Training.
     pub static TRAIN: &str = "model/train";
+
+    /// Inputs.
+    pub static NON_LOOKUP_LAYER: &str = "model/assoc_strengths";
 }
 
 /// Layer op in the parsing model
@@ -141,7 +144,8 @@ where
     session: Session,
     system: T,
     vectorizer: InputVectorizer,
-    layer_ops: LayerOps<Operation>,
+    lookup_layer_ops: LayerOps<Operation>,
+    non_lookup_layer_op: Operation,
     init_op: Operation,
     restore_op: Operation,
     save_op: Operation,
@@ -258,7 +262,8 @@ where
             .map_err(status_to_error)?;
         let session = Session::new(&session_opts, &graph).map_err(status_to_error)?;
 
-        let layer_ops = op_names.to_graph_ops(&graph)?;
+        let lookup_layer_ops = op_names.to_graph_ops(&graph)?;
+        let non_lookup_layer_op = Self::add_op(&graph, opnames::NON_LOOKUP_LAYER)?;
 
         let init_op = Self::add_op(&graph, opnames::INIT)?;
         let restore_op = Self::add_op(&graph, opnames::RESTORE)?;
@@ -274,12 +279,12 @@ where
         let targets_op = Self::add_op(&graph, opnames::TARGETS)?;
 
         let train_op = Self::add_op(&graph, opnames::TRAIN)?;
-
         Ok(TensorflowModel {
             system,
             session,
             vectorizer,
-            layer_ops,
+            lookup_layer_ops,
+            non_lookup_layer_op,
             init_op,
             restore_op,
             save_op,
@@ -302,9 +307,10 @@ where
     pub fn predict(
         &mut self,
         states: &[&ParserState],
-        input_tensors: &LayerTensors<i32>,
+        lookup_input_tensors: &LayerTensors<i32>,
+        non_lookup_input_tensors: &Tensor<f32>,
     ) -> Vec<T::Transition> {
-        let logits = self.logits(input_tensors);
+        let logits = self.logits(lookup_input_tensors, non_lookup_input_tensors);
 
         let n_labels = logits.dims()[1] as usize;
 
@@ -362,7 +368,11 @@ where
     ///
     /// Each input tensor has shape *[batch_size, layer_size]*. Returns a logits
     /// tensor with shape *[batch_size, n_transitions]*.
-    fn logits(&mut self, input_tensors: &LayerTensors<i32>) -> Tensor<f32> {
+    fn logits(
+        &mut self,
+        lookup_input_tensors: &LayerTensors<i32>,
+        non_lookup_input_tensors: &Tensor<f32>,
+    ) -> Tensor<f32> {
         let mut is_training = Tensor::new(&[]);
         is_training[0] = false;
 
@@ -370,9 +380,11 @@ where
         args.add_feed(&self.is_training_op, 0, &is_training);
         add_to_args(
             &mut args,
-            &self.layer_ops,
+            &self.lookup_layer_ops,
             self.vectorizer.layer_lookups(),
-            &input_tensors,
+            &lookup_input_tensors,
+            &self.non_lookup_layer_op,
+            &non_lookup_input_tensors,
         );
         let logits_token = args.request_fetch(&self.logits_op, 0);
         self.session.run(&mut args).expect("Cannot run graph");
@@ -406,7 +418,8 @@ where
     /// The loss and accuracy on the gold standard labels are returned.
     pub fn train(
         &mut self,
-        input_tensors: &LayerTensors<i32>,
+        lookup_input_tensors: &LayerTensors<i32>,
+        non_lookup_input_tensors: &Tensor<f32>,
         targets: &Tensor<i32>,
         learning_rate: f32,
     ) -> ModelPerformance {
@@ -421,7 +434,12 @@ where
         args.add_feed(&self.lr_op, 0, &lr);
         args.add_target(&self.train_op);
 
-        self.validate_(args, input_tensors, targets)
+        self.validate_(
+            args,
+            lookup_input_tensors,
+            non_lookup_input_tensors,
+            targets,
+        )
     }
 
     /// Perform a validation step.
@@ -431,7 +449,8 @@ where
     /// (`input_tensors`).
     pub fn validate(
         &mut self,
-        input_tensors: &LayerTensors<i32>,
+        lookup_input_tensors: &LayerTensors<i32>,
+        non_lookup_input_tensors: &Tensor<f32>,
         targets: &Tensor<i32>,
     ) -> ModelPerformance {
         let mut is_training = Tensor::new(&[]);
@@ -439,21 +458,29 @@ where
 
         let mut args = SessionRunArgs::new();
         args.add_feed(&self.is_training_op, 0, &is_training);
-        self.validate_(args, input_tensors, targets)
+        self.validate_(
+            args,
+            lookup_input_tensors,
+            non_lookup_input_tensors,
+            targets,
+        )
     }
 
     fn validate_<'l>(
         &'l mut self,
         mut args: SessionRunArgs<'l>,
-        input_tensors: &'l LayerTensors<i32>,
+        lookup_input_tensors: &'l LayerTensors<i32>,
+        non_lookup_input_tensors: &'l Tensor<f32>,
         targets: &'l Tensor<i32>,
     ) -> ModelPerformance {
         // Add inputs.
         add_to_args(
             &mut args,
-            &self.layer_ops,
+            &self.lookup_layer_ops,
             self.vectorizer.layer_lookups(),
-            input_tensors,
+            lookup_input_tensors,
+            &self.non_lookup_layer_op,
+            non_lookup_input_tensors,
         );
 
         // Add gold labels.
@@ -495,7 +522,9 @@ fn add_to_args<'l>(
     args: &mut SessionRunArgs<'l>,
     layer_ops: &LayerOps<Operation>,
     layer_lookups: &'l LayerLookups,
-    input_tensors: &'l LayerTensors<i32>,
+    lookup_input_tensors: &'l LayerTensors<i32>,
+    non_lookup_layer_op: &Operation,
+    non_lookup_input_tensors: &'l Tensor<f32>,
 ) {
     for (layer, layer_op) in &layer_ops.0 {
         let layer_op = ok_or!(layer_op.as_ref(), continue);
@@ -506,7 +535,7 @@ fn add_to_args<'l>(
                 ref embed_op,
             } => {
                 // Fill the layer vector placeholder.
-                args.add_feed(op, 0, &input_tensors[layer]);
+                args.add_feed(op, 0, &lookup_input_tensors[layer]);
 
                 // Fill the embedding placeholder. If we have an op for
                 // the embedding of a layer, there should always be a
@@ -520,10 +549,11 @@ fn add_to_args<'l>(
             }
             &LayerOp::Table { ref op } => {
                 // Fill the layer vector placeholder.
-                args.add_feed(op, 0, &input_tensors[layer]);
+                args.add_feed(op, 0, &lookup_input_tensors[layer]);
             }
         }
     }
+    args.add_feed(non_lookup_layer_op, 0, &non_lookup_input_tensors);
 }
 
 /// Tensorflow requires a path that contains a directory component.
@@ -552,6 +582,7 @@ fn status_to_error(status: Status) -> Error {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufReader, Read};
 
@@ -572,7 +603,11 @@ mod tests {
             .expect("Cannot decompress test graph.");
 
         let system = StackProjectiveSystem::new();
-        let vectorizer = InputVectorizer::new(LayerLookups::new(), AddressedValues(Vec::new()));
+        let vectorizer = InputVectorizer::new(
+            LayerLookups::new(),
+            AddressedValues(Vec::new()),
+            HashMap::new(),
+        );
 
         let mut op_names = LayerOps::new();
         op_names.insert(

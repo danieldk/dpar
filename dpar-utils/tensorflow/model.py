@@ -107,6 +107,10 @@ class ParseModel:
         deprel_input = tf.reshape(deprel_input, [tf.shape(self._deprels)[
             0], self._deprels.shape[1] * deprel_embeds.shape[1]])
 
+        n_attachment_addrs = 2
+        self._assoc_strengths = tf.placeholder(
+            tf.float32, [batch_size, n_deprel_embeds * n_attachment_addrs], "assoc_strengths")
+
         # Features are converted to a one-hot representation.
         n_features = int(shapes["n_features"])
         features = tf.one_hot(self._features, n_features, axis=-1)
@@ -116,7 +120,8 @@ class ParseModel:
                             tag_input,
                             deprel_input,
                             features,
-                            morph],
+                            morph,
+                            self._assoc_strengths],
                            1,
                            name="concat_inputs")
         with tf.variable_scope("input_norm"):
@@ -200,6 +205,10 @@ class ParseModel:
     @property
     def lr(self):
         return self._lr
+
+    @property
+    def assoc_strengths(self):
+        return self._assoc_strengths
 
     @property
     def tags(self):

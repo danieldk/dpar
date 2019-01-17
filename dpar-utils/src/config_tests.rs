@@ -9,6 +9,7 @@ lazy_static! {
             system: String::from("stackproj"),
             inputs: String::from("parser.inputs"),
             transitions: String::from("parser.transitions"),
+            associations: String::from("parser.associations"),
             train_batch_size: 8000,
             parse_batch_size: 4000,
         },

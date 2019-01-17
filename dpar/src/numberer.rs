@@ -72,6 +72,11 @@ where
         );
         self.values.get(number - self.start_at)
     }
+
+    /// Return the numbered values.
+    pub fn values(&self) -> &[T] {
+        &self.values
+    }
 }
 
 #[cfg(test)]

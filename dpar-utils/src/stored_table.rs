@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::mem;
@@ -73,6 +74,13 @@ impl Lookup for StoredLookupTable {
         match self {
             StoredLookupTable::Table(ref table) => table.lookup(feature),
             StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
+        }
+    }
+
+    fn lookup_values<'a>(&'a self) -> Cow<'a, [String]> {
+        match self {
+            StoredLookupTable::Table(ref table) => table.lookup_values(),
+            StoredLookupTable::FreshTable { ref table, .. } => table.lookup_values(),
         }
     }
 

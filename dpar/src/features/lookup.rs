@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cell::RefCell;
 
 use tensorflow::Tensor;
@@ -36,6 +37,9 @@ pub trait Lookup {
     /// Lookup a feature index.
     fn lookup(&self, feature: &str) -> Option<usize>;
 
+    /// Lookup features.
+    fn lookup_values<'a>(&'a self) -> Cow<'a, [String]>;
+
     /// Null value.
     fn null(&self) -> usize;
 
@@ -54,6 +58,10 @@ impl Lookup for Embeddings {
 
     fn lookup(&self, feature: &str) -> Option<usize> {
         self.indices().get(feature).cloned()
+    }
+
+    fn lookup_values<'a>(&'a self) -> Cow<'a, [String]> {
+        Cow::Owned(self.words().to_owned())
     }
 
     fn null(&self) -> usize {
@@ -91,6 +99,10 @@ impl Lookup for MutableLookupTable {
         Some(numberer.add(feature.to_owned()))
     }
 
+    fn lookup_values<'a>(&'a self) -> Cow<'a, [String]> {
+        Cow::Owned(self.numberer.borrow().values().to_owned())
+    }
+
     fn null(&self) -> usize {
         0
     }
@@ -119,6 +131,10 @@ impl Lookup for LookupTable {
 
     fn lookup(&self, feature: &str) -> Option<usize> {
         self.numberer.number(feature)
+    }
+
+    fn lookup_values<'a>(&'a self) -> Cow<'a, [String]> {
+        Cow::Owned(self.numberer.values().to_owned())
     }
 
     fn null(&self) -> usize {

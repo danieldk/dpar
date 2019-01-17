@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fmt;
 use std::io::BufRead;
 use std::result;
@@ -10,7 +11,7 @@ use features::addr;
 use features::lookup::BoxedLookup;
 use features::parse_addr::parse_addressed_values;
 use features::Lookup;
-use system::ParserState;
+use system::{AttachmentAddr, ParserState};
 
 /// Multiple addressable parts of the parser state.
 ///
@@ -45,16 +46,20 @@ impl AddressedValues {
 /// input layers in neural networks. The input vector is split in
 /// vectors for different layers. In each layer, the feature is encoded
 /// as a 32-bit identifier, which is typically the row of the layer
-/// value in an embedding matrix.
+/// value in an embedding matrix. The second type of layer directly
+/// stores floating point values which can represent, for example,
+/// association measures.
 pub struct InputVector {
-    pub layers: EnumMap<Layer, Vec<i32>>,
+    pub lookup_layers: EnumMap<Layer, Vec<i32>>,
+    pub non_lookup_layer: Vec<f32>,
 }
 
 impl InputVector {
     /// Construct a new input vector.
     pub fn new() -> Self {
         InputVector {
-            layers: EnumMap::new(),
+            lookup_layers: EnumMap::new(),
+            non_lookup_layer: Vec::new(),
         }
     }
 }
@@ -126,6 +131,7 @@ impl LayerLookups {
 pub struct InputVectorizer {
     layer_lookups: LayerLookups,
     input_layer_addrs: AddressedValues,
+    association_strengths: HashMap<(String, String, String), f32>,
 }
 
 impl InputVectorizer {
@@ -134,10 +140,15 @@ impl InputVectorizer {
     /// The vectorizer is constructed from the layer lookups and the parser
     /// state addresses from which the feature vector should be used. The layer
     /// lookups are used to find the indices that represent the features.
-    pub fn new(layer_lookups: LayerLookups, input_addrs: AddressedValues) -> Self {
+    pub fn new(
+        layer_lookups: LayerLookups,
+        input_addrs: AddressedValues,
+        association_strengths: HashMap<(String, String, String), f32>,
+    ) -> Self {
         InputVectorizer {
-            layer_lookups: layer_lookups,
+            layer_lookups,
             input_layer_addrs: input_addrs,
+            association_strengths,
         }
     }
 
@@ -148,6 +159,10 @@ impl InputVectorizer {
     /// Get the layer lookups.
     pub fn layer_lookups(&self) -> &LayerLookups {
         &self.layer_lookups
+    }
+
+    pub fn association_strengths(&self) -> &HashMap<(String, String, String), f32> {
+        &self.association_strengths
     }
 
     pub fn layer_sizes(&self) -> EnumMap<Layer, usize> {
@@ -166,21 +181,53 @@ impl InputVectorizer {
     }
 
     /// Vectorize a parser state.
-    pub fn realize(&self, state: &ParserState) -> InputVector {
-        let mut layers = EnumMap::new();
+    pub fn realize(&self, state: &ParserState, attachment_addrs: &[AttachmentAddr]) -> InputVector {
+        let mut lookup_layers = EnumMap::new();
 
         for (layer, &size) in &self.layer_sizes() {
-            layers[layer] = vec![0; size];
+            lookup_layers[layer] = vec![0; size];
         }
 
-        self.realize_into(state, &mut layers);
+        let n_deprel_embeds = &self
+            .layer_lookups
+            .layer_lookup(Layer::DepRel)
+            .unwrap()
+            .len();
+        let mut non_lookup_layer = vec![0f32; n_deprel_embeds * attachment_addrs.len()];
 
-        InputVector { layers }
+        self.realize_into(
+            state,
+            &mut lookup_layers,
+            &mut non_lookup_layer,
+            attachment_addrs,
+        );
+
+        InputVector {
+            lookup_layers,
+            non_lookup_layer,
+        }
     }
 
     /// Vectorize a parser state into the given slices.
-    pub fn realize_into<S>(&self, state: &ParserState, slices: &mut EnumMap<Layer, S>)
-    where
+    pub fn realize_into<S>(
+        &self,
+        state: &ParserState,
+        lookup_slices: &mut EnumMap<Layer, S>,
+        non_lookup_slice: &mut [f32],
+        attachment_addrs: &[AttachmentAddr],
+    ) where
+        S: AsMut<[i32]>,
+    {
+        self.realize_into_lookups(state, lookup_slices);
+        self.realize_into_assoc_strengths(state, non_lookup_slice, attachment_addrs);
+    }
+
+    /// Vectorize a parser state into the given lookup slices.
+    pub fn realize_into_lookups<S>(
+        &self,
+        state: &ParserState,
+        lookup_slices: &mut EnumMap<Layer, S>,
+    ) where
         S: AsMut<[i32]>,
     {
         let mut layer_offsets: EnumMap<Layer, usize> = EnumMap::new();
@@ -193,7 +240,7 @@ impl InputVectorizer {
                 addr::Layer::Char(prefix_len, suffix_len) => match val {
                     Some(chars) => {
                         for ch in chars.as_ref().chars() {
-                            slices[Layer::Char].as_mut()[*offset] = lookup_char(
+                            lookup_slices[Layer::Char].as_mut()[*offset] = lookup_char(
                                 self.layer_lookups
                                     .layer_lookup(Layer::Char)
                                     .expect("Missing layer lookup for: Char"),
@@ -210,13 +257,13 @@ impl InputVectorizer {
                             .expect("Missing layer lookup for: Char")
                             .null() as i32;
                         for _ in 0..(prefix_len + suffix_len) {
-                            slices[Layer::Char].as_mut()[*offset] = null_char;
+                            lookup_slices[Layer::Char].as_mut()[*offset] = null_char;
                             *offset += 1;
                         }
                     }
                 },
                 ref layer => {
-                    slices[layer.into()].as_mut()[*offset] = lookup_value(
+                    lookup_slices[layer.into()].as_mut()[*offset] = lookup_value(
                         self.layer_lookups
                             .layer_lookup(layer.into())
                             .expect(&format!("Missing layer lookup for: {:?}", layer)),
@@ -225,6 +272,48 @@ impl InputVectorizer {
                     *offset += 1;
                 }
             }
+        }
+    }
+
+    /// Vectorize a parser state into the given association measure slices.
+    ///
+    /// Add to `non_lookup_slice` the association measure between all parser state addresses
+    /// undergoing attachment. Consider all possible dependency relations.
+    pub fn realize_into_assoc_strengths(
+        &self,
+        state: &ParserState,
+        non_lookup_slice: &mut [f32],
+        attachment_addrs: &[AttachmentAddr],
+    ) {
+        if let Some(deprel_layer) = self.layer_lookups.layer_lookup(Layer::DepRel) {
+            let deprels = deprel_layer.lookup_values();
+
+            for (idx, (addr, deprel)) in
+                iproduct!(attachment_addrs.iter(), deprels.iter()).enumerate()
+            {
+                let addr_head = addr::AddressedValue {
+                    address: vec![addr.head],
+                    layer: addr::Layer::Token,
+                };
+                let addr_dependent = addr::AddressedValue {
+                    address: vec![addr.dependent],
+                    layer: addr::Layer::Token,
+                };
+                let head = addr_head.get(state);
+                let dependent = addr_dependent.get(state);
+                if let (Some(head), Some(dependent)) = (head, dependent) {
+                    let association = self.assoc_strength(&head, &dependent, &deprel);
+                    non_lookup_slice[idx] = association;
+                }
+            }
+        }
+    }
+
+    fn assoc_strength(&self, head: &str, dependent: &str, deprel: &str) -> f32 {
+        let dep_triple = (head.to_string(), dependent.to_string(), deprel.to_string());
+        match self.association_strengths.get(&dep_triple) {
+            Some(association_strength) => association_strength.to_owned(),
+            None => 0.5.to_owned(),
         }
     }
 }

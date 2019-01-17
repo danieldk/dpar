@@ -44,7 +44,7 @@ where
 {
     fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
         self.transition_system.transitions().lookup(t.clone());
-        self.vectorizer.realize(state);
+        self.vectorizer.realize(state, &T::ATTACHMENT_ADDRS);
         Ok(())
     }
 }

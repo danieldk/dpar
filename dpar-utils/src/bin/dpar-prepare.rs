@@ -120,7 +120,8 @@ where
 {
     let lookups = config.lookups.create_lookups()?;
     let inputs = config.parser.load_inputs()?;
-    let vectorizer = InputVectorizer::new(lookups, inputs);
+    let association_strenghts = config.parser.load_associations()?;
+    let vectorizer = InputVectorizer::new(lookups, inputs, association_strenghts);
     let system: S = S::default();
     let collector = NoopCollector::new(system, vectorizer)?;
     let mut trainer = GreedyTrainer::new(collector);
