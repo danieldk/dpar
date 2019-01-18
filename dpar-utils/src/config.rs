@@ -238,12 +238,14 @@ fn relativize_path(config_path: &Path, filename: &str) -> Result<String, Error> 
         .ok_or(format_err!(
             "Cannot get the parent path for the configuration file {}",
             config_path.display()
-        ))?.join(path)
+        ))?
+        .join(path)
         .to_str()
         .ok_or(format_err!(
             "Cannot convert parent path of configuration file to string: {}",
             config_path.display()
-        ))?.to_owned())
+        ))?
+        .to_owned())
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
