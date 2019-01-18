@@ -9,37 +9,14 @@ lazy_static! {
             system: String::from("stackproj"),
             inputs: String::from("parser.inputs"),
             transitions: String::from("parser.transitions"),
-            train_batch_size: 8000,
-            parse_batch_size: 4000,
+            train_batch_size: 8192,
+            parse_batch_size: 8192,
         },
         model: Model {
-            graph: String::from("model.bin"),
+            graph: String::from("parser.graph"),
             parameters: String::from("params"),
-            intra_op_parallelism_threads: 4,
-            inter_op_parallelism_threads: 6,
-        },
-        lookups: Lookups {
-            word: Some(Lookup::Embedding {
-                filename: String::from("word-vectors.bin"),
-                normalize: true,
-                op: String::from("word_op"),
-                embed_op: String::from("word_embed_op"),
-            }),
-            tag: Some(Lookup::Embedding {
-                filename: String::from("tag-vectors.bin"),
-                normalize: true,
-                op: String::from("tag_op"),
-                embed_op: String::from("tag_embed_op"),
-            }),
-            deprel: Some(Lookup::Embedding {
-                filename: String::from("deprel-vectors.bin.real"),
-                normalize: false,
-                op: String::from("deprel_op"),
-                embed_op: String::from("deprel_embed_op"),
-            }),
-
-            chars: None,
-            feature: None
+            intra_op_parallelism_threads: 2,
+            inter_op_parallelism_threads: 2,
         },
         train: Train {
             initial_lr: 0.05.into(),
@@ -47,6 +24,34 @@ lazy_static! {
             decay_steps: 10,
             staircase: true,
             patience: 5,
+        },
+        lookups: Lookups {
+            word: Some(Lookup::Embedding {
+                filename: String::from("word-vectors.bin"),
+                normalize: true,
+                op: String::from("model/tokens"),
+                embed_op: String::from("model/token_embeds"),
+            }),
+            tag: Some(Lookup::Embedding {
+                filename: String::from("tag-vectors.bin"),
+                normalize: true,
+                op: String::from("model/tags"),
+                embed_op: String::from("model/tag_embeds"),
+            }),
+            deprel: Some(Lookup::Table {
+                filename: String::from("deprels.lookup"),
+                op: String::from("model/deprels"),
+            }),
+            feature: Some(Lookup::Table {
+                filename: String::from("features.lookup"),
+                op: String::from("model/features"),
+            }),
+            chars: Some(Lookup::Embedding {
+                filename: String::from("char-vectors.bin"),
+                normalize: true,
+                op: String::from("model/chars"),
+                embed_op: String::from("model/char_embeds"),
+            })
         }
     };
 }
