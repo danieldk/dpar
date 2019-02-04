@@ -17,21 +17,21 @@ use train::InstanceCollector;
 /// After all instances are collected, the `into_data` method can be used
 /// to get the collected tensors. The last batch will be resized to the
 /// number of instances collected into the last batch.
-pub struct TensorCollector<T> {
+pub struct TensorCollector<'a, T> {
     transition_system: T,
-    vectorizer: InputVectorizer,
+    vectorizer: &'a InputVectorizer,
     batch_size: usize,
     inputs: Vec<LayerTensors<i32>>,
     labels: Vec<Tensor<i32>>,
     instance_idx: usize,
 }
 
-impl<T> TensorCollector<T> {
+impl<'a, T> TensorCollector<'a, T> {
     /// Construct a tensor collector.
     ///
     /// The tensor collector will use the given transition system, parser state
     /// vectorizer, and batch size.
-    pub fn new(transition_system: T, vectorizer: InputVectorizer, batch_size: usize) -> Self {
+    pub fn new(transition_system: T, vectorizer: &'a InputVectorizer, batch_size: usize) -> Self {
         TensorCollector {
             transition_system,
             vectorizer,
@@ -89,7 +89,7 @@ impl<T> TensorCollector<T> {
     }
 }
 
-impl<T> InstanceCollector<T> for TensorCollector<T>
+impl<'a, T> InstanceCollector<T> for TensorCollector<'a, T>
 where
     T: TransitionSystem,
 {
@@ -136,7 +136,8 @@ mod tests {
 
     #[test]
     fn collect_zero() {
-        let collector = test_collector();
+        let vectorizer = test_vectorizer();
+        let collector = test_collector(&vectorizer);
         let (labels, inputs) = collector.into_data();
         assert_eq!(labels.len(), 0);
         assert_eq!(inputs.len(), 0);
@@ -147,7 +148,8 @@ mod tests {
         let sent = vec![Token::new("een"), Token::new("test")];
         let mut state = ParserState::new(&sent);
 
-        let mut collector = test_collector();
+        let vectorizer = test_vectorizer();
+        let mut collector = test_collector(&vectorizer);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -179,7 +181,8 @@ mod tests {
         ];
         let mut state = ParserState::new(&sent);
 
-        let mut collector = test_collector();
+        let vectorizer = test_vectorizer();
+        let mut collector = test_collector(&vectorizer);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -210,7 +213,7 @@ mod tests {
         assert_eq!(inputs[1][features::Layer::Token].as_ref(), &[3, 4]);
     }
 
-    fn test_collector() -> TensorCollector<StackProjectiveSystem> {
+    fn test_vectorizer() -> InputVectorizer {
         let stack0 = AddressedValue {
             address: vec![Source::Stack(0)],
             layer: Layer::Token,
@@ -224,9 +227,10 @@ mod tests {
         let mut lookups = LayerLookups::new();
         let table: Box<Lookup> = Box::new(MutableLookupTable::new());
         lookups.insert(features::Layer::Token, table);
+        InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]))
+    }
 
-        let vectorizer = InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]));
-
+    fn test_collector(vectorizer: &InputVectorizer) -> TensorCollector<StackProjectiveSystem> {
         TensorCollector::new(StackProjectiveSystem::new(), vectorizer, 2)
     }
 }

@@ -64,9 +64,20 @@ fn main() {
     let reader = conllx::Reader::new(BufReader::new(
         FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
     ));
+
+    let lookups = config
+        .lookups
+        .load_lookups()
+        .or_exit("Cannot load lookups", 1);
+    let inputs = config
+        .parser
+        .load_inputs()
+        .or_exit("Cannot load lookups", 1);
+    let vectorizer = InputVectorizer::new(lookups, inputs);
+
     eprintln!("Vectorizing training data...");
     let (train_labels, train_inputs) =
-        collect_data(&config, reader).or_exit("Tensor collection failed", 1);
+        collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
     let input_file = File::open(&matches.free[2]).or_exit("Cannot open validation treebank", 1);
     let reader = conllx::Reader::new(BufReader::new(
@@ -74,25 +85,28 @@ fn main() {
     ));
     eprintln!("Vectorizing validation data...");
     let (validation_labels, validation_inputs) =
-        collect_data(&config, reader).or_exit("Tensor collection failed", 1);
+        collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
     train(
         &config,
+        vectorizer,
         train_labels,
         train_inputs,
         validation_labels,
         validation_inputs,
-    ).or_exit("Training failed", 1);
+    )
+    .or_exit("Training failed", 1);
 }
 
 fn train(
     config: &Config,
+    vectorizer: InputVectorizer,
     train_labels: Vec<Tensor<i32>>,
     train_inputs: Vec<LayerTensors<i32>>,
     validation_labels: Vec<Tensor<i32>>,
     validation_inputs: Vec<LayerTensors<i32>>,
 ) -> Result<(), Error> {
-    let train_fun: Box<Fn(_, _, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
+    let train_fun: Box<Fn(_, _, _, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
         "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
         "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
@@ -106,6 +120,7 @@ fn train(
 
     train_fun(
         config,
+        vectorizer,
         train_labels,
         train_inputs,
         validation_labels,
@@ -115,6 +130,7 @@ fn train(
 
 fn train_with_system<S>(
     config: &Config,
+    vectorizer: InputVectorizer,
     train_labels: Vec<Tensor<i32>>,
     train_inputs: Vec<LayerTensors<i32>>,
     validation_labels: Vec<Tensor<i32>>,
@@ -124,9 +140,6 @@ where
     S: SerializableTransitionSystem,
 {
     let system = S::default();
-    let lookups = config.lookups.load_lookups()?;
-    let inputs = config.parser.load_inputs()?;
-    let vectorizer = InputVectorizer::new(lookups, inputs);
     let mut model = TensorflowModel::load_graph(
         &config
             .model
@@ -231,12 +244,13 @@ where
 
 fn collect_data<R>(
     config: &Config,
+    vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
 ) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
 where
     R: BufRead,
 {
-    let collect_fun: Box<Fn(_, _) -> Result<_, _>> = match config.parser.system.as_ref() {
+    let collect_fun: Box<Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(collect_with_system::<R, ArcEagerSystem>),
         "archybrid" => Box::new(collect_with_system::<R, ArcHybridSystem>),
         "arcstandard" => Box::new(collect_with_system::<R, ArcStandardSystem>),
@@ -248,22 +262,20 @@ where
         }
     };
 
-    collect_fun(config, reader)
+    collect_fun(config, vectorizer, reader)
 }
 
 fn collect_with_system<R, S>(
     config: &Config,
+    vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
 ) -> Result<(Vec<Tensor<i32>>, Vec<LayerTensors<i32>>), Error>
 where
     R: BufRead,
     S: SerializableTransitionSystem,
 {
-    let lookups = config.lookups.load_lookups()?;
-    let inputs = config.parser.load_inputs()?;
-    let vectorizer = InputVectorizer::new(lookups, inputs);
     let system: S = load_transition_system_or_new(&config)?;
-    let collector = TensorCollector::new(system, vectorizer, config.parser.train_batch_size);
+    let collector = TensorCollector::new(system, &vectorizer, config.parser.train_batch_size);
     let mut trainer = GreedyTrainer::new(collector);
     let projectivizer = HeadProjectivizer::new();
 
