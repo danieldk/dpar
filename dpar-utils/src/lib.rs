@@ -11,6 +11,8 @@ extern crate ordered_float;
 
 extern crate protobuf;
 
+extern crate rust2vec;
+
 extern crate serde;
 
 extern crate serde_cbor;
@@ -19,8 +21,6 @@ extern crate serde_cbor;
 extern crate serde_derive;
 
 extern crate tensorflow;
-
-extern crate tf_embed;
 
 extern crate tf_proto;
 

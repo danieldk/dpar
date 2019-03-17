@@ -7,16 +7,6 @@ use system::{ParserState, Transition};
 use systems::stack_projective::StackProjectiveTransition;
 
 lazy_static! {
-    static ref CHAR_TEST_SENTENCE: Vec<Token> =
-        vec![TokenBuilder::new("Orientierungswoche").token()];
-    static ref CHAR_TEST_PARSER_STATE: ParserState<'static> = ParserState::new(&CHAR_TEST_SENTENCE);
-    static ref SHORT_CHAR_TEST_SENTENCE: Vec<Token> = vec![TokenBuilder::new("zu").token()];
-    static ref SHORT_CHAR_TEST_PARSER_STATE: ParserState<'static> =
-        ParserState::new(&SHORT_CHAR_TEST_SENTENCE);
-    static ref CHAR_TEST_ADDR: AddressedValue = AddressedValue {
-        address: vec![Source::Buffer(0)],
-        layer: Layer::Char(3, 4),
-    };
     static ref THREE_TOKEN_SENTENCE: Vec<Token> = vec![
         TokenBuilder::new("a")
             .features(Features::from_string("a:x|b"))
@@ -60,18 +50,6 @@ fn test_addr() {
 
     assert_eq!(Some(Cow::Borrowed("ROOT")), stack0.get(&state));
     assert_eq!(None, stack1.get(&state));
-}
-
-#[test]
-fn test_char() {
-    assert_eq!(
-        Some(Cow::Borrowed("Orioche")),
-        CHAR_TEST_ADDR.get(&CHAR_TEST_PARSER_STATE)
-    );
-    assert_eq!(
-        Some(Cow::Borrowed("zu\0\0\0zu")),
-        CHAR_TEST_ADDR.get(&SHORT_CHAR_TEST_PARSER_STATE)
-    );
 }
 
 #[test]

@@ -1,13 +1,37 @@
 use std::cell::RefCell;
+use std::ops::Deref;
 
-use tensorflow::Tensor;
-use tf_embed::Embeddings;
+use ndarray::Array1;
+use rust2vec::embeddings::Embeddings as R2VEmbeddings;
+use rust2vec::storage::{CowArray, CowArray1, StorageWrap};
+use rust2vec::vocab::{Vocab, VocabWrap};
 
 use Numberer;
 
-static NULL_TOKEN: &'static str = "<NULL-TOKEN>";
+pub enum LookupResult<'a> {
+    Index(usize),
+    Embedding(CowArray1<'a, f32>),
+}
 
-static UNKNOWN_TOKEN: &'static str = "<UNKNOWN-TOKEN>";
+impl<'a> LookupResult<'a> {
+    pub fn index(&self) -> Option<usize> {
+        use self::LookupResult::*;
+
+        match self {
+            Index(idx) => Some(*idx),
+            Embedding(_) => None,
+        }
+    }
+}
+
+/// The type of lookup.
+pub enum LookupType {
+    /// Lookup that returns indices.
+    Index,
+
+    /// Lookup that returns embeddings with the given size.
+    Embedding(usize),
+}
 
 /// Trait for feature index lookup.
 ///
@@ -24,120 +48,139 @@ static UNKNOWN_TOKEN: &'static str = "<UNKNOWN-TOKEN>";
 /// so that parser state vectorizers can be agnostic to where the indices come
 /// from.
 pub trait Lookup {
-    /// Get the embedding matrix for the data type.
-    ///
-    /// Returns `None` if the lookup does not have an associated embedding
-    /// matrix.
-    fn embed_matrix(&self) -> Option<&Tensor<f32>>;
-
-    // Size of the table.
+    /// Size of the table.
     fn len(&self) -> usize;
 
-    /// Lookup a feature index.
-    fn lookup(&self, feature: &str) -> Option<usize>;
+    /// Lookup a feature.
+    fn lookup(&self, feature: &str) -> Option<LookupResult>;
+
+    /// Lookup type.
+    fn lookup_type(&self) -> LookupType;
 
     /// Null value.
-    fn null(&self) -> usize;
+    fn null(&self) -> LookupResult;
 
     // Unknown value.
-    fn unknown(&self) -> usize;
+    fn unknown(&self) -> LookupResult;
+}
+
+pub struct Embeddings {
+    inner: R2VEmbeddings<VocabWrap, StorageWrap>,
+    null: Array1<f32>,
+    unknown: Array1<f32>,
+}
+
+impl Deref for Embeddings {
+    type Target = R2VEmbeddings<VocabWrap, StorageWrap>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl From<R2VEmbeddings<VocabWrap, StorageWrap>> for Embeddings {
+    fn from(embeddings: R2VEmbeddings<VocabWrap, StorageWrap>) -> Self {
+        let null = Array1::zeros(embeddings.dims());
+
+        // Compute the average embedding.
+        let mut unknown = Array1::zeros(embeddings.dims());
+        for (_, embed) in &embeddings {
+            unknown += &embed.as_view();
+        }
+        let l2norm = unknown.dot(&unknown).sqrt();
+        if l2norm != 0f32 {
+            unknown /= l2norm;
+        }
+
+        Embeddings {
+            inner: embeddings,
+            null,
+            unknown,
+        }
+    }
 }
 
 impl Lookup for Embeddings {
-    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
-        Some(self.data())
-    }
-
     fn len(&self) -> usize {
-        self.len()
+        self.vocab().len()
     }
 
-    fn lookup(&self, feature: &str) -> Option<usize> {
-        self.indices().get(feature).cloned()
+    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+        self.embedding(feature).map(LookupResult::Embedding)
     }
 
-    fn null(&self) -> usize {
-        self.indices()[NULL_TOKEN]
+    fn lookup_type(&self) -> LookupType {
+        LookupType::Embedding(self.dims())
     }
 
-    fn unknown(&self) -> usize {
-        self.indices()[UNKNOWN_TOKEN]
+    fn null(&self) -> LookupResult {
+        LookupResult::Embedding(CowArray::Borrowed(self.null.view()))
+    }
+
+    fn unknown(&self) -> LookupResult {
+        LookupResult::Embedding(CowArray::Borrowed(self.unknown.view()))
     }
 }
 
-pub struct MutableLookupTable {
-    numberer: RefCell<Numberer<String>>,
-}
+pub struct MutableLookupTable(RefCell<Numberer<String>>);
 
 impl MutableLookupTable {
     pub fn new() -> Self {
-        MutableLookupTable {
-            numberer: RefCell::new(Numberer::new(1)),
-        }
+        MutableLookupTable(RefCell::new(Numberer::new(1)))
     }
 }
 
 impl Lookup for MutableLookupTable {
-    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
-        None
-    }
-
     fn len(&self) -> usize {
-        self.numberer.borrow().len() + 1
+        self.0.borrow().len() + 1
     }
 
-    fn lookup(&self, feature: &str) -> Option<usize> {
-        let mut numberer = self.numberer.borrow_mut();
-        Some(numberer.add(feature.to_owned()))
+    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+        let mut numberer = self.0.borrow_mut();
+        Some(LookupResult::Index(numberer.add(feature.to_owned())))
     }
 
-    fn null(&self) -> usize {
-        0
+    fn lookup_type(&self) -> LookupType {
+        LookupType::Index
     }
 
-    fn unknown(&self) -> usize {
-        // No better possible value until we mark low-frequency tokens,
-        // features, etc. as unknown. Luckily, unknowns do not really
-        // happen
-        0
+    fn null(&self) -> LookupResult {
+        LookupResult::Index(0)
+    }
+
+    fn unknown(&self) -> LookupResult {
+        LookupResult::Index(0)
     }
 }
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
-pub struct LookupTable {
-    numberer: Numberer<String>,
-}
-
-impl Lookup for LookupTable {
-    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
-        None
-    }
-
-    fn len(&self) -> usize {
-        self.numberer.len() + 1
-    }
-
-    fn lookup(&self, feature: &str) -> Option<usize> {
-        self.numberer.number(feature)
-    }
-
-    fn null(&self) -> usize {
-        0
-    }
-
-    fn unknown(&self) -> usize {
-        // No better possible value until we mark low-frequency tokens,
-        // features, etc. as unknown. Luckily, unknowns do not really
-        // happen
-        0
-    }
-}
+pub struct LookupTable(Numberer<String>);
 
 impl From<MutableLookupTable> for LookupTable {
     fn from(t: MutableLookupTable) -> Self {
-        LookupTable {
-            numberer: t.numberer.into_inner(),
-        }
+        LookupTable(t.0.into_inner())
+    }
+}
+
+impl Lookup for LookupTable {
+    fn len(&self) -> usize {
+        self.0.len() + 1
+    }
+
+    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+        self.0.number(feature).map(LookupResult::Index)
+    }
+
+    fn lookup_type(&self) -> LookupType {
+        LookupType::Index
+    }
+
+    fn null(&self) -> LookupResult {
+        LookupResult::Index(0)
+    }
+
+    fn unknown(&self) -> LookupResult {
+        LookupResult::Index(0)
     }
 }
 
@@ -171,28 +214,25 @@ mod tests {
     #[test]
     fn mutable_lookup_table_test() {
         let table = MutableLookupTable::new();
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.lookup("b"), Some(2));
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.null(), 0);
-        assert_eq!(table.unknown(), 0);
-        assert!(table.embed_matrix().is_none());
+        assert_eq!(table.lookup("a").unwrap().index(), Some(1));
+        assert_eq!(table.lookup("b").unwrap().index(), Some(2));
+        assert_eq!(table.lookup("a").unwrap().index(), Some(1));
+        assert_eq!(table.null().index(), Some(0));
+        assert_eq!(table.unknown().index(), Some(0));
     }
 
     #[test]
     fn lookup_table_test() {
         let table = MutableLookupTable::new();
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.lookup("b"), Some(2));
+        assert_eq!(table.lookup("a").unwrap().index(), Some(1));
+        assert_eq!(table.lookup("b").unwrap().index(), Some(2));
 
         let table: LookupTable = table.into();
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.lookup("a"), Some(1));
-        assert_eq!(table.lookup("b"), Some(2));
-        assert_eq!(table.lookup("c"), None);
-        assert_eq!(table.null(), 0);
-        assert_eq!(table.unknown(), 0);
-        assert!(table.embed_matrix().is_none());
+        assert_eq!(table.lookup("a").unwrap().index(), Some(1));
+        assert_eq!(table.lookup("a").unwrap().index(), Some(1));
+        assert_eq!(table.lookup("b").unwrap().index(), Some(2));
+        assert!(table.lookup("c").is_none());
+        assert_eq!(table.null().index(), Some(0));
+        assert_eq!(table.unknown().index(), Some(0));
     }
 }

@@ -113,4 +113,5 @@ pub trait SerializableTransitionSystem:
 
 impl<T> SerializableTransitionSystem for T where
     T: Default + TransitionSystem + CborRead<Value = T> + CborWrite
-{}
+{
+}

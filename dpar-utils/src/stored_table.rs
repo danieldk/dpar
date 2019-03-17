@@ -3,9 +3,8 @@ use std::io::{BufWriter, Write};
 use std::mem;
 use std::path::Path;
 
-use dpar::features::{Lookup, LookupTable, MutableLookupTable};
+use dpar::features::{Lookup, LookupResult, LookupTable, LookupType, MutableLookupTable};
 use failure::Error;
-use tensorflow::Tensor;
 
 use {CborRead, CborWrite};
 
@@ -58,10 +57,6 @@ impl Drop for StoredLookupTable {
 }
 
 impl Lookup for StoredLookupTable {
-    fn embed_matrix(&self) -> Option<&Tensor<f32>> {
-        None
-    }
-
     fn len(&self) -> usize {
         match self {
             StoredLookupTable::Table(ref table) => table.len(),
@@ -69,21 +64,28 @@ impl Lookup for StoredLookupTable {
         }
     }
 
-    fn lookup(&self, feature: &str) -> Option<usize> {
+    fn lookup(&self, feature: &str) -> Option<LookupResult> {
         match self {
             StoredLookupTable::Table(ref table) => table.lookup(feature),
             StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
         }
     }
 
-    fn null(&self) -> usize {
+    fn lookup_type(&self) -> LookupType {
+        match self {
+            StoredLookupTable::Table(ref table) => table.lookup_type(),
+            StoredLookupTable::FreshTable { ref table, .. } => table.lookup_type(),
+        }
+    }
+
+    fn null(&self) -> LookupResult {
         match self {
             StoredLookupTable::Table(ref table) => table.null(),
             StoredLookupTable::FreshTable { ref table, .. } => table.null(),
         }
     }
 
-    fn unknown(&self) -> usize {
+    fn unknown(&self) -> LookupResult {
         match self {
             StoredLookupTable::Table(ref table) => table.unknown(),
             StoredLookupTable::FreshTable { ref table, .. } => table.unknown(),

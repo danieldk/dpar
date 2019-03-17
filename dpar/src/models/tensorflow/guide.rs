@@ -27,17 +27,24 @@ where
         }
 
         // Allocate batch tensors.
+        let embed_size = self.vectorizer().embedding_layer_size();
+        let mut embed_tensors = Tensor::new(&[states.len() as u64, embed_size as u64]);
+
         let mut input_tensors = LayerTensors::new();
-        for (layer, size) in self.vectorizer().layer_sizes() {
+        for (layer, size) in self.vectorizer().lookup_layer_sizes() {
             input_tensors[layer] = Tensor::new(&[states.len() as u64, size as u64]).into();
         }
 
         // Fill tensors.
         for (idx, state) in states.iter().enumerate() {
-            self.vectorizer()
-                .realize_into(state, &mut input_tensors.to_instance_slices(idx));
+            let embed_offset = embed_size * idx;
+            self.vectorizer().realize_into(
+                state,
+                &mut embed_tensors[embed_offset..embed_offset + embed_size],
+                &mut input_tensors.to_instance_slices(idx),
+            );
         }
 
-        self.predict(states, &input_tensors)
+        self.predict(states, &embed_tensors, &input_tensors)
     }
 }

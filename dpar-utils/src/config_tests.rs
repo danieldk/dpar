@@ -28,13 +28,11 @@ lazy_static! {
         lookups: Lookups {
             word: Some(Lookup::Embedding {
                 filename: String::from("word-vectors.bin"),
-                normalize: true,
                 op: String::from("model/tokens"),
                 embed_op: String::from("model/token_embeds"),
             }),
             tag: Some(Lookup::Embedding {
                 filename: String::from("tag-vectors.bin"),
-                normalize: true,
                 op: String::from("model/tags"),
                 embed_op: String::from("model/tag_embeds"),
             }),
@@ -46,12 +44,6 @@ lazy_static! {
                 filename: String::from("features.lookup"),
                 op: String::from("model/features"),
             }),
-            chars: Some(Lookup::Embedding {
-                filename: String::from("char-vectors.bin"),
-                normalize: true,
-                op: String::from("model/chars"),
-                embed_op: String::from("model/char_embeds"),
-            })
         }
     };
 }

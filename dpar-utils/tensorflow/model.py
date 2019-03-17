@@ -16,8 +16,6 @@ class Layer(Enum):
     tag = 2
     deprel = 3
     feature = 4
-    char = 5
-
 
 class ParseModel:
     def __init__(
@@ -31,6 +29,8 @@ class ParseModel:
 
         # Labels for training and validation.
         self._targets = tf.placeholder(tf.int32, batch_size, "targets")
+
+        self._embeds = tf.placeholder(tf.float32, [batch_size, shapes['embed_size']], "embeds")
 
         n_tokens = int(shapes['tokens'])
         self._tokens = tf.placeholder(tf.int32, [batch_size, n_tokens],
@@ -46,54 +46,6 @@ class ParseModel:
         n_features = int(shapes['features'])
         self._features = tf.placeholder(
             tf.int32, [batch_size, n_features], "features")
-
-        n_chars = int(shapes['chars'])
-        self._chars = tf.placeholder(tf.int32, [batch_size, n_chars], "chars")
-
-        # For tokens, tags, and characters, we use pre-trained embeddings.
-        # Todo: make this more flexible.
-        self._token_embeds = tf.placeholder(
-            tf.float32, [None, 50], "token_embeds")
-        self._tag_embeds = tf.placeholder(tf.float32, [None, 50], "tag_embeds")
-        self._char_embeds = tf.placeholder(
-            tf.float32, [None, 50], "char_embeds")
-
-        token_input = tf.nn.embedding_lookup(self._token_embeds, self._tokens)
-        token_input = tf.reshape(
-            token_input, [
-                tf.shape(
-                    self._tokens)[0], self._tokens.shape[1] * self._token_embeds.shape[1]])
-
-        tag_input = tf.nn.embedding_lookup(self._tag_embeds, self._tags)
-        tag_input = tf.reshape(
-            tag_input, [
-                tf.shape(
-                    self._tags)[0], self._tags.shape[1] * self._tag_embeds.shape[1]])
-
-        char_input = tf.nn.embedding_lookup(self._char_embeds, self._chars)
-        char_input = tf.reshape(
-            char_input, [
-                tf.shape(
-                    self._chars)[0], self._chars.shape[1] * self._char_embeds.shape[1]])
-        with tf.variable_scope("char_norm"):
-            char_input = tf.layers.batch_normalization(
-                char_input, scale=True, momentum=0.80, training=self.is_training, fused=True)
-
-        # The integer-encoded characters consist of n suffix/prefix pairs. Find
-        # n.
-        prefix_len = int(shapes["prefix_len"])
-        suffix_len = int(shapes["suffix_len"])
-        n_morph_tokens = int(self._chars.shape[1]) // (prefix_len + suffix_len)
-        char_input = tf.split(char_input, n_morph_tokens, 1)
-
-        morph_w = tf.get_variable(
-            "morph_w", [
-                char_input[0].get_shape()[1], config.morph_hidden_size])
-        morph_b = tf.get_variable("morph_b", [config.morph_hidden_size])
-
-        morph = list(map(lambda i: tf.nn.relu(
-            tf.matmul(i, morph_w) + morph_b), char_input))
-        morph = tf.concat(morph, 1)
 
         # For dependency relations, we train a separate layer, which could be seen as an
         # embeddings layer.
@@ -112,11 +64,9 @@ class ParseModel:
         features = tf.one_hot(self._features, n_features, axis=-1)
         features = tf.contrib.layers.flatten(features)
 
-        inputs = tf.concat([token_input,
-                            tag_input,
+        inputs = tf.concat([self.embeds,
                             deprel_input,
-                            features,
-                            morph],
+                            features],
                            1,
                            name="concat_inputs")
         with tf.variable_scope("input_norm"):
@@ -178,16 +128,12 @@ class ParseModel:
         return self._correct
 
     @property
-    def char_embeds(self):
-        return self._char_embeds
-
-    @property
-    def chars(self):
-        return self._chars
-
-    @property
     def deprels(self):
         return self._deprels
+
+    @property
+    def embeds(self):
+        return self._embeds
 
     @property
     def is_training(self):

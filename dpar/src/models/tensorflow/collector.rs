@@ -21,6 +21,7 @@ pub struct TensorCollector<'a, T> {
     transition_system: T,
     vectorizer: &'a InputVectorizer,
     batch_size: usize,
+    embeds: Vec<Tensor<f32>>,
     inputs: Vec<LayerTensors<i32>>,
     labels: Vec<Tensor<i32>>,
     instance_idx: usize,
@@ -36,6 +37,7 @@ impl<'a, T> TensorCollector<'a, T> {
             transition_system,
             vectorizer,
             batch_size,
+            embeds: Vec::new(),
             inputs: Vec::new(),
             labels: Vec::new(),
             instance_idx: 0,
@@ -50,6 +52,9 @@ impl<'a, T> TensorCollector<'a, T> {
 
         let last_size = self.instance_idx;
 
+        let old_embeds = self.embeds.pop().expect("No batches");
+        self.embeds.push(old_embeds.copy_batches(last_size as u64));
+
         let old_inputs = self.inputs.pop().expect("No batches");
         self.inputs.push(old_inputs.copy_batches(last_size as u64));
 
@@ -63,10 +68,10 @@ impl<'a, T> TensorCollector<'a, T> {
     /// tensors. Each tensor is `batch_size` in its first dimension, except
     /// the last label/layer tensors, which is sized to the number of instances
     /// of the last batch.
-    pub fn into_data(mut self) -> (Vec<Tensor<i32>>, Vec<LayerTensors<i32>>) {
+    pub fn into_data(mut self) -> (Vec<Tensor<i32>>, Vec<Tensor<f32>>, Vec<LayerTensors<i32>>) {
         self.resize_last_batch();
 
-        (self.labels, self.inputs)
+        (self.labels, self.embeds, self.inputs)
     }
 
     /// Get the transition system of the collector.
@@ -74,11 +79,17 @@ impl<'a, T> TensorCollector<'a, T> {
         &self.transition_system
     }
 
+    fn new_embed_tensor(&self, batch_size: usize) -> Tensor<f32> {
+        let embed_size = self.vectorizer.embedding_layer_size();
+
+        Tensor::new(&[batch_size as u64, embed_size as u64])
+    }
+
     /// Construct net layer batch tensors.
     ///
     /// Each tensor has shape `[batch_size, layer_size]`.
     fn new_layer_tensors(&self, batch_size: usize) -> LayerTensors<i32> {
-        let layer_sizes = self.vectorizer.layer_sizes();
+        let layer_sizes = self.vectorizer.lookup_layer_sizes();
 
         let mut layers: EnumMap<Layer, TensorWrap<i32>> = EnumMap::new();
         for (layer, tensor) in &mut layers {
@@ -96,7 +107,9 @@ where
     fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
         // Lazily add a new batch tensor.
         if self.instance_idx == 0 {
+            let embed_tensor = self.new_embed_tensor(self.batch_size);
             let layer_tensors = self.new_layer_tensors(self.batch_size);
+            self.embeds.push(embed_tensor);
             self.inputs.push(layer_tensors);
             self.labels.push(Tensor::new(&[self.batch_size as u64]));
         }
@@ -106,8 +119,12 @@ where
         let label = self.transition_system.transitions().lookup(t.clone());
         self.labels[batch][self.instance_idx] = label as i32;
 
+        let embed_size = self.embeds[batch].dims()[1] as usize;
+        let embed_offset = self.instance_idx * embed_size;
+
         self.vectorizer.realize_into(
             state,
+            &mut self.embeds[batch][embed_offset..embed_offset + embed_size],
             &mut self.inputs[batch].to_instance_slices(self.instance_idx),
         );
 
@@ -138,8 +155,9 @@ mod tests {
     fn collect_zero() {
         let vectorizer = test_vectorizer();
         let collector = test_collector(&vectorizer);
-        let (labels, inputs) = collector.into_data();
+        let (labels, embeds, inputs) = collector.into_data();
         assert_eq!(labels.len(), 0);
+        assert_eq!(embeds.len(), 0);
         assert_eq!(inputs.len(), 0);
     }
 
@@ -157,10 +175,11 @@ mod tests {
         collector
             .collect(&StackProjectiveTransition::LeftArc("FOO".into()), &state)
             .unwrap();
-        let (labels, inputs) = collector.into_data();
+        let (labels, embeds, inputs) = collector.into_data();
 
         // There should be one batch.
         assert_eq!(labels.len(), 1);
+        assert_eq!(embeds.len(), 1);
         assert_eq!(inputs.len(), 1);
 
         // Check batch shapes.
@@ -194,10 +213,11 @@ mod tests {
         collector
             .collect(&StackProjectiveTransition::LeftArc("FOO".into()), &state)
             .unwrap();
-        let (labels, inputs) = collector.into_data();
+        let (labels, embeds, inputs) = collector.into_data();
 
         // There should be two batches.
         assert_eq!(labels.len(), 2);
+        assert_eq!(embeds.len(), 2);
         assert_eq!(inputs.len(), 2);
 
         // Check batch shapes.

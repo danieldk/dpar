@@ -9,14 +9,15 @@ conllx = "0.10"
 enum-map = "0.4"
 failure = "0.1"
 maplit = "1"
+ndarray = "0.12"
 pest = "2"
 pest_derive = "2"
 petgraph = "0.4"
 protobuf = "1.4"
+rust2vec = "0.5"
 serde = "1"
 serde_derive = "1"
-tensorflow = "0.10"
-tf-embed = { git = "https://github.com/danieldk/tf-embed-rs", tag = "v0.4.0" }
+tensorflow = "0.12"
 tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
 
 [dev-dependencies]

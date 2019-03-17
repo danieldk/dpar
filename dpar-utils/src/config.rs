@@ -5,12 +5,14 @@ use std::path::Path;
 use failure::Error;
 use ordered_float::NotNan;
 use protobuf::core::Message;
-use tf_embed;
-use tf_embed::ReadWord2Vec;
+use rust2vec::{
+    embeddings::Embeddings as R2VEmbeddings, io::ReadEmbeddings, storage::StorageWrap,
+    vocab::VocabWrap,
+};
 use tf_proto::ConfigProto;
 
 use dpar::features;
-use dpar::features::{AddressedValues, Layer, LayerLookups};
+use dpar::features::{AddressedValues, Embeddings, Layer, LayerLookups};
 use dpar::models::lr::ExponentialDecay;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
@@ -40,7 +42,6 @@ impl Config {
         relativize_embed_path(config_path, &mut self.lookups.tag)?;
         relativize_embed_path(config_path, &mut self.lookups.deprel)?;
         relativize_embed_path(config_path, &mut self.lookups.feature)?;
-        relativize_embed_path(config_path, &mut self.lookups.chars)?;
 
         Ok(())
     }
@@ -68,7 +69,6 @@ pub struct Lookups {
     pub word: Option<Lookup>,
     pub tag: Option<Lookup>,
     pub deprel: Option<Lookup>,
-    pub chars: Option<Lookup>,
     pub feature: Option<Lookup>,
 }
 
@@ -95,10 +95,6 @@ impl Lookups {
             lookups.insert(Layer::Feature, load_fun(lookup)?);
         }
 
-        if let Some(ref lookup) = self.chars {
-            lookups.insert(Layer::Char, load_fun(lookup)?);
-        }
-
         Ok(lookups)
     }
 
@@ -108,11 +104,9 @@ impl Lookups {
 
     fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match lookup {
-            &Lookup::Embedding {
-                ref filename,
-                normalize,
-                ..
-            } => Ok(Box::new(Self::load_embeddings(filename, normalize)?)),
+            &Lookup::Embedding { ref filename, .. } => {
+                Ok(Box::new(Self::load_embeddings(filename)?))
+            }
             &Lookup::Table { ref filename, .. } => {
                 Ok(Box::new(StoredLookupTable::create(filename)?))
             }
@@ -126,63 +120,40 @@ impl Lookups {
     pub fn layer_ops(&self) -> LayerOps<String> {
         let mut names = LayerOps::new();
 
-        if let Some(ref lookup) = self.word {
-            names.insert(Layer::Token, self.layer_op(lookup));
-        }
-
-        if let Some(ref lookup) = self.tag {
-            names.insert(Layer::Tag, self.layer_op(lookup));
-        }
-
-        if let Some(ref lookup) = self.deprel {
-            names.insert(Layer::DepRel, self.layer_op(lookup));
-        }
-
-        if let Some(ref lookup) = self.feature {
-            names.insert(Layer::Feature, self.layer_op(lookup));
-        }
-
-        if let Some(ref lookup) = self.chars {
-            names.insert(Layer::Char, self.layer_op(lookup));
-        }
+        self.insert_layer_op(&mut names, Layer::Token, &self.word);
+        self.insert_layer_op(&mut names, Layer::Tag, &self.tag);
+        self.insert_layer_op(&mut names, Layer::DepRel, &self.deprel);
+        self.insert_layer_op(&mut names, Layer::Feature, &self.feature);
 
         names
     }
 
-    fn layer_op(&self, lookup: &Lookup) -> LayerOp<String> {
-        match lookup {
-            &Lookup::Embedding {
-                ref op,
-                ref embed_op,
-                ..
-            } => LayerOp::Embedding {
-                op: op.clone(),
-                embed_op: embed_op.clone(),
-            },
-            &Lookup::Table { ref op, .. } => LayerOp::Table { op: op.clone() },
+    fn insert_layer_op(&self, names: &mut LayerOps<String>, layer: Layer, lookup: &Option<Lookup>) {
+        let lookup = match lookup {
+            Some(ref lookup) => lookup,
+            None => return,
+        };
+
+        if let Lookup::Table { ref op, .. } = lookup {
+            names.insert(layer, LayerOp(op.clone()));
         }
     }
 
     fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match lookup {
-            &Lookup::Embedding {
-                ref filename,
-                normalize,
-                ..
-            } => Ok(Box::new(Self::load_embeddings(filename, normalize)?)),
+            &Lookup::Embedding { ref filename, .. } => {
+                Ok(Box::new(Self::load_embeddings(filename)?))
+            }
             &Lookup::Table { ref filename, .. } => Ok(Box::new(StoredLookupTable::open(filename)?)),
         }
     }
 
-    fn load_embeddings(filename: &str, normalize: bool) -> Result<tf_embed::Embeddings, Error> {
+    fn load_embeddings(filename: &str) -> Result<Embeddings, Error> {
         let f = File::open(filename)?;
-        let mut embeds = tf_embed::Embeddings::read_word2vec_binary(&mut BufReader::new(f))?;
+        let embeds: R2VEmbeddings<VocabWrap, StorageWrap> =
+            ReadEmbeddings::read_embeddings(&mut BufReader::new(f))?;
 
-        if normalize {
-            embeds.normalize()
-        }
-
-        Ok(embeds)
+        Ok(embeds.into())
     }
 }
 
@@ -191,7 +162,6 @@ impl Lookups {
 pub enum Lookup {
     Embedding {
         filename: String,
-        normalize: bool,
         op: String,
         embed_op: String,
     },

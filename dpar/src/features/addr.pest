@@ -13,10 +13,9 @@ rdep = @{ "RDEP" ~sep~ source_idx }
 initial_source = { (stack | buffer) }
 dep_source = { (ldep | rdep) }
 
-layer = { (char_layer | deprel_layer | feature_layer | tag_layer | token_layer ) }
+layer = { ( deprel_layer | feature_layer | tag_layer | token_layer ) }
 
 // Layers
-char_layer = @{ "CHAR" ~ sep ~ affix_len ~ sep ~ affix_len }
 deprel_layer = { "DEPREL" }
 feature_layer = @{ "FEATURE" ~ sep ~ feature_name }
 tag_layer = { "TAG" }

@@ -85,22 +85,6 @@ fn process_addresses(pairs: Pairs<Rule>) -> Vec<Source> {
 
 fn process_layer(pair: Pair<Rule>) -> Layer {
     match pair.as_rule() {
-        Rule::char_layer => {
-            let mut pairs = pair.into_inner();
-            let prefix = pairs
-                .next()
-                .expect("Missing prefix")
-                .as_str()
-                .parse()
-                .expect("Invalid prefix length");
-            let suffix = pairs
-                .next()
-                .expect("Missing prefix")
-                .as_str()
-                .parse()
-                .expect("Invalid suffix length");
-            Layer::Char(prefix, suffix)
-        }
         Rule::deprel_layer => Layer::DepRel,
         Rule::feature_layer => {
             let name = pair.into_inner().next().expect("Missing feature name");

@@ -1,6 +1,4 @@
 use std::borrow::Cow;
-use std::cmp::min;
-use std::iter::FromIterator;
 
 use conllx::Features;
 
@@ -46,10 +44,6 @@ pub enum Layer {
 
     /// Feature, the string argument should specify the feature name.
     Feature(String),
-
-    /// Character-based prefix/suffix. The arguments specify the
-    /// prefix/suffix length.
-    Char(usize, usize),
 }
 
 /// An `AddressedValue` represents a value in the parser state.
@@ -137,24 +131,6 @@ impl AddressedValue {
                     .and_then(|x| x) // Option<Option<T>> -> Option<T>
                     .map(String::as_str)
                     .map(Cow::Borrowed)
-            }
-            Layer::Char(prefix_len, suffix_len) => {
-                let token_chars = state.tokens()[token].chars().collect::<Vec<_>>();
-
-                // If the prefix length is 3 Suffix Length is 4, we want to encode 'zu' as:
-                //
-                // 'z' 'u' 0 0 0 'z' 'u'
-                let mut chars = vec!['\0'; prefix_len + suffix_len];
-
-                let prefix_len = min(prefix_len, token_chars.len());
-                chars[..prefix_len].copy_from_slice(&token_chars[0..prefix_len]);
-
-                let suffix_len = min(suffix_len, token_chars.len());
-                let chars_len = chars.len();
-                chars[chars_len - suffix_len..]
-                    .copy_from_slice(&token_chars[token_chars.len() - suffix_len..]);
-
-                Some(Cow::Owned(String::from_iter(chars)))
             }
         }
     }
