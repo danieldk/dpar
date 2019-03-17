@@ -1,8 +1,8 @@
 use tensorflow::Tensor;
 
-use guide::{BatchGuide, Guide};
-use models::tensorflow::{InstanceSlices, LayerTensors, TensorflowModel};
-use system::{ParserState, TransitionSystem};
+use crate::guide::{BatchGuide, Guide};
+use crate::models::tensorflow::{InstanceSlices, LayerTensors, TensorflowModel};
+use crate::system::{ParserState, TransitionSystem};
 
 impl<T> Guide for TensorflowModel<T>
 where

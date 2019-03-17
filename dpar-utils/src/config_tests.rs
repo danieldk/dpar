@@ -1,5 +1,7 @@
 use std::fs::File;
 
+use lazy_static::*;
+
 use super::{Config, Lookup, Lookups, Model, Parser, TomlRead, Train};
 
 lazy_static! {

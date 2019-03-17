@@ -1,6 +1,6 @@
 use failure::Error;
 
-use system::{ParserState, TransitionSystem};
+use crate::system::{ParserState, TransitionSystem};
 
 mod trainer;
 pub use self::trainer::GreedyTrainer;

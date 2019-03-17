@@ -1,10 +1,3 @@
-extern crate conllx;
-extern crate dpar;
-extern crate dpar_utils;
-extern crate failure;
-extern crate getopts;
-extern crate stdinout;
-
 use std::env::args;
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Write};
@@ -124,7 +117,7 @@ where
         );
 
         for sentence in reader.sentences() {
-            let mut sentence = sentence.or_exit("Cannot read sentence", 1);
+            let sentence = sentence.or_exit("Cannot read sentence", 1);
             sent_proc
                 .process(sentence)
                 .or_exit("Cannot parse sentence", 1);
@@ -267,7 +260,7 @@ fn update_sentences(sentences: &mut [Sentence], dependencies: Vec<DependencySet>
 
     for (sentence, dep_set) in sentences.iter_mut().zip(dependencies) {
         // Clear any existing annotations.
-        for mut token in sentence.iter_mut() {
+        for token in sentence.iter_mut() {
             token.set_head(None);
             let none: Option<&str> = None;
             token.set_head_rel(none);

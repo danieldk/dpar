@@ -5,8 +5,8 @@
 
 use conllx::Sentence;
 
+use crate::system::DependencySet;
 use failure::Error;
-use system::DependencySet;
 
 /// A dependency parser without batch processing.
 pub trait Parse {

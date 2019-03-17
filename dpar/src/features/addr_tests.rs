@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 
 use conllx::{Features, Token, TokenBuilder};
+use lazy_static::*;
 
-use features::addr::{AddressedValue, Layer, Source};
-use system::{ParserState, Transition};
-use systems::stack_projective::StackProjectiveTransition;
+use crate::features::addr::{AddressedValue, Layer, Source};
+use crate::system::{ParserState, Transition};
+use crate::systems::stack_projective::StackProjectiveTransition;
 
 lazy_static! {
     static ref THREE_TOKEN_SENTENCE: Vec<Token> = vec![

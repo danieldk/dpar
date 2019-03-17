@@ -3,15 +3,15 @@ use std::fmt;
 use std::io::BufRead;
 use std::result;
 
-use enum_map::EnumMap;
+use enum_map::{Enum, EnumMap};
 use failure::Error;
 use tensorflow::Tensor;
 
-use features::addr;
-use features::lookup::LookupResult;
-use features::parse_addr::parse_addressed_values;
-use features::{BoxedLookup, Lookup, LookupType};
-use system::ParserState;
+use crate::features::addr;
+use crate::features::lookup::LookupResult;
+use crate::features::parse_addr::parse_addressed_values;
+use crate::features::{BoxedLookup, Lookup, LookupType};
+use crate::system::ParserState;
 
 /// Multiple addressable parts of the parser state.
 ///
@@ -201,7 +201,7 @@ impl InputVectorizer {
 
         for layer in &self.input_layer_addrs.0 {
             let val = layer.get(state);
-            let mut offset = &mut layer_offsets[(&layer.layer).into()];
+            let offset = &mut layer_offsets[(&layer.layer).into()];
 
             let layer = &layer.layer;
 

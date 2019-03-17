@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use enum_map::EnumMap;
 
-use features::Layer;
+use crate::features::Layer;
 use tensorflow::{Tensor, TensorType};
 
 /// Ad-hoc trait for copying a subset of batches.

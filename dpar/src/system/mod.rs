@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use conllx::Sentence;
-use failure::Error;
+use failure::{format_err, Error};
 
 mod dependency;
 pub use self::dependency::{Dependency, DependencySet};

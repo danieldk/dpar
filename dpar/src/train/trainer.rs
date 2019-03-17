@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 
 use failure::Error;
 
-use guide::Guide;
-use system::{DependencySet, ParserState, Transition, TransitionSystem};
-use train::InstanceCollector;
+use crate::guide::Guide;
+use crate::system::{DependencySet, ParserState, Transition, TransitionSystem};
+use crate::train::InstanceCollector;
 
 pub struct GreedyTrainer<T, C>
 where

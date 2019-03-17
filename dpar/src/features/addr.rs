@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use conllx::Features;
 
-use system::ParserState;
+use crate::system::ParserState;
 
 /// Source of tokens in the parser state.
 ///

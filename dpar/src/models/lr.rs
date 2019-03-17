@@ -86,6 +86,8 @@ impl LearningRateSchedule for ExponentialDecay {
 
 #[cfg(test)]
 mod tests {
+    use approx::*;
+
     use super::{ConstantLearningRate, ExponentialDecay, LearningRateSchedule};
 
     #[test]

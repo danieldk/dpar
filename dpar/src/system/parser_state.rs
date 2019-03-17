@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use conllx::{Features, Sentence, Token};
 
-use system::{Dependency, DependencySet};
+use crate::system::{Dependency, DependencySet};
 
 #[derive(Debug)]
 pub struct ParserState<'a> {

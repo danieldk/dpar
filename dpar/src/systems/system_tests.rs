@@ -4,14 +4,14 @@ use std::io::BufReader;
 
 use conllx::Reader;
 
-use guide::Guide;
-use parser::{GreedyParser, Parse};
-use system::*;
-use systems::arc_eager::ArcEagerOracle;
-use systems::arc_hybrid::ArcHybridOracle;
-use systems::arc_standard::ArcStandardOracle;
-use systems::stack_projective::StackProjectiveOracle;
-use systems::stack_swap::StackSwapOracle;
+use crate::guide::Guide;
+use crate::parser::{GreedyParser, Parse};
+use crate::system::*;
+use crate::systems::arc_eager::ArcEagerOracle;
+use crate::systems::arc_hybrid::ArcHybridOracle;
+use crate::systems::arc_standard::ArcStandardOracle;
+use crate::systems::stack_projective::StackProjectiveOracle;
+use crate::systems::stack_swap::StackSwapOracle;
 
 static PROJECTIVE_DATA: &'static str = "testdata/cdb-test.conll";
 

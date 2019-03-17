@@ -2,13 +2,14 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-use failure::Error;
+use failure::{format_err, Error};
 use ordered_float::NotNan;
 use protobuf::core::Message;
 use rust2vec::{
     embeddings::Embeddings as R2VEmbeddings, io::ReadEmbeddings, storage::StorageWrap,
     vocab::VocabWrap,
 };
+use serde_derive::{Deserialize, Serialize};
 use tf_proto::ConfigProto;
 
 use dpar::features;
@@ -16,7 +17,7 @@ use dpar::features::{AddressedValues, Embeddings, Layer, LayerLookups};
 use dpar::models::lr::ExponentialDecay;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
-use StoredLookupTable;
+use crate::StoredLookupTable;
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use system::{Dependency, DependencySet};
+use crate::system::{Dependency, DependencySet};
 
 pub fn dep_head_mapping(dependencies: &DependencySet) -> HashMap<usize, Dependency> {
     let mut mapping = HashMap::new();

@@ -1,12 +1,12 @@
 use enum_map::EnumMap;
 use tensorflow::Tensor;
 
+use crate::features::{InputVectorizer, Layer};
+use crate::models::tensorflow::{CopyBatches, InstanceSlices, LayerTensors, TensorWrap};
+use crate::system::ParserState;
+use crate::system::TransitionSystem;
+use crate::train::InstanceCollector;
 use failure::Error;
-use features::{InputVectorizer, Layer};
-use models::tensorflow::{CopyBatches, InstanceSlices, LayerTensors, TensorWrap};
-use system::ParserState;
-use system::TransitionSystem;
-use train::InstanceCollector;
 
 /// Collect gold-standard instances into Tensorflow tensors.
 ///
@@ -141,13 +141,13 @@ where
 mod tests {
     use conllx::Token;
 
-    use features::addr::{AddressedValue, Layer, Source};
-    use features::{
+    use crate::features::addr::{AddressedValue, Layer, Source};
+    use crate::features::{
         self, AddressedValues, InputVectorizer, LayerLookups, Lookup, MutableLookupTable,
     };
-    use system::{ParserState, Transition};
-    use systems::stack_projective::{StackProjectiveSystem, StackProjectiveTransition};
-    use train::InstanceCollector;
+    use crate::system::{ParserState, Transition};
+    use crate::systems::stack_projective::{StackProjectiveSystem, StackProjectiveTransition};
+    use crate::train::InstanceCollector;
 
     use super::TensorCollector;
 

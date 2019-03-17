@@ -5,11 +5,12 @@ use std::hash::Hash;
 
 use serde::de::DeserializeOwned;
 use serde::{Serialize, Serializer};
+use serde_derive::Deserialize;
 
-use features::addr::Source;
-use guide::Guide;
-use numberer::Numberer;
-use system::{DependencySet, ParserState};
+use crate::features::addr::Source;
+use crate::guide::Guide;
+use crate::numberer::Numberer;
+use crate::system::{DependencySet, ParserState};
 
 pub trait TransitionSystem {
     type Transition: Transition;
@@ -185,7 +186,7 @@ where
 mod tests {
     use std::borrow::Cow;
 
-    use systems::arc_standard::ArcStandardTransition;
+    use crate::systems::arc_standard::ArcStandardTransition;
 
     use super::TransitionLookup;
 

@@ -5,7 +5,7 @@
 //! `BatchGuide`, and provides an implementation using Tensorflow in the
 //! `Tensorflow` submodule.
 
-use system::{ParserState, Transition};
+use crate::system::{ParserState, Transition};
 
 /// Guide for parsers without batch processing
 pub trait Guide {

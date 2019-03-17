@@ -5,8 +5,9 @@ use ndarray::Array1;
 use rust2vec::embeddings::Embeddings as R2VEmbeddings;
 use rust2vec::storage::{CowArray, CowArray1, StorageWrap};
 use rust2vec::vocab::{Vocab, VocabWrap};
+use serde_derive::{Deserialize, Serialize};
 
-use Numberer;
+use crate::Numberer;
 
 pub enum LookupResult<'a> {
     Index(usize),

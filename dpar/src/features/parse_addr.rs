@@ -1,8 +1,9 @@
-use features::addr::{AddressedValue, Layer, Source};
+use crate::features::addr::{AddressedValue, Layer, Source};
 
 use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
+use pest_derive::Parser;
 
 #[derive(Parser)]
 #[grammar = "features/addr.pest"]

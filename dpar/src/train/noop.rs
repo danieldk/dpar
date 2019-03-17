@@ -1,8 +1,8 @@
 use failure::Error;
 
-use features::InputVectorizer;
-use system::{ParserState, TransitionSystem};
-use train::InstanceCollector;
+use crate::features::InputVectorizer;
+use crate::system::{ParserState, TransitionSystem};
+use crate::train::InstanceCollector;
 
 /// No-op collector.
 ///

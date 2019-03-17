@@ -3,6 +3,8 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use serde_derive::{Deserialize, Serialize};
+
 /// Numberer for categorical values, such as features or class labels.
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Numberer<T>
@@ -76,7 +78,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use Numberer;
+    use crate::Numberer;
 
     #[test]
     pub fn start_at_1() {

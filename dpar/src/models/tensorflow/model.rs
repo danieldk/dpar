@@ -2,16 +2,16 @@ use std::f32;
 use std::path::Path;
 
 use enum_map::EnumMap;
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use tensorflow::{
     Graph, ImportGraphDefOptions, Operation, Session, SessionOptions, SessionRunArgs, Status,
     Tensor,
 };
 
-use features::{InputVectorizer, Layer};
-use models::tensorflow::LayerTensors;
-use models::ModelPerformance;
-use system::{ParserState, Transition, TransitionSystem};
+use crate::features::{InputVectorizer, Layer};
+use crate::models::tensorflow::LayerTensors;
+use crate::models::ModelPerformance;
+use crate::system::{ParserState, Transition, TransitionSystem};
 
 mod opnames {
     /// Graph initialization.
@@ -517,8 +517,8 @@ mod tests {
 
     use flate2::read::GzDecoder;
 
-    use features::{AddressedValues, InputVectorizer, Layer, LayerLookups};
-    use systems::StackProjectiveSystem;
+    use crate::features::{AddressedValues, InputVectorizer, Layer, LayerLookups};
+    use crate::systems::StackProjectiveSystem;
 
     use super::{LayerOp, LayerOps, TensorflowModel};
 

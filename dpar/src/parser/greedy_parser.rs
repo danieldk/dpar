@@ -1,9 +1,9 @@
 use conllx::Sentence;
 use failure::Error;
 
-use guide::{BatchGuide, Guide};
-use parser::{Parse, ParseBatch};
-use system::{DependencySet, ParserState, Transition, TransitionSystem};
+use crate::guide::{BatchGuide, Guide};
+use crate::parser::{Parse, ParseBatch};
+use crate::system::{DependencySet, ParserState, Transition, TransitionSystem};
 
 pub struct GreedyParser<G> {
     guide: G,

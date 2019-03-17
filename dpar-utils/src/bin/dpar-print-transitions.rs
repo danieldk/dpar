@@ -1,11 +1,3 @@
-extern crate colored;
-extern crate conllx;
-extern crate dpar;
-extern crate dpar_utils;
-extern crate failure;
-extern crate getopts;
-extern crate stdinout;
-
 use std::env::args;
 use std::io::{BufRead, BufWriter, Write};
 use std::process;

@@ -1,14 +1,3 @@
-extern crate conllx;
-extern crate dpar;
-extern crate dpar_utils;
-extern crate failure;
-extern crate getopts;
-extern crate indicatif;
-#[macro_use]
-extern crate itertools;
-extern crate stdinout;
-extern crate tensorflow;
-
 use std::env::args;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -27,6 +16,7 @@ use dpar::train::GreedyTrainer;
 use failure::Error;
 use getopts::Options;
 use indicatif::{ProgressBar, ProgressStyle};
+use itertools::izip;
 use stdinout::OrExit;
 use tensorflow::Tensor;
 

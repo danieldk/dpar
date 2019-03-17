@@ -6,7 +6,7 @@ use std::path::Path;
 use dpar::features::{Lookup, LookupResult, LookupTable, LookupType, MutableLookupTable};
 use failure::Error;
 
-use {CborRead, CborWrite};
+use crate::{CborRead, CborWrite};
 
 pub enum StoredLookupTable {
     Table(LookupTable),

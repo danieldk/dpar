@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
-use guide::Guide;
-use system::{
+use serde_derive::{Deserialize, Serialize};
+
+use crate::guide::Guide;
+use crate::system::{
     Dependency, DependencySet, ParserState, Transition, TransitionLookup, TransitionSystem,
 };
 
-use features::addr::Source;
-use system::AttachmentAddr;
-use systems::util::dep_head_mapping;
+use crate::features::addr::Source;
+use crate::system::AttachmentAddr;
+use crate::systems::util::dep_head_mapping;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub struct ArcEagerSystem {

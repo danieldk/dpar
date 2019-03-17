@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use features::addr::{AddressedValue, Layer, Source};
-use features::parse_addr::parse_addressed_values;
+use lazy_static::*;
+use maplit::hashmap;
+
+use crate::features::addr::{AddressedValue, Layer, Source};
+use crate::features::parse_addr::parse_addressed_values;
 
 static CORRECT_STRING1: &'static str = "[STACK 0] TOKEN";
 static CORRECT_STRING2: &'static str = "[BUFFER 1] TAG";
