@@ -116,6 +116,7 @@ where
     }
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl<T> TransitionLookup<T>
 where
     T: Clone + Eq + Hash,

@@ -7,7 +7,7 @@ use std::process;
 use conllx::{DisplaySentence, HeadProjectivizer, Projectivize, ReadSentence};
 use dpar::features::InputVectorizer;
 use dpar::models::lr::LearningRateSchedule;
-use dpar::models::tensorflow::{LayerTensors, TensorCollector, TensorflowModel};
+use dpar::models::tensorflow::{TensorCollector, TensorCollectorParts, TensorflowModel};
 use dpar::system::{sentence_to_dependencies, ParserState};
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
@@ -18,7 +18,6 @@ use getopts::Options;
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::izip;
 use stdinout::OrExit;
-use tensorflow::Tensor;
 
 use dpar_utils::{Config, FileProgress, SerializableTransitionSystem, TomlRead};
 
@@ -68,7 +67,7 @@ fn main() {
     let vectorizer = InputVectorizer::new(lookups, inputs);
 
     eprintln!("Vectorizing training data...");
-    let (train_labels, train_embeds, train_inputs) =
+    let train_parts =
         collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
     let input_file = File::open(&matches.free[2]).or_exit("Cannot open validation treebank", 1);
@@ -76,66 +75,38 @@ fn main() {
         FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
     ));
     eprintln!("Vectorizing validation data...");
-    let (validation_labels, validation_embeds, validation_inputs) =
+    let validation_parts =
         collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
 
-    train(
-        &config,
-        vectorizer,
-        train_labels,
-        train_embeds,
-        train_inputs,
-        validation_labels,
-        validation_embeds,
-        validation_inputs,
-    )
-    .or_exit("Training failed", 1);
+    train(&config, vectorizer, train_parts, validation_parts).or_exit("Training failed", 1);
 }
 
 fn train(
     config: &Config,
     vectorizer: InputVectorizer,
-    train_labels: Vec<Tensor<i32>>,
-    train_embeds: Vec<Tensor<f32>>,
-    train_inputs: Vec<LayerTensors<i32>>,
-    validation_labels: Vec<Tensor<i32>>,
-    validation_embeds: Vec<Tensor<f32>>,
-    validation_inputs: Vec<LayerTensors<i32>>,
+    train_parts: TensorCollectorParts,
+    validation_parts: TensorCollectorParts,
 ) -> Result<(), Error> {
-    let train_fun: Box<Fn(_, _, _, _, _, _, _, _) -> Result<_, _>> =
-        match config.parser.system.as_ref() {
-            "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
-            "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
-            "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
-            "stackproj" => Box::new(train_with_system::<StackProjectiveSystem>),
-            "stackswap" => Box::new(train_with_system::<StackSwapSystem>),
-            _ => {
-                eprintln!("Unsupported transition system: {}", config.parser.system);
-                process::exit(1);
-            }
-        };
+    let train_fun: Box<Fn(_, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
+        "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
+        "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
+        "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),
+        "stackproj" => Box::new(train_with_system::<StackProjectiveSystem>),
+        "stackswap" => Box::new(train_with_system::<StackSwapSystem>),
+        _ => {
+            eprintln!("Unsupported transition system: {}", config.parser.system);
+            process::exit(1);
+        }
+    };
 
-    train_fun(
-        config,
-        vectorizer,
-        train_labels,
-        train_embeds,
-        train_inputs,
-        validation_labels,
-        validation_embeds,
-        validation_inputs,
-    )
+    train_fun(config, vectorizer, train_parts, validation_parts)
 }
 
 fn train_with_system<S>(
     config: &Config,
     vectorizer: InputVectorizer,
-    train_labels: Vec<Tensor<i32>>,
-    train_embeds: Vec<Tensor<f32>>,
-    train_inputs: Vec<LayerTensors<i32>>,
-    validation_labels: Vec<Tensor<i32>>,
-    validation_embeds: Vec<Tensor<f32>>,
-    validation_inputs: Vec<LayerTensors<i32>>,
+    train_parts: TensorCollectorParts,
+    validation_parts: TensorCollectorParts,
 ) -> Result<(), Error>
 where
     S: SerializableTransitionSystem,
@@ -163,14 +134,7 @@ where
     for epoch in 0.. {
         let lr = lr_schedule.learning_rate(epoch);
 
-        let (loss, acc) = run_epoch(
-            &mut model,
-            &train_labels,
-            &train_embeds,
-            &train_inputs,
-            true,
-            lr,
-        );
+        let (loss, acc) = run_epoch(&mut model, &train_parts, true, lr);
         eprintln!(
             "Epoch {} (train, lr: {}): loss: {:.4}, acc: {:.4}",
             epoch, lr, loss, acc
@@ -179,14 +143,7 @@ where
             .save(format!("epoch-{}", epoch))
             .or_exit(format!("Cannot save model for epoch {}", epoch), 1);
 
-        let (_, acc) = run_epoch(
-            &mut model,
-            &validation_labels,
-            &validation_embeds,
-            &validation_inputs,
-            false,
-            lr,
-        );
+        let (_, acc) = run_epoch(&mut model, &validation_parts, false, lr);
 
         if acc > best_acc {
             best_epoch = epoch;
@@ -212,9 +169,7 @@ where
 
 fn run_epoch<S>(
     model: &mut TensorflowModel<S>,
-    labels: &[Tensor<i32>],
-    embeds: &[Tensor<f32>],
-    inputs: &[LayerTensors<i32>],
+    parts: &TensorCollectorParts,
     is_training: bool,
     lr: f32,
 ) -> (f32, f32)
@@ -227,12 +182,16 @@ where
     let mut loss = 0f32;
     let mut acc = 0f32;
 
-    let progress = ProgressBar::new(labels.len() as u64);
+    let progress = ProgressBar::new(parts.labels.len() as u64);
     progress.set_style(
         ProgressStyle::default_bar()
             .template(&format!("{{bar}} {} batch {{pos}}/{{len}}", epoch_type)),
     );
-    for (labels, embeds, inputs) in izip!(labels.iter(), embeds.iter(), inputs.iter()) {
+    for (labels, embeds, inputs) in izip!(
+        parts.labels.iter(),
+        parts.embeds.iter(),
+        parts.inputs.iter()
+    ) {
         let batch_perf = if is_training {
             model.train(embeds, inputs, labels, lr)
         } else {
@@ -256,7 +215,7 @@ fn collect_data<R>(
     config: &Config,
     vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<Tensor<f32>>, Vec<LayerTensors<i32>>), Error>
+) -> Result<TensorCollectorParts, Error>
 where
     R: BufRead,
 {
@@ -279,7 +238,7 @@ fn collect_with_system<R, S>(
     config: &Config,
     vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
-) -> Result<(Vec<Tensor<i32>>, Vec<Tensor<f32>>, Vec<LayerTensors<i32>>), Error>
+) -> Result<TensorCollectorParts, Error>
 where
     R: BufRead,
     S: SerializableTransitionSystem,
@@ -308,7 +267,7 @@ where
         trainer.parse_state(&dependencies, &mut state)?;
     }
 
-    Ok(trainer.into_collector().into_data())
+    Ok(trainer.into_collector().into_parts())
 }
 
 fn load_transition_system_or_new<T>(config: &Config) -> Result<T, Error>

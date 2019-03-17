@@ -48,6 +48,7 @@ pub enum LookupType {
 /// To accommodate for these different representation, this trait is provided,
 /// so that parser state vectorizers can be agnostic to where the indices come
 /// from.
+#[allow(clippy::len_without_is_empty)]
 pub trait Lookup {
     /// Size of the table.
     fn len(&self) -> usize;
@@ -128,6 +129,12 @@ pub struct MutableLookupTable(RefCell<Numberer<String>>);
 impl MutableLookupTable {
     pub fn new() -> Self {
         MutableLookupTable(RefCell::new(Numberer::new(1)))
+    }
+}
+
+impl Default for MutableLookupTable {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

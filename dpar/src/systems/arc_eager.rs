@@ -76,15 +76,15 @@ impl Transition for ArcEagerTransition {
         let stack_len = state.stack().len();
         let buffer_len = state.buffer().len();
 
-        match self {
-            &ArcEagerTransition::LeftArc(_) => {
+        match *self {
+            ArcEagerTransition::LeftArc(_) => {
                 stack_len > 1
                     && buffer_len > 0
                     && state.head(state.stack()[stack_len - 1]).is_none()
             }
-            &ArcEagerTransition::RightArc(_) => stack_len > 0 && buffer_len > 0,
-            &ArcEagerTransition::Shift => buffer_len > 0,
-            &ArcEagerTransition::Reduce => {
+            ArcEagerTransition::RightArc(_) => stack_len > 0 && buffer_len > 0,
+            ArcEagerTransition::Shift => buffer_len > 0,
+            ArcEagerTransition::Reduce => {
                 stack_len > 0 && state.head(state.stack()[stack_len - 1]).is_some()
             }
         }
@@ -93,34 +93,34 @@ impl Transition for ArcEagerTransition {
     fn apply(&self, state: &mut ParserState) {
         let stack_len = state.stack().len();
 
-        match self {
-            &ArcEagerTransition::LeftArc(ref rel) => {
+        match *self {
+            ArcEagerTransition::LeftArc(ref rel) => {
                 let head = state.buffer()[0];
                 let dependent = state.stack_mut().remove(stack_len - 1);
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
             }
-            &ArcEagerTransition::RightArc(ref rel) => {
+            ArcEagerTransition::RightArc(ref rel) => {
                 let dependent = state.buffer_mut().remove(0);
                 let head = state.stack()[stack_len - 1];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.stack_mut().push(dependent);
             }
-            &ArcEagerTransition::Shift => {
+            ArcEagerTransition::Shift => {
                 let next = state.buffer_mut().remove(0);
                 state.stack_mut().push(next);
             }
-            &ArcEagerTransition::Reduce => {
+            ArcEagerTransition::Reduce => {
                 state.stack_mut().pop();
             }
         }
@@ -152,7 +152,7 @@ impl ArcEagerOracle {
             }
         }
 
-        return false;
+        false
     }
 }
 

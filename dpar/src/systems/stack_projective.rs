@@ -70,42 +70,42 @@ impl Transition for StackProjectiveTransition {
     type S = StackProjectiveSystem;
 
     fn is_possible(&self, state: &ParserState) -> bool {
-        match self {
-            &StackProjectiveTransition::LeftArc(_) => state.stack().len() > 2,
-            &StackProjectiveTransition::RightArc(_) => state.stack().len() > 1,
-            &StackProjectiveTransition::Shift => !state.buffer().is_empty(),
+        match *self {
+            StackProjectiveTransition::LeftArc(_) => state.stack().len() > 2,
+            StackProjectiveTransition::RightArc(_) => state.stack().len() > 1,
+            StackProjectiveTransition::Shift => !state.buffer().is_empty(),
         }
     }
 
     fn apply(&self, state: &mut ParserState) {
         let stack_size = state.stack().len();
 
-        match self {
-            &StackProjectiveTransition::LeftArc(ref rel) => {
+        match *self {
+            StackProjectiveTransition::LeftArc(ref rel) => {
                 let head = state.stack()[stack_size - 1];
                 let dependent = state.stack()[stack_size - 2];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.stack_mut().remove(stack_size - 2);
             }
-            &StackProjectiveTransition::RightArc(ref rel) => {
+            StackProjectiveTransition::RightArc(ref rel) => {
                 let dependent = state.stack()[stack_size - 1];
                 let head = state.stack()[stack_size - 2];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.stack_mut().pop();
             }
-            &StackProjectiveTransition::Shift => {
+            StackProjectiveTransition::Shift => {
                 let next = state.buffer_mut().remove(0);
                 state.stack_mut().push(next);
             }

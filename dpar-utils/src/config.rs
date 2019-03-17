@@ -104,11 +104,11 @@ impl Lookups {
     }
 
     fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
-        match lookup {
-            &Lookup::Embedding { ref filename, .. } => {
+        match *lookup {
+            Lookup::Embedding { ref filename, .. } => {
                 Ok(Box::new(Self::load_embeddings(filename)?))
             }
-            &Lookup::Table { ref filename, .. } => {
+            Lookup::Table { ref filename, .. } => {
                 Ok(Box::new(StoredLookupTable::create(filename)?))
             }
         }
@@ -141,11 +141,11 @@ impl Lookups {
     }
 
     fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
-        match lookup {
-            &Lookup::Embedding { ref filename, .. } => {
+        match *lookup {
+            Lookup::Embedding { ref filename, .. } => {
                 Ok(Box::new(Self::load_embeddings(filename)?))
             }
-            &Lookup::Table { ref filename, .. } => Ok(Box::new(StoredLookupTable::open(filename)?)),
+            Lookup::Table { ref filename, .. } => Ok(Box::new(StoredLookupTable::open(filename)?)),
         }
     }
 
@@ -174,13 +174,13 @@ pub enum Lookup {
 
 fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Result<(), Error> {
     if let Some(embed) = embed.as_mut() {
-        match embed {
-            &mut Lookup::Embedding {
+        match *embed {
+            Lookup::Embedding {
                 ref mut filename, ..
             } => {
                 *filename = relativize_path(config_path, &filename)?;
             }
-            &mut Lookup::Table {
+            Lookup::Table {
                 ref mut filename, ..
             } => {
                 *filename = relativize_path(config_path, &filename)?;
@@ -206,16 +206,20 @@ fn relativize_path(config_path: &Path, filename: &str) -> Result<String, Error> 
     let abs_config_path = config_path.canonicalize()?;
     Ok(abs_config_path
         .parent()
-        .ok_or(format_err!(
-            "Cannot get the parent path for the configuration file {}",
-            config_path.display()
-        ))?
+        .ok_or_else(|| {
+            format_err!(
+                "Cannot get the parent path for the configuration file {}",
+                config_path.display()
+            )
+        })?
         .join(path)
         .to_str()
-        .ok_or(format_err!(
-            "Cannot convert parent path of configuration file to string: {}",
-            config_path.display()
-        ))?
+        .ok_or_else(|| {
+            format_err!(
+                "Cannot convert parent path of configuration file to string: {}",
+                config_path.display()
+            )
+        })?
         .to_owned())
 }
 

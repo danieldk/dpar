@@ -1,4 +1,4 @@
-use conllx::Sentence;
+use conllx::Token;
 use failure::Error;
 
 use crate::guide::{BatchGuide, Guide};
@@ -19,7 +19,7 @@ where
     G: Guide,
 {
     pub fn new(guide: G) -> Self {
-        GreedyParser { guide: guide }
+        GreedyParser { guide }
     }
 }
 
@@ -27,7 +27,7 @@ impl<G> Parse for GreedyParser<G>
 where
     G: Guide,
 {
-    fn parse(&mut self, sentence: &Sentence) -> Result<DependencySet, Error> {
+    fn parse(&mut self, sentence: &[Token]) -> Result<DependencySet, Error> {
         let mut state = ParserState::new(sentence);
 
         while !<<G as Guide>::Transition as Transition>::S::is_terminal(&state) {
@@ -42,8 +42,14 @@ impl<G> ParseBatch for GreedyParser<G>
 where
     G: BatchGuide,
 {
-    fn parse_batch(&mut self, sentences: &[Sentence]) -> Result<Vec<DependencySet>, Error> {
-        let mut states: Vec<_> = sentences.iter().map(|s| ParserState::new(s)).collect();
+    fn parse_batch<S>(&mut self, sentences: &[S]) -> Result<Vec<DependencySet>, Error>
+    where
+        S: AsRef<[Token]>,
+    {
+        let mut states: Vec<_> = sentences
+            .iter()
+            .map(|s| ParserState::new(s.as_ref()))
+            .collect();
 
         loop {
             let (transitions, mapping) = {

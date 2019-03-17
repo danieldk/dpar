@@ -70,47 +70,47 @@ impl Transition for ArcStandardTransition {
     type S = ArcStandardSystem;
 
     fn is_possible(&self, state: &ParserState) -> bool {
-        match self {
-            &ArcStandardTransition::LeftArc(_) => {
+        match *self {
+            ArcStandardTransition::LeftArc(_) => {
                 !state.stack().len() > 1 && !state.buffer().is_empty()
             }
-            &ArcStandardTransition::RightArc(_) => {
+            ArcStandardTransition::RightArc(_) => {
                 !state.stack().is_empty() && !state.buffer().is_empty()
             }
-            &ArcStandardTransition::Shift => !state.buffer().is_empty(),
+            ArcStandardTransition::Shift => !state.buffer().is_empty(),
         }
     }
 
     fn apply(&self, state: &mut ParserState) {
         let stack_size = state.stack().len();
 
-        match self {
-            &ArcStandardTransition::LeftArc(ref rel) => {
+        match *self {
+            ArcStandardTransition::LeftArc(ref rel) => {
                 let head = state.buffer()[0];
                 let dependent = state.stack()[stack_size - 1];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.stack_mut().pop();
             }
-            &ArcStandardTransition::RightArc(ref rel) => {
+            ArcStandardTransition::RightArc(ref rel) => {
                 let dependent = state.buffer()[0];
                 let head = state.stack()[stack_size - 1];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.buffer_mut()[0] = state.stack()[stack_size - 1];
                 state.stack_mut().pop();
             }
-            &ArcStandardTransition::Shift => {
+            ArcStandardTransition::Shift => {
                 let next = state.buffer()[0];
                 state.stack_mut().push(next);
                 state.buffer_mut().remove(0);

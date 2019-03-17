@@ -22,7 +22,7 @@ where
 {
     pub fn new(collector: C) -> Self {
         GreedyTrainer {
-            collector: collector,
+            collector,
             transition_type: PhantomData,
         }
     }

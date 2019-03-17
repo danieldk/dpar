@@ -22,8 +22,8 @@ where
     /// Create a new `NoopCollector`.
     pub fn new(transition_system: T, vectorizer: InputVectorizer) -> Result<Self, Error> {
         Ok(NoopCollector {
-            transition_system: transition_system,
-            vectorizer: vectorizer,
+            transition_system,
+            vectorizer,
         })
     }
 

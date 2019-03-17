@@ -3,7 +3,7 @@
 //! This module defines the `Parse` and `ParseBatch` traits for dependency
 //! parsers. A greedy (linear-time) parser is also provided.
 
-use conllx::Sentence;
+use conllx::Token;
 
 use crate::system::DependencySet;
 use failure::Error;
@@ -11,13 +11,15 @@ use failure::Error;
 /// A dependency parser without batch processing.
 pub trait Parse {
     /// Parse a sentence, returning the dependency relations.
-    fn parse(&mut self, sentence: &Sentence) -> Result<DependencySet, Error>;
+    fn parse(&mut self, sentence: &[Token]) -> Result<DependencySet, Error>;
 }
 
 /// A dependency parser with batch processing.
 pub trait ParseBatch {
     /// Parse a batch of sentence, returning the dependency relations.
-    fn parse_batch(&mut self, sentences: &[Sentence]) -> Result<Vec<DependencySet>, Error>;
+    fn parse_batch<S>(&mut self, sentences: &[S]) -> Result<Vec<DependencySet>, Error>
+    where
+        S: AsRef<[Token]>;
 }
 
 mod greedy_parser;

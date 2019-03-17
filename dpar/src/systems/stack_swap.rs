@@ -85,11 +85,11 @@ impl Transition for StackSwapTransition {
     fn is_possible(&self, state: &ParserState) -> bool {
         let stack_len = state.stack().len();
 
-        match self {
-            &StackSwapTransition::LeftArc(_) => stack_len > 2,
-            &StackSwapTransition::RightArc(_) => stack_len > 1,
-            &StackSwapTransition::Shift => !state.buffer().is_empty(),
-            &StackSwapTransition::Swap => {
+        match *self {
+            StackSwapTransition::LeftArc(_) => stack_len > 2,
+            StackSwapTransition::RightArc(_) => stack_len > 1,
+            StackSwapTransition::Shift => !state.buffer().is_empty(),
+            StackSwapTransition::Swap => {
                 stack_len > 2 && state.stack()[stack_len - 1] > state.stack()[stack_len - 2]
             }
         }
@@ -98,32 +98,32 @@ impl Transition for StackSwapTransition {
     fn apply(&self, state: &mut ParserState) {
         let stack_len = state.stack().len();
 
-        match self {
-            &StackSwapTransition::LeftArc(ref rel) => {
+        match *self {
+            StackSwapTransition::LeftArc(ref rel) => {
                 let head = state.stack()[stack_len - 1];
                 let dependent = state.stack_mut().remove(stack_len - 2);
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
             }
-            &StackSwapTransition::RightArc(ref rel) => {
+            StackSwapTransition::RightArc(ref rel) => {
                 let head = state.stack()[stack_len - 2];
                 let dependent = state.stack_mut().remove(stack_len - 1);
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
             }
-            &StackSwapTransition::Shift => {
+            StackSwapTransition::Shift => {
                 let next = state.buffer_mut().remove(0);
                 state.stack_mut().push(next);
             }
-            &StackSwapTransition::Swap => {
+            StackSwapTransition::Swap => {
                 let swap_token = state.stack_mut().remove(stack_len - 2);
                 state.buffer_mut().insert(0, swap_token);
             }

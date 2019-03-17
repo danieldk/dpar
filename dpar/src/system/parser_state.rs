@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use conllx::{Features, Sentence, Token};
+use conllx::{Features, Token};
 
 use crate::system::{Dependency, DependencySet};
 
@@ -16,7 +16,7 @@ pub struct ParserState<'a> {
 }
 
 impl<'a> ParserState<'a> {
-    pub fn new(sentence: &Sentence) -> ParserState {
+    pub fn new(sentence: &[Token]) -> ParserState {
         let n_tokens = sentence.len() + 1;
 
         let buffer = (1..n_tokens).collect();
@@ -34,15 +34,15 @@ impl<'a> ParserState<'a> {
         features.push(None);
         features.extend(sentence.iter().map(Token::features));
 
-        return ParserState {
-            tokens: tokens,
-            tags: tags,
-            features: features,
-            stack: stack,
-            buffer: buffer,
+        ParserState {
+            tokens,
+            tags,
+            features,
+            stack,
+            buffer,
             token_heads: vec![None; n_tokens],
             head_deps: vec![Vec::new(); n_tokens],
-        };
+        }
     }
 
     pub fn add_dependency(&mut self, d: Dependency) {

@@ -74,42 +74,42 @@ impl Transition for ArcHybridTransition {
     type S = ArcHybridSystem;
 
     fn is_possible(&self, state: &ParserState) -> bool {
-        match self {
-            &ArcHybridTransition::LeftArc(_) => {
+        match *self {
+            ArcHybridTransition::LeftArc(_) => {
                 state.stack().len() > 1 && !state.buffer().is_empty()
             }
-            &ArcHybridTransition::RightArc(_) => state.stack().len() > 1,
-            &ArcHybridTransition::Shift => !state.buffer().is_empty(),
+            ArcHybridTransition::RightArc(_) => state.stack().len() > 1,
+            ArcHybridTransition::Shift => !state.buffer().is_empty(),
         }
     }
 
     fn apply(&self, state: &mut ParserState) {
         let stack_len = state.stack().len();
 
-        match self {
-            &ArcHybridTransition::LeftArc(ref rel) => {
+        match *self {
+            ArcHybridTransition::LeftArc(ref rel) => {
                 let head = state.buffer()[0];
                 let dependent = state.stack_mut().remove(stack_len - 1);
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
             }
-            &ArcHybridTransition::RightArc(ref rel) => {
+            ArcHybridTransition::RightArc(ref rel) => {
                 let dependent = state.stack()[stack_len - 1];
                 let head = state.stack()[stack_len - 2];
 
                 state.add_dependency(Dependency {
-                    head: head,
+                    head,
                     relation: rel.clone(),
-                    dependent: dependent,
+                    dependent,
                 });
 
                 state.stack_mut().pop();
             }
-            &ArcHybridTransition::Shift => {
+            ArcHybridTransition::Shift => {
                 let next = state.buffer_mut().remove(0);
                 state.stack_mut().push(next);
             }

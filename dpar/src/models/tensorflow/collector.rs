@@ -68,10 +68,14 @@ impl<'a, T> TensorCollector<'a, T> {
     /// tensors. Each tensor is `batch_size` in its first dimension, except
     /// the last label/layer tensors, which is sized to the number of instances
     /// of the last batch.
-    pub fn into_data(mut self) -> (Vec<Tensor<i32>>, Vec<Tensor<f32>>, Vec<LayerTensors<i32>>) {
+    pub fn into_parts(mut self) -> TensorCollectorParts {
         self.resize_last_batch();
 
-        (self.labels, self.embeds, self.inputs)
+        TensorCollectorParts {
+            labels: self.labels,
+            embeds: self.embeds,
+            inputs: self.inputs,
+        }
     }
 
     /// Get the transition system of the collector.
@@ -137,6 +141,12 @@ where
     }
 }
 
+pub struct TensorCollectorParts {
+    pub embeds: Vec<Tensor<f32>>,
+    pub inputs: Vec<LayerTensors<i32>>,
+    pub labels: Vec<Tensor<i32>>,
+}
+
 #[cfg(test)]
 mod tests {
     use conllx::Token;
@@ -155,10 +165,10 @@ mod tests {
     fn collect_zero() {
         let vectorizer = test_vectorizer();
         let collector = test_collector(&vectorizer);
-        let (labels, embeds, inputs) = collector.into_data();
-        assert_eq!(labels.len(), 0);
-        assert_eq!(embeds.len(), 0);
-        assert_eq!(inputs.len(), 0);
+        let parts = collector.into_parts();
+        assert_eq!(parts.labels.len(), 0);
+        assert_eq!(parts.embeds.len(), 0);
+        assert_eq!(parts.inputs.len(), 0);
     }
 
     #[test]
@@ -175,20 +185,23 @@ mod tests {
         collector
             .collect(&StackProjectiveTransition::LeftArc("FOO".into()), &state)
             .unwrap();
-        let (labels, embeds, inputs) = collector.into_data();
+        let parts = collector.into_parts();
 
         // There should be one batch.
-        assert_eq!(labels.len(), 1);
-        assert_eq!(embeds.len(), 1);
-        assert_eq!(inputs.len(), 1);
+        assert_eq!(parts.labels.len(), 1);
+        assert_eq!(parts.embeds.len(), 1);
+        assert_eq!(parts.inputs.len(), 1);
 
         // Check batch shapes.
-        assert_eq!(labels[0].dims(), &[2]);
-        assert_eq!(inputs[0][features::Layer::Token].dims(), &[2, 2]);
+        assert_eq!(parts.labels[0].dims(), &[2]);
+        assert_eq!(parts.inputs[0][features::Layer::Token].dims(), &[2, 2]);
 
         // Check batch contents.
-        assert_eq!(&*labels[0], &[1, 2]);
-        assert_eq!(inputs[0][features::Layer::Token].as_ref(), &[1, 2, 2, 3]);
+        assert_eq!(&*parts.labels[0], &[1, 2]);
+        assert_eq!(
+            parts.inputs[0][features::Layer::Token].as_ref(),
+            &[1, 2, 2, 3]
+        );
     }
 
     #[test]
@@ -213,24 +226,27 @@ mod tests {
         collector
             .collect(&StackProjectiveTransition::LeftArc("FOO".into()), &state)
             .unwrap();
-        let (labels, embeds, inputs) = collector.into_data();
+        let parts = collector.into_parts();
 
         // There should be two batches.
-        assert_eq!(labels.len(), 2);
-        assert_eq!(embeds.len(), 2);
-        assert_eq!(inputs.len(), 2);
+        assert_eq!(parts.labels.len(), 2);
+        assert_eq!(parts.embeds.len(), 2);
+        assert_eq!(parts.inputs.len(), 2);
 
         // Check batch shapes.
-        assert_eq!(labels[0].dims(), &[2]);
-        assert_eq!(inputs[0][features::Layer::Token].dims(), &[2, 2]);
-        assert_eq!(labels[1].dims(), &[1]);
-        assert_eq!(inputs[1][features::Layer::Token].dims(), &[1, 2]);
+        assert_eq!(parts.labels[0].dims(), &[2]);
+        assert_eq!(parts.inputs[0][features::Layer::Token].dims(), &[2, 2]);
+        assert_eq!(parts.labels[1].dims(), &[1]);
+        assert_eq!(parts.inputs[1][features::Layer::Token].dims(), &[1, 2]);
 
         // Check batch contents.
-        assert_eq!(&*labels[0], &[1, 1]);
-        assert_eq!(inputs[0][features::Layer::Token].as_ref(), &[1, 2, 2, 3]);
-        assert_eq!(&*labels[1], &[2]);
-        assert_eq!(inputs[1][features::Layer::Token].as_ref(), &[3, 4]);
+        assert_eq!(&*parts.labels[0], &[1, 1]);
+        assert_eq!(
+            parts.inputs[0][features::Layer::Token].as_ref(),
+            &[1, 2, 2, 3]
+        );
+        assert_eq!(&*parts.labels[1], &[2]);
+        assert_eq!(parts.inputs[1][features::Layer::Token].as_ref(), &[3, 4]);
     }
 
     fn test_vectorizer() -> InputVectorizer {

@@ -24,7 +24,7 @@ where
         Numberer {
             values: Vec::new(),
             numbers: HashMap::new(),
-            start_at: start_at,
+            start_at,
         }
     }
 
@@ -32,7 +32,7 @@ where
     /// the corresponding number is returned.
     pub fn add(&mut self, value: T) -> usize {
         match self.numbers.entry(value.clone()) {
-            Entry::Occupied(e) => e.get().clone(),
+            Entry::Occupied(e) => *e.get(),
             Entry::Vacant(e) => {
                 let number = self.values.len() + self.start_at;
                 self.values.push(value);
@@ -40,6 +40,11 @@ where
                 number
             }
         }
+    }
+
+    /// Query whether the numberer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 
     /// Get the number of different items numbered.

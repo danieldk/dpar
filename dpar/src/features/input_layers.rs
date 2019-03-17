@@ -77,11 +77,11 @@ impl fmt::Display for Layer {
 // convenient way to convert from both addr::Layer and &addr::Layer?
 impl From<&addr::Layer> for Layer {
     fn from(layer: &addr::Layer) -> Self {
-        match layer {
-            &addr::Layer::Token => Layer::Token,
-            &addr::Layer::Tag => Layer::Tag,
-            &addr::Layer::DepRel => Layer::DepRel,
-            &addr::Layer::Feature(_) => Layer::Feature,
+        match *layer {
+            addr::Layer::Token => Layer::Token,
+            addr::Layer::Tag => Layer::Tag,
+            addr::Layer::DepRel => Layer::DepRel,
+            addr::Layer::Feature(_) => Layer::Feature,
         }
     }
 }
@@ -90,6 +90,7 @@ impl From<&addr::Layer> for Layer {
 ///
 /// This data structure bundles lookups for the different layers (tokens,
 /// part-of-speech, etc).
+#[derive(Default)]
 pub struct LayerLookups(EnumMap<Layer, BoxedLookup>);
 
 impl LayerLookups {
@@ -124,10 +125,10 @@ impl InputVectorizer {
     /// The vectorizer is constructed from the layer lookups and the parser
     /// state addresses from which the feature vector should be used. The layer
     /// lookups are used to find the indices that represent the features.
-    pub fn new(layer_lookups: LayerLookups, input_addrs: AddressedValues) -> Self {
+    pub fn new(layer_lookups: LayerLookups, input_layer_addrs: AddressedValues) -> Self {
         InputVectorizer {
-            layer_lookups: layer_lookups,
-            input_layer_addrs: input_addrs,
+            layer_lookups,
+            input_layer_addrs,
         }
     }
 
@@ -208,7 +209,7 @@ impl InputVectorizer {
             match lookup_value(
                 self.layer_lookups
                     .layer_lookup(layer.into())
-                    .expect(&format!("Missing layer lookup for: {:?}", layer)),
+                    .unwrap_or_else(|| panic!("Missing layer lookup for: {:?}", layer)),
                 val,
             ) {
                 LookupResult::Embedding(embed) => {
@@ -229,7 +230,9 @@ impl InputVectorizer {
 
 fn lookup_value<'a>(lookup: &'a Lookup, feature: Option<Cow<str>>) -> LookupResult<'a> {
     match feature {
-        Some(f) => lookup.lookup(f.as_ref()).unwrap_or(lookup.unknown()),
+        Some(f) => lookup
+            .lookup(f.as_ref())
+            .unwrap_or_else(|| lookup.unknown()),
         None => lookup.null(),
     }
 }
