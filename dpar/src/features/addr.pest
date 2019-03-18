@@ -22,7 +22,7 @@ tag_layer = { "TAG" }
 token_layer = { "TOKEN" }
 
 // Layer arguments.
-feature_name = ${ ASCII_ALPHANUMERIC+ }
+feature_name = ${ ASCII_ALPHANUMERIC ~ (ASCII_ALPHANUMERIC | "_" | "-" )+ }
 affix_len = ${ ASCII_DIGIT+ }
 
 addr = { "[" ~ initial_source ~ ("," ~ dep_source)* ~ "]" }
