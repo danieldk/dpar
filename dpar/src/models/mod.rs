@@ -5,7 +5,7 @@ pub mod lr;
 pub mod tensorflow;
 
 /// Results of validation.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ModelPerformance {
     /// Model loss.
     pub loss: f32,

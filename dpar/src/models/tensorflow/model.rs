@@ -113,13 +113,13 @@ impl<S> LayerOps<S> {
 /// and `validate` methods. Moreover, a trained graph can be used to
 /// predict the best transition given a parser state using
 /// `predict_best_transition`.
-pub struct TensorflowModel<T>
+pub struct TensorflowModel<'a, T>
 where
     T: TransitionSystem,
 {
     session: Session,
     system: T,
-    vectorizer: InputVectorizer,
+    vectorizer: &'a InputVectorizer,
     layer_ops: LayerOps<Operation>,
     init_op: Operation,
     restore_op: Operation,
@@ -135,7 +135,7 @@ where
     train_op: Operation,
 }
 
-impl<T> TensorflowModel<T>
+impl<'a, T> TensorflowModel<'a, T>
 where
     T: TransitionSystem,
 {
@@ -147,7 +147,7 @@ where
         config_protobuf: &[u8],
         model_protobuf: &[u8],
         system: T,
-        vectorizer: InputVectorizer,
+        vectorizer: &'a InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -181,7 +181,7 @@ where
         model_protobuf: &[u8],
         parameters_path: P,
         system: T,
-        vectorizer: InputVectorizer,
+        vectorizer: &'a InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -220,7 +220,7 @@ where
         config_protobuf: &[u8],
         model_protobuf: &[u8],
         system: T,
-        vectorizer: InputVectorizer,
+        vectorizer: &'a InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -541,7 +541,7 @@ mod tests {
         op_names.insert(Layer::DepRel, LayerOp("model/deprels"));
         op_names.insert(Layer::Feature, LayerOp("model/features"));
 
-        TensorflowModel::load_graph(&[], &data, system, vectorizer, &op_names)
+        TensorflowModel::load_graph(&[], &data, system, &vectorizer, &op_names)
             .expect("Cannot load graph.");
     }
 }

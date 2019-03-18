@@ -4,11 +4,11 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process;
 
-use conllx::{DisplaySentence, HeadProjectivizer, Projectivize, ReadSentence};
+use conllx::{DisplaySentence, HeadProjectivizer, Projectivize, ReadSentence, Token};
 use dpar::features::InputVectorizer;
 use dpar::models::lr::LearningRateSchedule;
-use dpar::models::tensorflow::{TensorCollector, TensorCollectorParts, TensorflowModel};
-use dpar::system::{sentence_to_dependencies, ParserState};
+use dpar::models::tensorflow::{TensorflowModel, TrainCollector};
+use dpar::system::{sentence_to_dependencies, DependencySet, ParserState};
 use dpar::systems::{
     ArcEagerSystem, ArcHybridSystem, ArcStandardSystem, StackProjectiveSystem, StackSwapSystem,
 };
@@ -16,7 +16,6 @@ use dpar::train::GreedyTrainer;
 use failure::Error;
 use getopts::Options;
 use indicatif::{ProgressBar, ProgressStyle};
-use itertools::izip;
 use stdinout::OrExit;
 
 use dpar_utils::{Config, FileProgress, SerializableTransitionSystem, TomlRead};
@@ -66,26 +65,24 @@ fn main() {
         .or_exit("Cannot load lookups", 1);
     let vectorizer = InputVectorizer::new(lookups, inputs);
 
-    eprintln!("Vectorizing training data...");
-    let train_parts =
-        collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
+    eprintln!("Reading training data...");
+    let train_data = read_data(&config, reader).or_exit("Cannot read training data", 1);
 
     let input_file = File::open(&matches.free[2]).or_exit("Cannot open validation treebank", 1);
     let reader = conllx::Reader::new(BufReader::new(
         FileProgress::new(input_file).or_exit("Cannot create progress bar", 1),
     ));
-    eprintln!("Vectorizing validation data...");
-    let validation_parts =
-        collect_data(&config, &vectorizer, reader).or_exit("Tensor collection failed", 1);
+    eprintln!("Reading validation data...");
+    let validation_data = read_data(&config, reader).or_exit("Cannot read validation data", 1);
 
-    train(&config, vectorizer, train_parts, validation_parts).or_exit("Training failed", 1);
+    train(&config, vectorizer, train_data, validation_data).or_exit("Training failed", 1);
 }
 
 fn train(
     config: &Config,
     vectorizer: InputVectorizer,
-    train_parts: TensorCollectorParts,
-    validation_parts: TensorCollectorParts,
+    train_data: (Vec<Vec<Token>>, Vec<DependencySet>),
+    validation_data: (Vec<Vec<Token>>, Vec<DependencySet>),
 ) -> Result<(), Error> {
     let train_fun: Box<Fn(_, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
@@ -99,19 +96,18 @@ fn train(
         }
     };
 
-    train_fun(config, vectorizer, train_parts, validation_parts)
+    train_fun(config, vectorizer, train_data, validation_data)
 }
 
 fn train_with_system<S>(
     config: &Config,
     vectorizer: InputVectorizer,
-    train_parts: TensorCollectorParts,
-    validation_parts: TensorCollectorParts,
+    train_data: (Vec<Vec<Token>>, Vec<DependencySet>),
+    validation_data: (Vec<Vec<Token>>, Vec<DependencySet>),
 ) -> Result<(), Error>
 where
     S: SerializableTransitionSystem,
 {
-    let system = S::default();
     let mut model = TensorflowModel::load_graph(
         &config
             .model
@@ -121,20 +117,29 @@ where
             .model
             .read_graph()
             .or_exit("Cannot read Tensorflow graph", 1),
-        system,
-        vectorizer,
+        S::default(),
+        &vectorizer,
         &config.lookups.layer_ops(),
     )?;
 
     let mut best_epoch = 0;
     let mut best_acc = 0.0;
 
+    let system: S = load_transition_system_or_new(&config)?;
     let lr_schedule = config.train.lr_schedule();
 
     for epoch in 0.. {
         let lr = lr_schedule.learning_rate(epoch);
 
-        let (loss, acc) = run_epoch(&mut model, &train_parts, true, lr);
+        let (loss, acc) = run_epoch(
+            config,
+            &system,
+            &vectorizer,
+            &mut model,
+            &train_data,
+            true,
+            lr,
+        )?;
         eprintln!(
             "Epoch {} (train, lr: {}): loss: {:.4}, acc: {:.4}",
             epoch, lr, loss, acc
@@ -143,7 +148,15 @@ where
             .save(format!("epoch-{}", epoch))
             .or_exit(format!("Cannot save model for epoch {}", epoch), 1);
 
-        let (_, acc) = run_epoch(&mut model, &validation_parts, false, lr);
+        let (loss, acc) = run_epoch(
+            config,
+            &system,
+            &vectorizer,
+            &mut model,
+            &validation_data,
+            false,
+            lr,
+        )?;
 
         if acc > best_acc {
             best_epoch = epoch;
@@ -168,88 +181,61 @@ where
 }
 
 fn run_epoch<S>(
+    config: &Config,
+    system: &S,
+    vectorizer: &InputVectorizer,
     model: &mut TensorflowModel<S>,
-    parts: &TensorCollectorParts,
+    data: &(Vec<Vec<Token>>, Vec<DependencySet>),
     is_training: bool,
     lr: f32,
-) -> (f32, f32)
+) -> Result<(f32, f32), Error>
 where
     S: SerializableTransitionSystem,
 {
     let epoch_type = if is_training { "train" } else { "validation" };
 
-    let mut instances = 0;
-    let mut loss = 0f32;
-    let mut acc = 0f32;
-
-    let progress = ProgressBar::new(parts.labels.len() as u64);
+    let progress = ProgressBar::new(data.0.len() as u64);
     progress.set_style(
         ProgressStyle::default_bar()
             .template(&format!("{{bar}} {} batch {{pos}}/{{len}}", epoch_type)),
     );
-    for (labels, embeds, inputs) in izip!(
-        parts.labels.iter(),
-        parts.embeds.iter(),
-        parts.inputs.iter()
-    ) {
-        let batch_perf = if is_training {
-            model.train(embeds, inputs, labels, lr)
-        } else {
-            model.validate(embeds, inputs, labels)
-        };
 
-        loss += batch_perf.loss * labels.dims()[0] as f32;
-        acc += batch_perf.accuracy * labels.dims()[0] as f32;
-        instances += labels.dims()[0];
+    let collector = TrainCollector::new(
+        system,
+        vectorizer,
+        model,
+        config.parser.train_batch_size,
+        is_training,
+        lr,
+    );
+    let mut trainer = GreedyTrainer::new(collector);
+
+    for (sentence, dependency_set) in data.0.iter().zip(data.1.iter()) {
+        let mut parser_state = ParserState::new(&sentence);
+        trainer.parse_state(dependency_set, &mut parser_state)?;
         progress.inc(1);
     }
+
+    let perf = trainer.into_collector().finish();
+
     progress.finish();
 
-    loss /= instances as f32;
-    acc /= instances as f32;
-
-    (loss, acc)
+    Ok((perf.loss, perf.accuracy))
 }
 
-fn collect_data<R>(
+fn read_data<R>(
     config: &Config,
-    vectorizer: &InputVectorizer,
     reader: conllx::Reader<R>,
-) -> Result<TensorCollectorParts, Error>
+) -> Result<(Vec<Vec<Token>>, Vec<DependencySet>), Error>
 where
     R: BufRead,
 {
-    let collect_fun: Box<Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
-        "arceager" => Box::new(collect_with_system::<R, ArcEagerSystem>),
-        "archybrid" => Box::new(collect_with_system::<R, ArcHybridSystem>),
-        "arcstandard" => Box::new(collect_with_system::<R, ArcStandardSystem>),
-        "stackproj" => Box::new(collect_with_system::<R, StackProjectiveSystem>),
-        "stackswap" => Box::new(collect_with_system::<R, StackSwapSystem>),
-        _ => {
-            eprintln!("Unsupported transition system: {}", config.parser.system);
-            process::exit(1);
-        }
-    };
-
-    collect_fun(config, vectorizer, reader)
-}
-
-fn collect_with_system<R, S>(
-    config: &Config,
-    vectorizer: &InputVectorizer,
-    reader: conllx::Reader<R>,
-) -> Result<TensorCollectorParts, Error>
-where
-    R: BufRead,
-    S: SerializableTransitionSystem,
-{
-    let system: S = load_transition_system_or_new(&config)?;
-    let collector = TensorCollector::new(system, &vectorizer, config.parser.train_batch_size);
-    let mut trainer = GreedyTrainer::new(collector);
     let projectivizer = HeadProjectivizer::new();
 
+    let mut sentences = Vec::new();
+    let mut gold_dependencies = Vec::new();
     for sentence in reader.sentences() {
-        let sentence = if config.parser.pproj {
+        let sentence: Vec<_> = if config.parser.pproj {
             projectivizer.projectivize(&sentence?)?
         } else {
             sentence?
@@ -263,11 +249,11 @@ where
             1,
         );
 
-        let mut state = ParserState::new(&sentence);
-        trainer.parse_state(&dependencies, &mut state)?;
+        sentences.push(sentence);
+        gold_dependencies.push(dependencies);
     }
 
-    Ok(trainer.into_collector().into_parts())
+    Ok((sentences, gold_dependencies))
 }
 
 fn load_transition_system_or_new<T>(config: &Config) -> Result<T, Error>

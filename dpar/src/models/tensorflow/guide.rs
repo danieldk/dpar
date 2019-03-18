@@ -4,7 +4,7 @@ use crate::guide::{BatchGuide, Guide};
 use crate::models::tensorflow::{InstanceSlices, LayerTensors, TensorflowModel};
 use crate::system::{ParserState, TransitionSystem};
 
-impl<T> Guide for TensorflowModel<T>
+impl<'a, T> Guide for TensorflowModel<'a, T>
 where
     T: TransitionSystem,
 {
@@ -15,7 +15,7 @@ where
     }
 }
 
-impl<T> BatchGuide for TensorflowModel<T>
+impl<'a, T> BatchGuide for TensorflowModel<'a, T>
 where
     T: TransitionSystem,
 {

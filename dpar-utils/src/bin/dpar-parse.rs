@@ -102,7 +102,7 @@ where
     let layer_ops = config.lookups.layer_ops();
     let vectorizer = InputVectorizer::new(lookups, inputs);
     let system: S = load_system_generic(config)?;
-    let guide = load_model(&config, system, vectorizer, &layer_ops)?;
+    let guide = load_model(&config, system, &vectorizer, &layer_ops)?;
     let parser = GreedyParser::new(guide);
 
     let mut n_sents = 0;
@@ -222,12 +222,12 @@ where
     }
 }
 
-fn load_model<T>(
+fn load_model<'a, T>(
     config: &Config,
     system: T,
-    vectorizer: InputVectorizer,
+    vectorizer: &'a InputVectorizer,
     layer_ops: &LayerOps<String>,
-) -> Result<TensorflowModel<T>, Error>
+) -> Result<TensorflowModel<'a, T>, Error>
 where
     T: TransitionSystem,
 {

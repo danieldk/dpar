@@ -2,7 +2,10 @@ use enum_map::EnumMap;
 use tensorflow::Tensor;
 
 use crate::features::{InputVectorizer, Layer};
-use crate::models::tensorflow::{CopyBatches, InstanceSlices, LayerTensors, TensorWrap};
+use crate::models::tensorflow::{
+    CopyBatches, InstanceSlices, LayerTensors, TensorWrap, TensorflowModel,
+};
+use crate::models::ModelPerformance;
 use crate::system::ParserState;
 use crate::system::TransitionSystem;
 use crate::train::InstanceCollector;
@@ -17,49 +20,116 @@ use failure::Error;
 /// After all instances are collected, the `into_data` method can be used
 /// to get the collected tensors. The last batch will be resized to the
 /// number of instances collected into the last batch.
-pub struct TensorCollector<'a, T> {
-    transition_system: T,
+pub struct TrainCollector<'a, 'b, T>
+where
+    T: TransitionSystem,
+{
+    transition_system: &'a T,
     vectorizer: &'a InputVectorizer,
+    model: &'a mut TensorflowModel<'b, T>,
     batch_size: usize,
-    embeds: Vec<Tensor<f32>>,
-    inputs: Vec<LayerTensors<i32>>,
-    labels: Vec<Tensor<i32>>,
+    embeds: Tensor<f32>,
+    inputs: LayerTensors<i32>,
+    labels: Tensor<i32>,
     instance_idx: usize,
+    is_training: bool,
+    lr: f32,
+    performance: ModelPerformance,
+    n_instances: usize,
 }
 
-impl<'a, T> TensorCollector<'a, T> {
+impl<'a, 'b, T> TrainCollector<'a, 'b, T>
+where
+    T: TransitionSystem,
+{
     /// Construct a tensor collector.
     ///
     /// The tensor collector will use the given transition system, parser state
     /// vectorizer, and batch size.
-    pub fn new(transition_system: T, vectorizer: &'a InputVectorizer, batch_size: usize) -> Self {
-        TensorCollector {
+    pub fn new(
+        transition_system: &'a T,
+        vectorizer: &'a InputVectorizer,
+        model: &'a mut TensorflowModel<'b, T>,
+        batch_size: usize,
+        is_training: bool,
+        lr: f32,
+    ) -> Self {
+        let embeds = Tensor::new(&[batch_size as u64, vectorizer.embedding_layer_size() as u64]);
+
+        let layer_sizes = vectorizer.lookup_layer_sizes();
+
+        let mut inputs: EnumMap<Layer, TensorWrap<i32>> = EnumMap::new();
+        for (layer, tensor) in &mut inputs {
+            *tensor = TensorWrap(Tensor::new(&[batch_size as u64, layer_sizes[layer] as u64]));
+        }
+
+        TrainCollector {
             transition_system,
             vectorizer,
+            model,
             batch_size,
-            embeds: Vec::new(),
-            inputs: Vec::new(),
-            labels: Vec::new(),
+            embeds,
+            inputs,
+            labels: Tensor::new(&[batch_size as u64]),
             instance_idx: 0,
+            is_training,
+            lr,
+            performance: Default::default(),
+            n_instances: 0,
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.instance_idx = 0;
+    }
+
+    pub fn embeds(&self) -> &Tensor<f32> {
+        &self.embeds
+    }
+
+    pub fn inputs(&self) -> &LayerTensors<i32> {
+        &self.inputs
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.instance_idx == 0
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.instance_idx == self.batch_size
+    }
+
+    pub fn labels(&self) -> &Tensor<i32> {
+        &self.labels
+    }
+
+    /// Number of instances in the collector.
+    pub fn len(&self) -> usize {
+        self.instance_idx
+    }
+
+    /// Process the last batch and return the model performance.
+    pub fn finish(mut self) -> ModelPerformance {
+        self.resize_last_batch();
+        self.train_batch();
+
+        let mut perf = self.performance;
+        perf.loss /= self.n_instances as f32;
+        perf.accuracy /= self.n_instances as f32;
+        perf
     }
 
     /// Resize the last batch to the number of instances in that batch.
     fn resize_last_batch(&mut self) {
-        if self.instance_idx == 0 {
+        if self.instance_idx == self.batch_size {
             return;
         }
 
         let last_size = self.instance_idx;
 
-        let old_embeds = self.embeds.pop().expect("No batches");
-        self.embeds.push(old_embeds.copy_batches(last_size as u64));
-
-        let old_inputs = self.inputs.pop().expect("No batches");
-        self.inputs.push(old_inputs.copy_batches(last_size as u64));
-
-        let old_labels = self.labels.pop().expect("No batches");
-        self.labels.push(old_labels.copy_batches(last_size as u64));
+        self.embeds = self.embeds.copy_batches(last_size as u64);
+        self.inputs = self.inputs.copy_batches(last_size as u64);
+        self.labels = self.labels.copy_batches(last_size as u64);
     }
 
     /// Get the collected tensors.
@@ -78,97 +148,89 @@ impl<'a, T> TensorCollector<'a, T> {
         }
     }
 
+    fn train_batch(&mut self) {
+        let batch_perf = if self.is_training {
+            self.model
+                .train(&self.embeds, &self.inputs, &self.labels, self.lr)
+        } else {
+            self.model
+                .validate(&self.embeds, &self.inputs, &self.labels)
+        };
+
+        self.performance.loss += batch_perf.loss * self.len() as f32;
+        self.performance.accuracy += batch_perf.accuracy * self.len() as f32;
+        self.n_instances += self.len();
+    }
+
     /// Get the transition system of the collector.
     pub fn transition_system(&self) -> &T {
         &self.transition_system
     }
-
-    fn new_embed_tensor(&self, batch_size: usize) -> Tensor<f32> {
-        let embed_size = self.vectorizer.embedding_layer_size();
-
-        Tensor::new(&[batch_size as u64, embed_size as u64])
-    }
-
-    /// Construct net layer batch tensors.
-    ///
-    /// Each tensor has shape `[batch_size, layer_size]`.
-    fn new_layer_tensors(&self, batch_size: usize) -> LayerTensors<i32> {
-        let layer_sizes = self.vectorizer.lookup_layer_sizes();
-
-        let mut layers: EnumMap<Layer, TensorWrap<i32>> = EnumMap::new();
-        for (layer, tensor) in &mut layers {
-            *tensor = TensorWrap(Tensor::new(&[batch_size as u64, layer_sizes[layer] as u64]));
-        }
-
-        layers
-    }
 }
 
-impl<'a, T> InstanceCollector<T> for TensorCollector<'a, T>
+impl<'a, 'b, T> InstanceCollector<T> for TrainCollector<'a, 'b, T>
 where
     T: TransitionSystem,
 {
     fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
-        // Lazily add a new batch tensor.
-        if self.instance_idx == 0 {
-            let embed_tensor = self.new_embed_tensor(self.batch_size);
-            let layer_tensors = self.new_layer_tensors(self.batch_size);
-            self.embeds.push(embed_tensor);
-            self.inputs.push(layer_tensors);
-            self.labels.push(Tensor::new(&[self.batch_size as u64]));
+        if self.is_full() {
+            self.train_batch();
+            self.clear();
         }
 
-        let batch = self.labels.len() - 1;
-
         let label = self.transition_system.transitions().lookup(t.clone());
-        self.labels[batch][self.instance_idx] = label as i32;
+        self.labels[self.instance_idx] = label as i32;
 
-        let embed_size = self.embeds[batch].dims()[1] as usize;
+        let embed_size = self.embeds.dims()[1] as usize;
         let embed_offset = self.instance_idx * embed_size;
 
         self.vectorizer.realize_into(
             state,
-            &mut self.embeds[batch][embed_offset..embed_offset + embed_size],
-            &mut self.inputs[batch].to_instance_slices(self.instance_idx),
+            &mut self.embeds[embed_offset..embed_offset + embed_size],
+            &mut self.inputs.to_instance_slices(self.instance_idx),
         );
 
         self.instance_idx += 1;
-        if self.instance_idx == self.batch_size {
-            self.instance_idx = 0;
-        }
 
         Ok(())
     }
 }
 
 pub struct TensorCollectorParts {
-    pub embeds: Vec<Tensor<f32>>,
-    pub inputs: Vec<LayerTensors<i32>>,
-    pub labels: Vec<Tensor<i32>>,
+    pub embeds: Tensor<f32>,
+    pub inputs: LayerTensors<i32>,
+    pub labels: Tensor<i32>,
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::{BufReader, Read};
+
     use conllx::Token;
+    use flate2::read::GzDecoder;
 
     use crate::features::addr::{AddressedValue, Layer, Source};
     use crate::features::{
         self, AddressedValues, InputVectorizer, LayerLookups, Lookup, MutableLookupTable,
     };
+    use crate::models::tensorflow::{LayerOp, LayerOps, TensorflowModel};
     use crate::system::{ParserState, Transition};
     use crate::systems::stack_projective::{StackProjectiveSystem, StackProjectiveTransition};
     use crate::train::InstanceCollector;
 
-    use super::TensorCollector;
+    use super::TrainCollector;
 
     #[test]
     fn collect_zero() {
         let vectorizer = test_vectorizer();
-        let collector = test_collector(&vectorizer);
+        let mut model = test_model(&vectorizer);
+        let system = StackProjectiveSystem::new();
+        let collector = test_collector(&system, &vectorizer, &mut model);
         let parts = collector.into_parts();
         assert_eq!(parts.labels.len(), 0);
         assert_eq!(parts.embeds.len(), 0);
-        assert_eq!(parts.inputs.len(), 0);
+        assert_eq!(parts.inputs[features::Layer::Token].len(), 0);
     }
 
     #[test]
@@ -177,7 +239,9 @@ mod tests {
         let mut state = ParserState::new(&sent);
 
         let vectorizer = test_vectorizer();
-        let mut collector = test_collector(&vectorizer);
+        let mut model = test_model(&vectorizer);
+        let system = StackProjectiveSystem::new();
+        let mut collector = test_collector(&system, &vectorizer, &mut model);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -187,21 +251,13 @@ mod tests {
             .unwrap();
         let parts = collector.into_parts();
 
-        // There should be one batch.
-        assert_eq!(parts.labels.len(), 1);
-        assert_eq!(parts.embeds.len(), 1);
-        assert_eq!(parts.inputs.len(), 1);
-
         // Check batch shapes.
-        assert_eq!(parts.labels[0].dims(), &[2]);
-        assert_eq!(parts.inputs[0][features::Layer::Token].dims(), &[2, 2]);
+        assert_eq!(parts.labels.dims(), &[2]);
+        assert_eq!(parts.inputs[features::Layer::Token].dims(), &[2, 2]);
 
         // Check batch contents.
-        assert_eq!(&*parts.labels[0], &[1, 2]);
-        assert_eq!(
-            parts.inputs[0][features::Layer::Token].as_ref(),
-            &[1, 2, 2, 3]
-        );
+        assert_eq!(&*parts.labels, &[1, 2]);
+        assert_eq!(parts.inputs[features::Layer::Token].as_ref(), &[1, 2, 2, 3]);
     }
 
     #[test]
@@ -214,7 +270,9 @@ mod tests {
         let mut state = ParserState::new(&sent);
 
         let vectorizer = test_vectorizer();
-        let mut collector = test_collector(&vectorizer);
+        let mut model = test_model(&vectorizer);
+        let system = StackProjectiveSystem::new();
+        let mut collector = test_collector(&system, &vectorizer, &mut model);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -228,25 +286,16 @@ mod tests {
             .unwrap();
         let parts = collector.into_parts();
 
-        // There should be two batches.
-        assert_eq!(parts.labels.len(), 2);
-        assert_eq!(parts.embeds.len(), 2);
-        assert_eq!(parts.inputs.len(), 2);
-
         // Check batch shapes.
-        assert_eq!(parts.labels[0].dims(), &[2]);
-        assert_eq!(parts.inputs[0][features::Layer::Token].dims(), &[2, 2]);
-        assert_eq!(parts.labels[1].dims(), &[1]);
-        assert_eq!(parts.inputs[1][features::Layer::Token].dims(), &[1, 2]);
+        assert_eq!(parts.labels.dims(), &[3]);
+        assert_eq!(parts.inputs[features::Layer::Token].dims(), &[3, 2]);
 
         // Check batch contents.
-        assert_eq!(&*parts.labels[0], &[1, 1]);
+        assert_eq!(&*parts.labels, &[1, 1, 2]);
         assert_eq!(
-            parts.inputs[0][features::Layer::Token].as_ref(),
-            &[1, 2, 2, 3]
+            parts.inputs[features::Layer::Token].as_ref(),
+            &[1, 2, 2, 3, 3, 4]
         );
-        assert_eq!(&*parts.labels[1], &[2]);
-        assert_eq!(parts.inputs[1][features::Layer::Token].as_ref(), &[3, 4]);
     }
 
     fn test_vectorizer() -> InputVectorizer {
@@ -266,7 +315,31 @@ mod tests {
         InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]))
     }
 
-    fn test_collector(vectorizer: &InputVectorizer) -> TensorCollector<StackProjectiveSystem> {
-        TensorCollector::new(StackProjectiveSystem::new(), vectorizer, 2)
+    fn test_model(vectorizer: &InputVectorizer) -> TensorflowModel<StackProjectiveSystem> {
+        let f = File::open("testdata/parser.graph.gz").expect("Cannot open test graph.");
+        let mut decoder = GzDecoder::new(BufReader::new(f));
+        let mut data = Vec::new();
+        decoder
+            .read_to_end(&mut data)
+            .expect("Cannot decompress test graph.");
+
+        let mut op_names = LayerOps::new();
+        op_names.insert(features::Layer::Token, LayerOp("model/tokens"));
+        op_names.insert(features::Layer::Tag, LayerOp("model/tags"));
+        op_names.insert(features::Layer::DepRel, LayerOp("model/deprels"));
+        op_names.insert(features::Layer::Feature, LayerOp("model/features"));
+
+        let system = StackProjectiveSystem::new();
+
+        TensorflowModel::load_graph(&[], &data, system, vectorizer, &op_names)
+            .expect("Cannot load graph.")
+    }
+
+    fn test_collector<'a, 'b>(
+        system: &'a StackProjectiveSystem,
+        vectorizer: &'a InputVectorizer,
+        model: &'a mut TensorflowModel<'b, StackProjectiveSystem>,
+    ) -> TrainCollector<'a, 'b, StackProjectiveSystem> {
+        TrainCollector::new(system, vectorizer, model, 3, false, 0.01)
     }
 }
