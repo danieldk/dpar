@@ -2,7 +2,7 @@ use std::fs::File;
 
 use lazy_static::*;
 
-use super::{Config, Lookup, Lookups, Model, Parser, TomlRead, Train};
+use super::{Config, EmbeddingAlloc, Lookup, Lookups, Model, Parser, TomlRead, Train};
 
 lazy_static! {
     static ref BASIC_PARSER_CHECK: Config = Config {
@@ -29,11 +29,13 @@ lazy_static! {
         lookups: Lookups {
             word: Some(Lookup::Embedding {
                 filename: String::from("word-vectors.bin"),
+                alloc: EmbeddingAlloc::Read,
                 op: String::from("model/tokens"),
                 embed_op: String::from("model/token_embeds"),
             }),
             tag: Some(Lookup::Embedding {
                 filename: String::from("tag-vectors.bin"),
+                alloc: EmbeddingAlloc::Mmap,
                 op: String::from("model/tags"),
                 embed_op: String::from("model/tag_embeds"),
             }),
