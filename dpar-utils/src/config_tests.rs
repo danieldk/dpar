@@ -22,10 +22,9 @@ lazy_static! {
         },
         train: Train {
             initial_lr: 0.05.into(),
-            decay_rate: 0.95.into(),
-            decay_steps: 10,
-            staircase: true,
-            patience: 5,
+            lr_scale: 0.5.into(),
+            lr_patience: 5,
+            patience: 10,
         },
         lookups: Lookups {
             word: Some(Lookup::Embedding {

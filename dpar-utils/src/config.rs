@@ -14,7 +14,7 @@ use tf_proto::ConfigProto;
 
 use dpar::features;
 use dpar::features::{AddressedValues, Embeddings, Layer, LayerLookups};
-use dpar::models::lr::ExponentialDecay;
+use dpar::models::lr::PlateauLearningRate;
 use dpar::models::tensorflow::{LayerOp, LayerOps};
 
 use crate::StoredLookupTable;
@@ -263,19 +263,17 @@ impl Model {
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Train {
     pub initial_lr: NotNan<f32>,
-    pub decay_rate: NotNan<f32>,
-    pub decay_steps: usize,
-    pub staircase: bool,
+    pub lr_scale: NotNan<f32>,
+    pub lr_patience: usize,
     pub patience: usize,
 }
 
 impl Train {
-    pub fn lr_schedule(&self) -> ExponentialDecay {
-        ExponentialDecay::new(
+    pub fn lr_schedule(&self) -> PlateauLearningRate {
+        PlateauLearningRate::new(
             self.initial_lr.into_inner(),
-            self.decay_rate.into_inner(),
-            self.decay_steps,
-            self.staircase,
+            self.lr_scale.into_inner(),
+            self.lr_patience,
         )
     }
 }

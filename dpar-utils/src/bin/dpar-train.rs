@@ -126,11 +126,12 @@ where
 
     let mut best_epoch = 0;
     let mut best_acc = 0.0;
+    let mut last_acc = 0.0;
 
-    let lr_schedule = config.train.lr_schedule();
+    let mut lr_schedule = config.train.lr_schedule();
 
     for epoch in 0.. {
-        let lr = lr_schedule.learning_rate(epoch);
+        let lr = lr_schedule.learning_rate(epoch, last_acc);
 
         let (loss, acc) = run_epoch(config, &mut model, &train_data, true, lr)?;
         eprintln!(
@@ -143,6 +144,7 @@ where
 
         let (loss, acc) = run_epoch(config, &mut model, &validation_data, false, lr)?;
 
+        last_acc = acc;
         if acc > best_acc {
             best_epoch = epoch;
             best_acc = acc;
