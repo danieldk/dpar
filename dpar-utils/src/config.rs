@@ -6,7 +6,9 @@ use failure::{format_err, Error};
 use ordered_float::NotNan;
 use protobuf::core::Message;
 use rust2vec::{
-    embeddings::Embeddings as R2VEmbeddings, io::ReadEmbeddings, storage::StorageWrap,
+    embeddings::Embeddings as R2VEmbeddings,
+    io::{MmapEmbeddings, ReadEmbeddings},
+    storage::StorageWrap,
     vocab::VocabWrap,
 };
 use serde_derive::{Deserialize, Serialize};
@@ -105,9 +107,11 @@ impl Lookups {
 
     fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match *lookup {
-            Lookup::Embedding { ref filename, .. } => {
-                Ok(Box::new(Self::load_embeddings(filename)?))
-            }
+            Lookup::Embedding {
+                ref filename,
+                ref alloc,
+                ..
+            } => Ok(Box::new(Self::load_embeddings(filename, *alloc)?)),
             Lookup::Table { ref filename, .. } => {
                 Ok(Box::new(StoredLookupTable::create(filename)?))
             }
@@ -142,17 +146,22 @@ impl Lookups {
 
     fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
         match *lookup {
-            Lookup::Embedding { ref filename, .. } => {
-                Ok(Box::new(Self::load_embeddings(filename)?))
-            }
+            Lookup::Embedding {
+                ref filename,
+                ref alloc,
+                ..
+            } => Ok(Box::new(Self::load_embeddings(filename, *alloc)?)),
             Lookup::Table { ref filename, .. } => Ok(Box::new(StoredLookupTable::open(filename)?)),
         }
     }
 
-    fn load_embeddings(filename: &str) -> Result<Embeddings, Error> {
+    fn load_embeddings(filename: &str, alloc: EmbeddingAlloc) -> Result<Embeddings, Error> {
         let f = File::open(filename)?;
-        let embeds: R2VEmbeddings<VocabWrap, StorageWrap> =
-            ReadEmbeddings::read_embeddings(&mut BufReader::new(f))?;
+        let mut buf_read = BufReader::new(f);
+        let embeds: R2VEmbeddings<VocabWrap, StorageWrap> = match alloc {
+            EmbeddingAlloc::Read => ReadEmbeddings::read_embeddings(&mut buf_read)?,
+            EmbeddingAlloc::Mmap => MmapEmbeddings::mmap_embeddings(&mut buf_read)?,
+        };
 
         Ok(embeds.into())
     }
@@ -163,6 +172,7 @@ impl Lookups {
 pub enum Lookup {
     Embedding {
         filename: String,
+        alloc: EmbeddingAlloc,
         op: String,
         embed_op: String,
     },
@@ -170,6 +180,13 @@ pub enum Lookup {
         filename: String,
         op: String,
     },
+}
+
+#[serde(rename_all = "lowercase")]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum EmbeddingAlloc {
+    Mmap,
+    Read,
 }
 
 fn relativize_embed_path(config_path: &Path, embed: &mut Option<Lookup>) -> Result<(), Error> {

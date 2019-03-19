@@ -1,5 +1,5 @@
 mod config;
-pub use crate::config::{Config, Lookup, Lookups, Model, Parser, Train};
+pub use crate::config::{Config, EmbeddingAlloc, Lookup, Lookups, Model, Parser, Train};
 
 mod progress;
 pub use crate::progress::FileProgress;
