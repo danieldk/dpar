@@ -3,7 +3,7 @@ use tensorflow::Tensor;
 
 use crate::features::{InputVectorizer, Layer};
 use crate::models::tensorflow::{
-    CopyBatches, InstanceSlices, LayerTensors, TensorWrap, TensorflowModel,
+    InstanceSlices, LayerTensors, ShrinkBatch, TensorWrap, TensorflowModel,
 };
 use crate::models::ModelPerformance;
 use crate::system::ParserState;
@@ -127,9 +127,9 @@ where
 
         let last_size = self.instance_idx;
 
-        self.embeds = self.embeds.copy_batches(last_size as u64);
-        self.inputs = self.inputs.copy_batches(last_size as u64);
-        self.labels = self.labels.copy_batches(last_size as u64);
+        self.embeds = self.embeds.shrink_batch(last_size as u64);
+        self.inputs = self.inputs.shrink_batch(last_size as u64);
+        self.labels = self.labels.shrink_batch(last_size as u64);
     }
 
     /// Get the collected tensors.
