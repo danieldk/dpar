@@ -1,7 +1,7 @@
 use enum_map::EnumMap;
 use tensorflow::Tensor;
 
-use crate::features::{InputVectorizer, Layer};
+use crate::features::Layer;
 use crate::models::tensorflow::{
     InstanceSlices, LayerTensors, ShrinkBatch, TensorWrap, TensorflowModel,
 };
@@ -20,13 +20,11 @@ use failure::Error;
 /// After all instances are collected, the `into_data` method can be used
 /// to get the collected tensors. The last batch will be resized to the
 /// number of instances collected into the last batch.
-pub struct TrainCollector<'a, 'b, T>
+pub struct TrainCollector<'a, T>
 where
     T: TransitionSystem,
 {
-    transition_system: &'a T,
-    vectorizer: &'a InputVectorizer,
-    model: &'a mut TensorflowModel<'b, T>,
+    model: &'a mut TensorflowModel<T>,
     batch_size: usize,
     embeds: Tensor<f32>,
     inputs: LayerTensors<i32>,
@@ -38,7 +36,7 @@ where
     n_instances: usize,
 }
 
-impl<'a, 'b, T> TrainCollector<'a, 'b, T>
+impl<'a, T> TrainCollector<'a, T>
 where
     T: TransitionSystem,
 {
@@ -47,16 +45,17 @@ where
     /// The tensor collector will use the given transition system, parser state
     /// vectorizer, and batch size.
     pub fn new(
-        transition_system: &'a T,
-        vectorizer: &'a InputVectorizer,
-        model: &'a mut TensorflowModel<'b, T>,
+        model: &'a mut TensorflowModel<T>,
         batch_size: usize,
         is_training: bool,
         lr: f32,
     ) -> Self {
-        let embeds = Tensor::new(&[batch_size as u64, vectorizer.embedding_layer_size() as u64]);
+        let embeds = Tensor::new(&[
+            batch_size as u64,
+            model.vectorizer().embedding_layer_size() as u64,
+        ]);
 
-        let layer_sizes = vectorizer.lookup_layer_sizes();
+        let layer_sizes = model.vectorizer().lookup_layer_sizes();
 
         let mut inputs: EnumMap<Layer, TensorWrap<i32>> = EnumMap::new();
         for (layer, tensor) in &mut inputs {
@@ -64,8 +63,6 @@ where
         }
 
         TrainCollector {
-            transition_system,
-            vectorizer,
             model,
             batch_size,
             embeds,
@@ -161,14 +158,9 @@ where
         self.performance.accuracy += batch_perf.accuracy * self.len() as f32;
         self.n_instances += self.len();
     }
-
-    /// Get the transition system of the collector.
-    pub fn transition_system(&self) -> &T {
-        &self.transition_system
-    }
 }
 
-impl<'a, 'b, T> InstanceCollector<T> for TrainCollector<'a, 'b, T>
+impl<'a, T> InstanceCollector<T> for TrainCollector<'a, T>
 where
     T: TransitionSystem,
 {
@@ -178,13 +170,13 @@ where
             self.clear();
         }
 
-        let label = self.transition_system.transitions().lookup(t.clone());
+        let label = self.model.system().transitions().lookup(t.clone());
         self.labels[self.instance_idx] = label as i32;
 
         let embed_size = self.embeds.dims()[1] as usize;
         let embed_offset = self.instance_idx * embed_size;
 
-        self.vectorizer.realize_into(
+        self.model.vectorizer().realize_into(
             state,
             &mut self.embeds[embed_offset..embed_offset + embed_size],
             &mut self.inputs.to_instance_slices(self.instance_idx),
@@ -224,9 +216,8 @@ mod tests {
     #[test]
     fn collect_zero() {
         let vectorizer = test_vectorizer();
-        let mut model = test_model(&vectorizer);
-        let system = StackProjectiveSystem::new();
-        let collector = test_collector(&system, &vectorizer, &mut model);
+        let mut model = test_model(vectorizer);
+        let collector = test_collector(&mut model);
         let parts = collector.into_parts();
         assert_eq!(parts.labels.len(), 0);
         assert_eq!(parts.embeds.len(), 0);
@@ -239,9 +230,8 @@ mod tests {
         let mut state = ParserState::new(&sent);
 
         let vectorizer = test_vectorizer();
-        let mut model = test_model(&vectorizer);
-        let system = StackProjectiveSystem::new();
-        let mut collector = test_collector(&system, &vectorizer, &mut model);
+        let mut model = test_model(vectorizer);
+        let mut collector = test_collector(&mut model);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -270,9 +260,8 @@ mod tests {
         let mut state = ParserState::new(&sent);
 
         let vectorizer = test_vectorizer();
-        let mut model = test_model(&vectorizer);
-        let system = StackProjectiveSystem::new();
-        let mut collector = test_collector(&system, &vectorizer, &mut model);
+        let mut model = test_model(vectorizer);
+        let mut collector = test_collector(&mut model);
         collector
             .collect(&StackProjectiveTransition::Shift, &state)
             .unwrap();
@@ -315,7 +304,7 @@ mod tests {
         InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]))
     }
 
-    fn test_model(vectorizer: &InputVectorizer) -> TensorflowModel<StackProjectiveSystem> {
+    fn test_model(vectorizer: InputVectorizer) -> TensorflowModel<StackProjectiveSystem> {
         let f = File::open("testdata/parser.graph.gz").expect("Cannot open test graph.");
         let mut decoder = GzDecoder::new(BufReader::new(f));
         let mut data = Vec::new();
@@ -335,11 +324,9 @@ mod tests {
             .expect("Cannot load graph.")
     }
 
-    fn test_collector<'a, 'b>(
-        system: &'a StackProjectiveSystem,
-        vectorizer: &'a InputVectorizer,
-        model: &'a mut TensorflowModel<'b, StackProjectiveSystem>,
-    ) -> TrainCollector<'a, 'b, StackProjectiveSystem> {
-        TrainCollector::new(system, vectorizer, model, 3, false, 0.01)
+    fn test_collector<'a>(
+        model: &'a mut TensorflowModel<StackProjectiveSystem>,
+    ) -> TrainCollector<'a, StackProjectiveSystem> {
+        TrainCollector::new(model, 3, false, 0.01)
     }
 }

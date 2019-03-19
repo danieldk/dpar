@@ -108,6 +108,8 @@ fn train_with_system<S>(
 where
     S: SerializableTransitionSystem,
 {
+    let system: S = load_transition_system_or_new(&config)?;
+
     let mut model = TensorflowModel::load_graph(
         &config
             .model
@@ -117,29 +119,20 @@ where
             .model
             .read_graph()
             .or_exit("Cannot read Tensorflow graph", 1),
-        S::default(),
-        &vectorizer,
+        system,
+        vectorizer,
         &config.lookups.layer_ops(),
     )?;
 
     let mut best_epoch = 0;
     let mut best_acc = 0.0;
 
-    let system: S = load_transition_system_or_new(&config)?;
     let lr_schedule = config.train.lr_schedule();
 
     for epoch in 0.. {
         let lr = lr_schedule.learning_rate(epoch);
 
-        let (loss, acc) = run_epoch(
-            config,
-            &system,
-            &vectorizer,
-            &mut model,
-            &train_data,
-            true,
-            lr,
-        )?;
+        let (loss, acc) = run_epoch(config, &mut model, &train_data, true, lr)?;
         eprintln!(
             "Epoch {} (train, lr: {}): loss: {:.4}, acc: {:.4}",
             epoch, lr, loss, acc
@@ -148,15 +141,7 @@ where
             .save(format!("epoch-{}", epoch))
             .or_exit(format!("Cannot save model for epoch {}", epoch), 1);
 
-        let (loss, acc) = run_epoch(
-            config,
-            &system,
-            &vectorizer,
-            &mut model,
-            &validation_data,
-            false,
-            lr,
-        )?;
+        let (loss, acc) = run_epoch(config, &mut model, &validation_data, false, lr)?;
 
         if acc > best_acc {
             best_epoch = epoch;
@@ -182,8 +167,6 @@ where
 
 fn run_epoch<S>(
     config: &Config,
-    system: &S,
-    vectorizer: &InputVectorizer,
     model: &mut TensorflowModel<S>,
     data: &(Vec<Vec<Token>>, Vec<DependencySet>),
     is_training: bool,
@@ -200,14 +183,7 @@ where
             .template(&format!("{{bar}} {} batch {{pos}}/{{len}}", epoch_type)),
     );
 
-    let collector = TrainCollector::new(
-        system,
-        vectorizer,
-        model,
-        config.parser.train_batch_size,
-        is_training,
-        lr,
-    );
+    let collector = TrainCollector::new(model, config.parser.train_batch_size, is_training, lr);
     let mut trainer = GreedyTrainer::new(collector);
 
     for (sentence, dependency_set) in data.0.iter().zip(data.1.iter()) {
