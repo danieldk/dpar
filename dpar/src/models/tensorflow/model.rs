@@ -113,13 +113,13 @@ impl<S> LayerOps<S> {
 /// and `validate` methods. Moreover, a trained graph can be used to
 /// predict the best transition given a parser state using
 /// `predict_best_transition`.
-pub struct TensorflowModel<'a, T>
+pub struct TensorflowModel<T>
 where
     T: TransitionSystem,
 {
     session: Session,
     system: T,
-    vectorizer: &'a InputVectorizer,
+    vectorizer: InputVectorizer,
     layer_ops: LayerOps<Operation>,
     init_op: Operation,
     restore_op: Operation,
@@ -135,7 +135,7 @@ where
     train_op: Operation,
 }
 
-impl<'a, T> TensorflowModel<'a, T>
+impl<T> TensorflowModel<T>
 where
     T: TransitionSystem,
 {
@@ -147,7 +147,7 @@ where
         config_protobuf: &[u8],
         model_protobuf: &[u8],
         system: T,
-        vectorizer: &'a InputVectorizer,
+        vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -181,7 +181,7 @@ where
         model_protobuf: &[u8],
         parameters_path: P,
         system: T,
-        vectorizer: &'a InputVectorizer,
+        vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -220,7 +220,7 @@ where
         config_protobuf: &[u8],
         model_protobuf: &[u8],
         system: T,
-        vectorizer: &'a InputVectorizer,
+        vectorizer: InputVectorizer,
         op_names: &LayerOps<S>,
     ) -> Result<Self, Error>
     where
@@ -382,6 +382,11 @@ where
         self.session.run(&mut args).map_err(status_to_error)
     }
 
+    /// Get the transition system used by the model.
+    pub fn system(&self) -> &T {
+        &self.system
+    }
+
     /// Perform a training step.
     ///
     /// This method updates the model parameters using a batch of parser
@@ -541,7 +546,7 @@ mod tests {
         op_names.insert(Layer::DepRel, LayerOp("model/deprels"));
         op_names.insert(Layer::Feature, LayerOp("model/features"));
 
-        TensorflowModel::load_graph(&[], &data, system, &vectorizer, &op_names)
+        TensorflowModel::load_graph(&[], &data, system, vectorizer, &op_names)
             .expect("Cannot load graph.");
     }
 }
