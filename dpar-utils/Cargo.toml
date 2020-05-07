@@ -25,4 +25,4 @@ tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
 toml = "0.4"
 
 [dev-dependencies]
-lazy_static = "0.2"
+lazy_static = "1"
