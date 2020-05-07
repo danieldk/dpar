@@ -3,14 +3,14 @@ use std::io::{BufReader, Read};
 use std::path::Path;
 
 use failure::{format_err, Error};
-use ordered_float::NotNan;
-use protobuf::core::Message;
-use rust2vec::{
-    embeddings::Embeddings as R2VEmbeddings,
+use finalfusion::{
+    embeddings::Embeddings as FFEmbeddings,
     io::{MmapEmbeddings, ReadEmbeddings},
     storage::StorageWrap,
     vocab::VocabWrap,
 };
+use ordered_float::NotNan;
+use protobuf::core::Message;
 use serde_derive::{Deserialize, Serialize};
 use tf_proto::ConfigProto;
 
@@ -158,7 +158,7 @@ impl Lookups {
     fn load_embeddings(filename: &str, alloc: EmbeddingAlloc) -> Result<Embeddings, Error> {
         let f = File::open(filename)?;
         let mut buf_read = BufReader::new(f);
-        let embeds: R2VEmbeddings<VocabWrap, StorageWrap> = match alloc {
+        let embeds: FFEmbeddings<VocabWrap, StorageWrap> = match alloc {
             EmbeddingAlloc::Read => ReadEmbeddings::read_embeddings(&mut buf_read)?,
             EmbeddingAlloc::Mmap => MmapEmbeddings::mmap_embeddings(&mut buf_read)?,
         };

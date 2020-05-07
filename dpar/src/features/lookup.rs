@@ -1,17 +1,17 @@
 use std::cell::RefCell;
 use std::ops::Deref;
 
-use ndarray::Array1;
-use rust2vec::embeddings::Embeddings as R2VEmbeddings;
-use rust2vec::storage::{CowArray, CowArray1, StorageWrap};
-use rust2vec::vocab::{Vocab, VocabWrap};
+use finalfusion::embeddings::Embeddings as FFEmbeddings;
+use finalfusion::storage::StorageWrap;
+use finalfusion::vocab::{Vocab, VocabWrap};
+use ndarray::{Array1, CowArray, Ix1};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::Numberer;
 
 pub enum LookupResult<'a> {
     Index(usize),
-    Embedding(CowArray1<'a, f32>),
+    Embedding(CowArray<'a, f32, Ix1>),
 }
 
 impl<'a> LookupResult<'a> {
@@ -67,27 +67,27 @@ pub trait Lookup {
 }
 
 pub struct Embeddings {
-    inner: R2VEmbeddings<VocabWrap, StorageWrap>,
+    inner: FFEmbeddings<VocabWrap, StorageWrap>,
     null: Array1<f32>,
     unknown: Array1<f32>,
 }
 
 impl Deref for Embeddings {
-    type Target = R2VEmbeddings<VocabWrap, StorageWrap>;
+    type Target = FFEmbeddings<VocabWrap, StorageWrap>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl From<R2VEmbeddings<VocabWrap, StorageWrap>> for Embeddings {
-    fn from(embeddings: R2VEmbeddings<VocabWrap, StorageWrap>) -> Self {
+impl From<FFEmbeddings<VocabWrap, StorageWrap>> for Embeddings {
+    fn from(embeddings: FFEmbeddings<VocabWrap, StorageWrap>) -> Self {
         let null = Array1::zeros(embeddings.dims());
 
         // Compute the average embedding.
         let mut unknown = Array1::zeros(embeddings.dims());
         for (_, embed) in &embeddings {
-            unknown += &embed.as_view();
+            unknown += &embed;
         }
         let l2norm = unknown.dot(&unknown).sqrt();
         if l2norm != 0f32 {
@@ -104,7 +104,7 @@ impl From<R2VEmbeddings<VocabWrap, StorageWrap>> for Embeddings {
 
 impl Lookup for Embeddings {
     fn len(&self) -> usize {
-        self.vocab().len()
+        self.vocab().words_len()
     }
 
     fn lookup(&self, feature: &str) -> Option<LookupResult<'_>> {
@@ -116,11 +116,11 @@ impl Lookup for Embeddings {
     }
 
     fn null(&self) -> LookupResult<'_> {
-        LookupResult::Embedding(CowArray::Borrowed(self.null.view()))
+        LookupResult::Embedding(CowArray::from(self.null.view()))
     }
 
     fn unknown(&self) -> LookupResult<'_> {
-        LookupResult::Embedding(CowArray::Borrowed(self.unknown.view()))
+        LookupResult::Embedding(CowArray::from(self.unknown.view()))
     }
 }
 
