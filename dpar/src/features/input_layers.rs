@@ -213,11 +213,9 @@ impl InputVectorizer {
                 val,
             ) {
                 LookupResult::Embedding(embed) => {
-                    let embed_view = embed.as_view();
-                    embed_layer[embed_offset..embed_offset + embed_view.len()].copy_from_slice(
-                        embed_view.as_slice().expect("Embedding is not contiguous"),
-                    );
-                    embed_offset += embed_view.len();
+                    embed_layer[embed_offset..embed_offset + embed.len()]
+                        .copy_from_slice(embed.as_slice().expect("Embedding is not contiguous"));
+                    embed_offset += embed.len();
                 }
                 LookupResult::Index(idx) => {
                     lookup_slices[layer.into()].as_mut()[*offset] = idx as i32;
