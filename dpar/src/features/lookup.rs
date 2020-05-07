@@ -4,7 +4,7 @@ use std::ops::Deref;
 use finalfusion::embeddings::Embeddings as FFEmbeddings;
 use finalfusion::storage::StorageWrap;
 use finalfusion::vocab::{Vocab, VocabWrap};
-use ndarray::{Array1, CowArray, Ix1};
+use ndarray::{Array1, Axis, CowArray, Ix1};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::Numberer;
@@ -84,11 +84,48 @@ impl From<FFEmbeddings<VocabWrap, StorageWrap>> for Embeddings {
     fn from(embeddings: FFEmbeddings<VocabWrap, StorageWrap>) -> Self {
         let null = Array1::zeros(embeddings.dims());
 
-        // Compute the average embedding.
-        let mut unknown = Array1::zeros(embeddings.dims());
-        for (_, embed) in &embeddings {
-            unknown += &embed;
-        }
+        let mut unknown = match embeddings.storage() {
+            StorageWrap::QuantizedArray(_) | StorageWrap::MmapQuantizedArray(_) => {
+                let quantizer = match embeddings.storage() {
+                    StorageWrap::QuantizedArray(a) => a.quantizer(),
+                    StorageWrap::MmapQuantizedArray(a) => a.quantizer(),
+                    _ => unreachable!(),
+                };
+
+                // The subquantizer tensor has shape:
+                //
+                // n_quantizers * n_centroids * quantizer_len
+                //
+                // Here we average the centroids of the quantizers to obtain
+                // the average subquantizers of shape:
+                //
+                // n_quantizers * quantizer_len
+                let avg_subquantizers = quantizer.subquantizers().sum_axis(Axis(1))
+                    / quantizer.subquantizers().len_of(Axis(1)) as f32;
+
+                // Now we reshape to get the average quantizer embedding.
+                let embed_len = avg_subquantizers.len();
+                let avg_quantizer_embed = avg_subquantizers
+                    .into_shape((embed_len,))
+                    .expect("Cannot reshape averaged subquantizers into vector");
+
+                // Finally, project the embedding into the original space.
+                match quantizer.projection() {
+                    Some(ref projection) => avg_quantizer_embed.dot(&projection.t()),
+                    None => avg_quantizer_embed,
+                }
+            }
+            _ => {
+                let mut unknown = Array1::zeros(embeddings.dims());
+
+                for (_, embed) in &embeddings {
+                    unknown += &embed.view();
+                }
+
+                unknown
+            }
+        };
+
         let l2norm = unknown.dot(&unknown).sqrt();
         if l2norm != 0f32 {
             unknown /= l2norm;
