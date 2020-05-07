@@ -16,7 +16,7 @@ pub struct ParserState<'a> {
 }
 
 impl<'a> ParserState<'a> {
-    pub fn new(sentence: &[Token]) -> ParserState {
+    pub fn new(sentence: &[Token]) -> ParserState<'_> {
         let n_tokens = sentence.len() + 1;
 
         let buffer = (1..n_tokens).collect();

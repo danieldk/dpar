@@ -10,7 +10,7 @@ where
 {
     type Transition = T::Transition;
 
-    fn best_transition(&mut self, state: &ParserState) -> Self::Transition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> Self::Transition {
         self.best_transitions(&[state]).remove(0)
     }
 }
@@ -21,7 +21,7 @@ where
 {
     type Transition = T::Transition;
 
-    fn best_transitions(&mut self, states: &[&ParserState]) -> Vec<Self::Transition> {
+    fn best_transitions(&mut self, states: &[&ParserState<'_>]) -> Vec<Self::Transition> {
         if states.is_empty() {
             return Vec::new();
         }

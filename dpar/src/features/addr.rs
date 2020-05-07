@@ -74,7 +74,7 @@ pub struct AddressedValue {
 
 impl AddressedValue {
     /// Get the value of the address in the given parser state.
-    pub fn get<'a>(&self, state: &'a ParserState) -> Option<Cow<'a, str>> {
+    pub fn get<'a>(&self, state: &'a ParserState<'_>) -> Option<Cow<'a, str>> {
         let mut token = 0;
         for (idx, source) in self.address.iter().enumerate() {
             if let Some(next_token) = self.resolve_address(state, *source, idx, token) {
@@ -89,7 +89,7 @@ impl AddressedValue {
 
     fn resolve_address(
         &self,
-        state: &ParserState,
+        state: &ParserState<'_>,
         source: Source,
         idx: usize,
         token: usize,
@@ -112,7 +112,7 @@ impl AddressedValue {
         }
     }
 
-    fn resolve_value<'a>(&self, state: &'a ParserState, token: usize) -> Option<Cow<'a, str>> {
+    fn resolve_value<'a>(&self, state: &'a ParserState<'_>, token: usize) -> Option<Cow<'a, str>> {
         match self.layer {
             // Note: indexing is used here rather than get(), accessing a non-existing
             // token is a bug. So we want things to burst in flames.

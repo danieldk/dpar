@@ -29,7 +29,7 @@ pub fn parse_addressed_values(data: &str) -> Result<Vec<AddressedValue>, Error<R
     Ok(addr_values)
 }
 
-fn process_addressed_value(mut pairs: Pairs<Rule>) -> AddressedValue {
+fn process_addressed_value(mut pairs: Pairs<'_, Rule>) -> AddressedValue {
     let address_pair = pairs
         .next()
         .expect("Address components missing")
@@ -47,7 +47,7 @@ fn process_addressed_value(mut pairs: Pairs<Rule>) -> AddressedValue {
     AddressedValue { address, layer }
 }
 
-fn process_address(pair: Pair<Rule>) -> Source {
+fn process_address(pair: Pair<'_, Rule>) -> Source {
     let rule = pair.as_rule();
 
     let source_idx = pair
@@ -67,7 +67,7 @@ fn process_address(pair: Pair<Rule>) -> Source {
     }
 }
 
-fn process_addresses(pairs: Pairs<Rule>) -> Vec<Source> {
+fn process_addresses(pairs: Pairs<'_, Rule>) -> Vec<Source> {
     let mut address = Vec::new();
 
     for source in pairs {
@@ -84,7 +84,7 @@ fn process_addresses(pairs: Pairs<Rule>) -> Vec<Source> {
     address
 }
 
-fn process_layer(pair: Pair<Rule>) -> Layer {
+fn process_layer(pair: Pair<'_, Rule>) -> Layer {
     match pair.as_rule() {
         Rule::deprel_layer => Layer::DepRel,
         Rule::feature_layer => {

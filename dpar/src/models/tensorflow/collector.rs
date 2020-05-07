@@ -164,7 +164,7 @@ impl<'a, T> InstanceCollector<T> for TrainCollector<'a, T>
 where
     T: TransitionSystem,
 {
-    fn collect(&mut self, t: &T::Transition, state: &ParserState) -> Result<(), Error> {
+    fn collect(&mut self, t: &T::Transition, state: &ParserState<'_>) -> Result<(), Error> {
         if self.is_full() {
             self.train_batch();
             self.clear();
@@ -299,7 +299,7 @@ mod tests {
         };
 
         let mut lookups = LayerLookups::new();
-        let table: Box<Lookup> = Box::new(MutableLookupTable::new());
+        let table: Box<dyn Lookup> = Box::new(MutableLookupTable::new());
         lookups.insert(features::Layer::Token, table);
         InputVectorizer::new(lookups, AddressedValues(vec![stack0, buffer0]))
     }

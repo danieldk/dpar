@@ -111,7 +111,7 @@ enum Source {
     Stack,
 }
 
-fn print_tokens<W>(writer: &mut W, state: &ParserState, source: Source) -> Result<(), Error>
+fn print_tokens<W>(writer: &mut W, state: &ParserState<'_>, source: Source) -> Result<(), Error>
 where
     W: Write,
 {

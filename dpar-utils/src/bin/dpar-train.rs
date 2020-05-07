@@ -84,7 +84,7 @@ fn train(
     train_data: (Vec<Vec<Token>>, Vec<DependencySet>),
     validation_data: (Vec<Vec<Token>>, Vec<DependencySet>),
 ) -> Result<(), Error> {
-    let train_fun: Box<Fn(_, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
+    let train_fun: Box<dyn Fn(_, _, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(train_with_system::<ArcEagerSystem>),
         "archybrid" => Box::new(train_with_system::<ArcHybridSystem>),
         "arcstandard" => Box::new(train_with_system::<ArcStandardSystem>),

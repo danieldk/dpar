@@ -61,7 +61,7 @@ pub enum Layer {
 }
 
 impl fmt::Display for Layer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> result::Result<(), fmt::Error> {
         let s = match *self {
             Layer::Token => "tokens",
             Layer::Tag => "tags",
@@ -100,13 +100,13 @@ impl LayerLookups {
 
     pub fn insert<L>(&mut self, layer: Layer, lookup: L)
     where
-        L: Into<Box<Lookup>>,
+        L: Into<Box<dyn Lookup>>,
     {
         self.0[layer] = BoxedLookup::new(lookup)
     }
 
     /// Get the lookup for a layer.
-    pub fn layer_lookup(&self, layer: Layer) -> Option<&Lookup> {
+    pub fn layer_lookup(&self, layer: Layer) -> Option<&dyn Lookup> {
         self.0[layer].as_ref()
     }
 }
@@ -172,7 +172,7 @@ impl InputVectorizer {
     }
 
     /// Vectorize a parser state.
-    pub fn realize(&self, state: &ParserState) -> InputVector {
+    pub fn realize(&self, state: &ParserState<'_>) -> InputVector {
         let mut embed_layer = Tensor::new(&[self.embedding_layer_size() as u64]);
 
         let mut lookup_layers = EnumMap::new();
@@ -191,7 +191,7 @@ impl InputVectorizer {
     /// Vectorize a parser state into the given slices.
     pub fn realize_into<S>(
         &self,
-        state: &ParserState,
+        state: &ParserState<'_>,
         embed_layer: &mut [f32],
         lookup_slices: &mut EnumMap<Layer, S>,
     ) where
@@ -228,7 +228,7 @@ impl InputVectorizer {
     }
 }
 
-fn lookup_value<'a>(lookup: &'a Lookup, feature: Option<Cow<str>>) -> LookupResult<'a> {
+fn lookup_value<'a>(lookup: &'a dyn Lookup, feature: Option<Cow<'_, str>>) -> LookupResult<'a> {
     match feature {
         Some(f) => lookup
             .lookup(f.as_ref())

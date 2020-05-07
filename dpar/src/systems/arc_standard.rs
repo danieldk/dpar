@@ -45,7 +45,7 @@ impl TransitionSystem for ArcStandardSystem {
         },
     ];
 
-    fn is_terminal(state: &ParserState) -> bool {
+    fn is_terminal(state: &ParserState<'_>) -> bool {
         state.buffer().is_empty()
     }
 
@@ -69,7 +69,7 @@ pub enum ArcStandardTransition {
 impl Transition for ArcStandardTransition {
     type S = ArcStandardSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool {
+    fn is_possible(&self, state: &ParserState<'_>) -> bool {
         match *self {
             ArcStandardTransition::LeftArc(_) => {
                 !state.stack().len() > 1 && !state.buffer().is_empty()
@@ -81,7 +81,7 @@ impl Transition for ArcStandardTransition {
         }
     }
 
-    fn apply(&self, state: &mut ParserState) {
+    fn apply(&self, state: &mut ParserState<'_>) {
         let stack_size = state.stack().len();
 
         match *self {
@@ -131,7 +131,7 @@ impl ArcStandardOracle {
         }
     }
 
-    fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
+    fn needed_for_attachment(&self, state: &ParserState<'_>, token: usize) -> bool {
         for buf_token in state.buffer() {
             if let Some(dep) = self.dependencies.get(&buf_token) {
                 if dep.head == token {
@@ -147,7 +147,7 @@ impl ArcStandardOracle {
 impl Guide for ArcStandardOracle {
     type Transition = ArcStandardTransition;
 
-    fn best_transition(&mut self, state: &ParserState) -> ArcStandardTransition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> ArcStandardTransition {
         let stack = &state.stack();
         let buffer = &state.buffer();
 

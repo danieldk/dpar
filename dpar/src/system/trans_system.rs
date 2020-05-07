@@ -23,7 +23,7 @@ pub trait TransitionSystem {
     /// right-arc transition.
     const ATTACHMENT_ADDRS: [AttachmentAddr; 2];
 
-    fn is_terminal(state: &ParserState) -> bool;
+    fn is_terminal(state: &ParserState<'_>) -> bool;
     fn oracle(gold_dependencies: &DependencySet) -> Self::Oracle;
     fn transitions(&self) -> &TransitionLookup<Self::Transition>;
 }
@@ -54,8 +54,8 @@ pub struct AttachmentAddr {
 pub trait Transition: Clone + Debug + Eq + Hash + Serialize + DeserializeOwned {
     type S: TransitionSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool;
-    fn apply(&self, state: &mut ParserState);
+    fn is_possible(&self, state: &ParserState<'_>) -> bool;
+    fn apply(&self, state: &mut ParserState<'_>);
 }
 
 /// Transition lookup table.
@@ -160,7 +160,7 @@ where
     /// Fresh tables return copies of transitions, frozen tables references
     /// to transitions. `None` is returned when the identifier is unknown
     /// or the special identifier `0`.
-    pub fn value(&self, id: usize) -> Option<Cow<T>> {
+    pub fn value(&self, id: usize) -> Option<Cow<'_, T>> {
         use self::TransitionLookup::*;
 
         if id == 0 {
