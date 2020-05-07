@@ -80,7 +80,7 @@ where
     R: BufRead,
     W: Write,
 {
-    let prepare_fun: Box<Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
+    let prepare_fun: Box<dyn Fn(_, _, _) -> Result<_, _>> = match config.parser.system.as_ref() {
         "arceager" => Box::new(prepare_with_system::<R, W, ArcEagerSystem>),
         "archybrid" => Box::new(prepare_with_system::<R, W, ArcHybridSystem>),
         "arcstandard" => Box::new(prepare_with_system::<R, W, ArcStandardSystem>),

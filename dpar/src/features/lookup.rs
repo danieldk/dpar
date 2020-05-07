@@ -54,16 +54,16 @@ pub trait Lookup {
     fn len(&self) -> usize;
 
     /// Lookup a feature.
-    fn lookup(&self, feature: &str) -> Option<LookupResult>;
+    fn lookup(&self, feature: &str) -> Option<LookupResult<'_>>;
 
     /// Lookup type.
     fn lookup_type(&self) -> LookupType;
 
     /// Null value.
-    fn null(&self) -> LookupResult;
+    fn null(&self) -> LookupResult<'_>;
 
     // Unknown value.
-    fn unknown(&self) -> LookupResult;
+    fn unknown(&self) -> LookupResult<'_>;
 }
 
 pub struct Embeddings {
@@ -107,7 +107,7 @@ impl Lookup for Embeddings {
         self.vocab().len()
     }
 
-    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+    fn lookup(&self, feature: &str) -> Option<LookupResult<'_>> {
         self.embedding(feature).map(LookupResult::Embedding)
     }
 
@@ -115,11 +115,11 @@ impl Lookup for Embeddings {
         LookupType::Embedding(self.dims())
     }
 
-    fn null(&self) -> LookupResult {
+    fn null(&self) -> LookupResult<'_> {
         LookupResult::Embedding(CowArray::Borrowed(self.null.view()))
     }
 
-    fn unknown(&self) -> LookupResult {
+    fn unknown(&self) -> LookupResult<'_> {
         LookupResult::Embedding(CowArray::Borrowed(self.unknown.view()))
     }
 }
@@ -143,7 +143,7 @@ impl Lookup for MutableLookupTable {
         self.0.borrow().len() + 1
     }
 
-    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+    fn lookup(&self, feature: &str) -> Option<LookupResult<'_>> {
         let mut numberer = self.0.borrow_mut();
         Some(LookupResult::Index(numberer.add(feature.to_owned())))
     }
@@ -152,11 +152,11 @@ impl Lookup for MutableLookupTable {
         LookupType::Index
     }
 
-    fn null(&self) -> LookupResult {
+    fn null(&self) -> LookupResult<'_> {
         LookupResult::Index(0)
     }
 
-    fn unknown(&self) -> LookupResult {
+    fn unknown(&self) -> LookupResult<'_> {
         LookupResult::Index(0)
     }
 }
@@ -175,7 +175,7 @@ impl Lookup for LookupTable {
         self.0.len() + 1
     }
 
-    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+    fn lookup(&self, feature: &str) -> Option<LookupResult<'_>> {
         self.0.number(feature).map(LookupResult::Index)
     }
 
@@ -183,28 +183,28 @@ impl Lookup for LookupTable {
         LookupType::Index
     }
 
-    fn null(&self) -> LookupResult {
+    fn null(&self) -> LookupResult<'_> {
         LookupResult::Index(0)
     }
 
-    fn unknown(&self) -> LookupResult {
+    fn unknown(&self) -> LookupResult<'_> {
         LookupResult::Index(0)
     }
 }
 
-pub struct BoxedLookup(Option<Box<Lookup>>);
+pub struct BoxedLookup(Option<Box<dyn Lookup>>);
 
 impl BoxedLookup {
     /// Construct a boxed lookup from a lookup.
     pub fn new<L>(lookup: L) -> Self
     where
-        L: Into<Box<Lookup>>,
+        L: Into<Box<dyn Lookup>>,
     {
         BoxedLookup(Some(lookup.into()))
     }
 
     /// Get the lookup as a reference.
-    pub fn as_ref(&self) -> Option<&Lookup> {
+    pub fn as_ref(&self) -> Option<&dyn Lookup> {
         self.0.as_ref().map(AsRef::as_ref)
     }
 }

@@ -284,7 +284,7 @@ where
     /// each parser state.
     pub fn predict(
         &mut self,
-        states: &[&ParserState],
+        states: &[&ParserState<'_>],
         embeds_tensor: &Tensor<f32>,
         input_tensors: &LayerTensors<i32>,
     ) -> Vec<T::Transition> {
@@ -306,7 +306,7 @@ where
     ///
     /// This method finds the best transition (largest logit) that is possible given the
     /// current parser state.
-    fn logits_best_transition(&self, state: &ParserState, logits: &[f32]) -> T::Transition {
+    fn logits_best_transition(&self, state: &ParserState<'_>, logits: &[f32]) -> T::Transition {
         // Invariant: we should have as many predictions as transitions.
         let n_predictions = logits.len();
         let n_transitions = self.system.transitions().len();

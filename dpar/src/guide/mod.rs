@@ -13,7 +13,7 @@ pub trait Guide {
 
     /// Returns the best (permissible) transition given the current parser
     /// state.
-    fn best_transition(&mut self, state: &ParserState) -> Self::Transition;
+    fn best_transition(&mut self, state: &ParserState<'_>) -> Self::Transition;
 }
 
 /// Guide for parsers with batch processing
@@ -24,5 +24,5 @@ pub trait BatchGuide {
     /// states. The transitions are returned in the same order as the
     /// parser states. So, the *0th* transition is the best transition
     /// for the *0th* parser state.
-    fn best_transitions(&mut self, states: &[&ParserState]) -> Vec<Self::Transition>;
+    fn best_transitions(&mut self, states: &[&ParserState<'_>]) -> Vec<Self::Transition>;
 }

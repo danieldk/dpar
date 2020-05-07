@@ -38,7 +38,7 @@ where
     pub fn parse_state(
         &mut self,
         gold_dependencies: &DependencySet,
-        state: &mut ParserState,
+        state: &mut ParserState<'_>,
     ) -> Result<(), Error> {
         let mut oracle = T::oracle(gold_dependencies);
 

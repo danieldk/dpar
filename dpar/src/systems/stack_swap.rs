@@ -57,7 +57,7 @@ impl TransitionSystem for StackSwapSystem {
         },
     ];
 
-    fn is_terminal(state: &ParserState) -> bool {
+    fn is_terminal(state: &ParserState<'_>) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1
     }
 
@@ -82,7 +82,7 @@ pub enum StackSwapTransition {
 impl Transition for StackSwapTransition {
     type S = StackSwapSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool {
+    fn is_possible(&self, state: &ParserState<'_>) -> bool {
         let stack_len = state.stack().len();
 
         match *self {
@@ -95,7 +95,7 @@ impl Transition for StackSwapTransition {
         }
     }
 
-    fn apply(&self, state: &mut ParserState) {
+    fn apply(&self, state: &mut ParserState<'_>) {
         let stack_len = state.stack().len();
 
         match *self {
@@ -144,7 +144,7 @@ impl StackSwapOracle {
         }
     }
 
-    fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
+    fn needed_for_attachment(&self, state: &ParserState<'_>, token: usize) -> bool {
         for buf_token in state.buffer() {
             if let Some(dep) = self.dependencies.get(&buf_token) {
                 if dep.head == token {
@@ -168,7 +168,7 @@ impl StackSwapOracle {
 impl Guide for StackSwapOracle {
     type Transition = StackSwapTransition;
 
-    fn best_transition(&mut self, state: &ParserState) -> StackSwapTransition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> StackSwapTransition {
         let stack = &state.stack();
         let stack_len = stack.len();
 

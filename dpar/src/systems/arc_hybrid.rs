@@ -49,7 +49,7 @@ impl TransitionSystem for ArcHybridSystem {
         },
     ];
 
-    fn is_terminal(state: &ParserState) -> bool {
+    fn is_terminal(state: &ParserState<'_>) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1
     }
 
@@ -73,7 +73,7 @@ pub enum ArcHybridTransition {
 impl Transition for ArcHybridTransition {
     type S = ArcHybridSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool {
+    fn is_possible(&self, state: &ParserState<'_>) -> bool {
         match *self {
             ArcHybridTransition::LeftArc(_) => {
                 state.stack().len() > 1 && !state.buffer().is_empty()
@@ -83,7 +83,7 @@ impl Transition for ArcHybridTransition {
         }
     }
 
-    fn apply(&self, state: &mut ParserState) {
+    fn apply(&self, state: &mut ParserState<'_>) {
         let stack_len = state.stack().len();
 
         match *self {
@@ -128,7 +128,7 @@ impl ArcHybridOracle {
         }
     }
 
-    fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
+    fn needed_for_attachment(&self, state: &ParserState<'_>, token: usize) -> bool {
         for buf_token in state.buffer() {
             if let Some(dep) = self.dependencies.get(&buf_token) {
                 if dep.head == token {
@@ -144,7 +144,7 @@ impl ArcHybridOracle {
 impl Guide for ArcHybridOracle {
     type Transition = ArcHybridTransition;
 
-    fn best_transition(&mut self, state: &ParserState) -> ArcHybridTransition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> ArcHybridTransition {
         assert!(
             !state.stack().is_empty(),
             "Impossible configuration (empty stack)"

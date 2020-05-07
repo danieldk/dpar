@@ -78,7 +78,7 @@ pub struct Lookups {
 impl Lookups {
     pub fn construct_lookups_with<F>(&self, load_fun: F) -> Result<LayerLookups, Error>
     where
-        F: Fn(&Lookup) -> Result<Box<features::Lookup>, Error>,
+        F: Fn(&Lookup) -> Result<Box<dyn features::Lookup>, Error>,
     {
         let mut lookups = LayerLookups::new();
 
@@ -105,7 +105,7 @@ impl Lookups {
         self.construct_lookups_with(|l| self.create_layer_tables(l))
     }
 
-    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
+    fn create_layer_tables(&self, lookup: &Lookup) -> Result<Box<dyn features::Lookup>, Error> {
         match *lookup {
             Lookup::Embedding {
                 ref filename,
@@ -144,7 +144,7 @@ impl Lookups {
         }
     }
 
-    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<features::Lookup>, Error> {
+    fn load_layer_tables(&self, lookup: &Lookup) -> Result<Box<dyn features::Lookup>, Error> {
         match *lookup {
             Lookup::Embedding {
                 ref filename,

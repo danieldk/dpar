@@ -11,7 +11,7 @@ use crate::{CborRead, CborWrite};
 pub enum StoredLookupTable {
     Table(LookupTable),
     FreshTable {
-        write: Box<Write>,
+        write: Box<dyn Write>,
         table: MutableLookupTable,
     },
 }
@@ -64,7 +64,7 @@ impl Lookup for StoredLookupTable {
         }
     }
 
-    fn lookup(&self, feature: &str) -> Option<LookupResult> {
+    fn lookup(&self, feature: &str) -> Option<LookupResult<'_>> {
         match self {
             StoredLookupTable::Table(ref table) => table.lookup(feature),
             StoredLookupTable::FreshTable { ref table, .. } => table.lookup(feature),
@@ -78,14 +78,14 @@ impl Lookup for StoredLookupTable {
         }
     }
 
-    fn null(&self) -> LookupResult {
+    fn null(&self) -> LookupResult<'_> {
         match self {
             StoredLookupTable::Table(ref table) => table.null(),
             StoredLookupTable::FreshTable { ref table, .. } => table.null(),
         }
     }
 
-    fn unknown(&self) -> LookupResult {
+    fn unknown(&self) -> LookupResult<'_> {
         match self {
             StoredLookupTable::Table(ref table) => table.unknown(),
             StoredLookupTable::FreshTable { ref table, .. } => table.unknown(),

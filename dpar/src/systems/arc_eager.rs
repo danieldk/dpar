@@ -48,7 +48,7 @@ impl TransitionSystem for ArcEagerSystem {
         },
     ];
 
-    fn is_terminal(state: &ParserState) -> bool {
+    fn is_terminal(state: &ParserState<'_>) -> bool {
         state.buffer().is_empty()
     }
 
@@ -72,7 +72,7 @@ pub enum ArcEagerTransition {
 impl Transition for ArcEagerTransition {
     type S = ArcEagerSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool {
+    fn is_possible(&self, state: &ParserState<'_>) -> bool {
         let stack_len = state.stack().len();
         let buffer_len = state.buffer().len();
 
@@ -90,7 +90,7 @@ impl Transition for ArcEagerTransition {
         }
     }
 
-    fn apply(&self, state: &mut ParserState) {
+    fn apply(&self, state: &mut ParserState<'_>) {
         let stack_len = state.stack().len();
 
         match *self {
@@ -138,7 +138,7 @@ impl ArcEagerOracle {
         }
     }
 
-    fn next_attached(&self, state: &ParserState) -> bool {
+    fn next_attached(&self, state: &ParserState<'_>) -> bool {
         let stack_tip = state.stack()[state.stack().len() - 1];
         let buffer_head = state.buffer()[0];
 
@@ -159,7 +159,7 @@ impl ArcEagerOracle {
 impl Guide for ArcEagerOracle {
     type Transition = ArcEagerTransition;
 
-    fn best_transition(&mut self, state: &ParserState) -> ArcEagerTransition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> ArcEagerTransition {
         assert!(
             !state.buffer().is_empty(),
             "Applying oracle to terminal configuration"

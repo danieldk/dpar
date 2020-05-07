@@ -45,7 +45,7 @@ impl TransitionSystem for StackProjectiveSystem {
         },
     ];
 
-    fn is_terminal(state: &ParserState) -> bool {
+    fn is_terminal(state: &ParserState<'_>) -> bool {
         state.buffer().is_empty() && state.stack().len() == 1
     }
 
@@ -69,7 +69,7 @@ pub enum StackProjectiveTransition {
 impl Transition for StackProjectiveTransition {
     type S = StackProjectiveSystem;
 
-    fn is_possible(&self, state: &ParserState) -> bool {
+    fn is_possible(&self, state: &ParserState<'_>) -> bool {
         match *self {
             StackProjectiveTransition::LeftArc(_) => state.stack().len() > 2,
             StackProjectiveTransition::RightArc(_) => state.stack().len() > 1,
@@ -77,7 +77,7 @@ impl Transition for StackProjectiveTransition {
         }
     }
 
-    fn apply(&self, state: &mut ParserState) {
+    fn apply(&self, state: &mut ParserState<'_>) {
         let stack_size = state.stack().len();
 
         match *self {
@@ -124,7 +124,7 @@ impl StackProjectiveOracle {
         }
     }
 
-    fn needed_for_attachment(&self, state: &ParserState, token: usize) -> bool {
+    fn needed_for_attachment(&self, state: &ParserState<'_>, token: usize) -> bool {
         for buf_token in state.buffer() {
             if let Some(dep) = self.dependencies.get(&buf_token) {
                 if dep.head == token {
@@ -140,7 +140,7 @@ impl StackProjectiveOracle {
 impl Guide for StackProjectiveOracle {
     type Transition = StackProjectiveTransition;
 
-    fn best_transition(&mut self, state: &ParserState) -> StackProjectiveTransition {
+    fn best_transition(&mut self, state: &ParserState<'_>) -> StackProjectiveTransition {
         let stack = &state.stack();
 
         if stack.len() > 1 {
