@@ -158,7 +158,7 @@ where
         if epoch - best_epoch == config.train.patience {
             eprintln!(
                 "Lost my patience! Best epoch: {} with accuracy: {:.4}",
-                best_epoch, acc
+                best_epoch, best_acc
             );
             break;
         }
