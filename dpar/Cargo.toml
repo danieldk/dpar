@@ -19,7 +19,7 @@ protobuf = "1.4"
 serde = "1"
 serde_derive = "1"
 tensorflow = "0.12"
-tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
+tf-proto = { path = "../tf-proto", version = "0.1" }
 
 [dev-dependencies]
 approx = "0.3"

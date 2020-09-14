@@ -1267,7 +1267,6 @@ dependencies = [
 [[package]]
 name = "tf-proto"
 version = "0.1.0"
-source = "git+https://github.com/danieldk/tf-proto-rs?tag=v1.4.0#88fa3f65819a8f140b9c56f0bd2b48a3c958f541"
 dependencies = [
  "protobuf",
 ]

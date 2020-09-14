@@ -21,7 +21,7 @@ serde_cbor = "0.6"
 serde_derive = "1.0"
 stdinout = "0.4"
 tensorflow = "0.12"
-tf-proto = { git = "https://github.com/danieldk/tf-proto-rs", tag = "v1.4.0" }
+tf-proto = { path = "../tf-proto", version = "0.1" }
 toml = "0.4"
 
 [dev-dependencies]

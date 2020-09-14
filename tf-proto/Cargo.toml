@@ -1,0 +1,7 @@
+[package]
+name = "tf-proto"
+version = "0.1.0"
+authors = ["Daniël de Kok <me@danieldk.eu>"]
+
+[dependencies]
+protobuf = "1.4"
