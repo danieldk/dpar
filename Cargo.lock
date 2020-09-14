@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "dpar"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "approx",
  "conllx",
@@ -332,7 +332,7 @@ dependencies = [
 
 [[package]]
 name = "dpar-utils"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "colored",
  "conllx",
